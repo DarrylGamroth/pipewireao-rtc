@@ -35,6 +35,7 @@ function application_defaults!(application)
     )
     for owner in get(application, "owners", [])
         _application_owner(owner)
+        D.uses_external_stream(owner) && continue
         D.validate_environment(get!(owner, "environment", Dict{String,Any}()), "owner")
     end
     if haskey(application, "session-runtime")

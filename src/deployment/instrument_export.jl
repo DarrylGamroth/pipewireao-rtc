@@ -290,6 +290,8 @@ function profile!(spec, profile, bindings)
             )
         elseif role in (owner["role"] for owner in spec["owners"])
             owner = only(filter(owner -> owner["role"] == role, spec["owners"]))
+            D.uses_external_stream(owner) &&
+                throw(ArgumentError("independently supervised source owns its environment"))
             merge!(owner["environment"], substitute(environment, bindings))
         else
             throw(

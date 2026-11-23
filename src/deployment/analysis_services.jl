@@ -47,7 +47,7 @@ function install_analysis!(entry, package, prefix, paths, project, client, recor
         "--remote",
         record["remote"],
     ]
-    env = analysis_environment(paths, runtime, role, prefix, basename(record["remote"]))
+    env = analysis_environment(paths, runtime, role, prefix, record["remote"])
     # Native Ready has already been proved. The parent is still activating
     # during ExecStartPost, so avoid a dependency on its systemd active state.
     # Julia handles SIGTERM through its runtime exit path, which can stall
@@ -98,7 +98,7 @@ function start_analysis!(package, prefix, spec, record; deadline, clock)
         client = D.relative_asset(package, spec["client"]["analysis"])
         bindings = Dict(
             "PACKAGE" => package, "PREFIX" => prefix, "RUNTIME" => runtime,
-            "REMOTE" => basename(record["remote"]), "INSTANCE" => record["invocation"],
+            "REMOTE" => record["remote"], "INSTANCE" => record["invocation"],
         )
         rendered = D.substitute(read(client, String), bindings; quoted = true)
         services = S.Service[]

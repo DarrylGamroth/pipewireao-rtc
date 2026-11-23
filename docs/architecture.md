@@ -282,8 +282,12 @@ define application configuration, calibration bindings and one-shot deployment
 and control commands. The GUI observes these owners and submits operator
 requests.
 
-Standalone HIL owns simulation startup configuration and execution. The RTC
-management endpoint handles the artifact catalog. The earlier cold replacement
+Standalone HIL owns simulation startup configuration and execution. With an
+independent input, systemd supervises the core and HIL separately from the RTC.
+MediaSession verifies the live provider and owns the Links to its controllers.
+Restarting the RTC leaves the simulator clock and provider-owned Links running.
+The [HIL configuration guide](HIL_CONFIGURATION.md#attach-an-rtc-to-an-already-publishing-source)
+describes the site bindings. The RTC management endpoint handles the artifact catalog. The earlier cold replacement
 service and its GUI request domain are retired.
 
 ```mermaid

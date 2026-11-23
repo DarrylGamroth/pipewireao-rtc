@@ -5,7 +5,8 @@ ExecStart runs RTC after this function returns. This module creates
 processes and configuration; it never admits a session or issues source/link
 operations. The MediaSession module owns those actions.
 
-Owner names are exclusive per systemd invocation. A query followed by a stop
+RTC-owned service names are exclusive per systemd invocation. Separately supervised
+core and source services are observed by their exact unit and process identity. A query followed by a stop
 cannot be atomic; manual replacement of the same name is outside this workflow.
 Observed retained PID, invocation, or cgroup mismatches fence cleanup.
 """
@@ -42,6 +43,8 @@ struct LaunchError <: Exception
 end
 Base.showerror(io::IO, error::LaunchError) = print(io, error.message)
 fail(message) = throw(LaunchError(message))
+
+include("external_services.jl")
 
 struct Request
     package::String
@@ -166,7 +169,9 @@ end
 
 function owner_environment(paths, spec, bindings, runtime, role)
     env = Dict{String,String}(ENV)
-    for key in ("NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID")
+    for key in (
+        "NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID", EXTERNAL_SERVICE_ENV...
+    )
         delete!(env, key)
     end
     merge!(
@@ -373,10 +378,10 @@ _fgn_configuration_token(token) = fail("FGN graph has no configuration path")
 _fgn_configuration_token(::String) = nothing
 _fgn_node_name(name) = fail("FGN graph node differs from its rendered host module")
 _fgn_node_name(::String) = nothing
-_held_source_owner(role, spec) = fail("RTC session requires a declared held source owner")
-_held_source_owner(role::String, spec) =
+_source_owner(role, spec) = fail("RTC session requires a declared source owner")
+_source_owner(role::String, spec) =
     any(owner -> owner["role"] == role, spec["owners"]) ||
-    fail("RTC session requires a declared held source owner")
+    fail("RTC session requires a declared source owner")
 _rendered_session_configuration(config, runtime) =
     fail("session generator did not return a private invocation configuration")
 _rendered_session_configuration(config::AbstractString, runtime) =
@@ -525,7 +530,12 @@ function prepare!(request::Request; render!::Function)
         "RTC session does not yet retain a CPU DMA latency lease; cpu-latency-us must be null",
     )
     source_role = get(spec, "source-owner", nothing)
-    _held_source_owner(source_role, spec)
+    _source_owner(source_role, spec)
+    source = only(filter(owner -> owner["role"] == source_role, spec["owners"]))
+    external = external_services()
+    external === nothing && D.uses_external_stream(source) &&
+        fail("external stream requires independent core and source service bindings")
+    external === nothing || external_source!(spec, source)
     coordinator = preparation_identity(request, source_role)
     invocation = coordinator.invocation
     root = request.runtime_root
@@ -537,7 +547,7 @@ function prepare!(request::Request; render!::Function)
     runtime = joinpath(root, invocation)
     mkdir(runtime; mode = 0o700) # Never reuse a previous invocation directory.
     chmod(runtime, 0o700)
-    remote_name = "rtc-" * invocation[1:12]
+    remote_name = external === nothing ? "rtc-" * invocation[1:12] : N.private_remote(external.socket)
     remote = joinpath(runtime, remote_name)
     ncodeunits(remote) <= 100 ||
         fail("private core socket path exceeds the Unix socket bound")
@@ -562,7 +572,6 @@ function prepare!(request::Request; render!::Function)
         bindings["HEART_OWNER_NODE"] = heart["control-node"]
         bindings["HEART_OWNER_INSTANCE"] = string(N.next_instance())
     end
-    source = only(filter(owner -> owner["role"] == source_role, spec["owners"]))
     D.uses_acquisition_protocol(source) &&
         (bindings["SOURCE_OWNER_INSTANCE"] = string(N.next_instance()))
     paths = D.installed_paths(prefix)
@@ -609,21 +618,26 @@ function prepare!(request::Request; render!::Function)
     )
     launch_record!(runtime, record)
     try
-        contracts = collect(values(spec["placement"]))
+        contracts = [contract for (role, contract) in spec["placement"]
+                     if external === nothing || !(role in ("core", source_role))]
         priority = maximum(contract["rt-priority"] for contract in contracts)
         locked = maximum(contract["locked-bytes"] for contract in contracts)
         record["credentials"] = P.credentials(priority, locked, spec["cpu-latency-us"])
         launch_record!(runtime, record)
         services = Dict{String,S.Service}()
-        services["core"] = reserve_owner!(
-            coordinator, "core", spec["placement"]["core"], record
-        )
+        if external === nothing
+            services["core"] = reserve_owner!(coordinator, "core", spec["placement"]["core"], record)
+        else
+            services["core"] = record_external_service!(coordinator, record, "core", external.core, spec["placement"]["core"])
+        end
         owner_records = record["owners"]
         for owner in spec["owners"]
             role = owner["role"]
-            services[role] = reserve_owner!(
-                coordinator, role, spec["placement"][role], record
-            )
+            services[role] = if external !== nothing && role == source_role
+                record_external_service!(coordinator, record, role, external.source, spec["placement"][role])
+            else
+                reserve_owner!(coordinator, role, spec["placement"][role], record)
+            end
             control_instance = if D.uses_heart_protocol(owner)
                 bindings["HEART_OWNER_INSTANCE"]
             elseif D.uses_acquisition_protocol(owner)
@@ -654,28 +668,34 @@ function prepare!(request::Request; render!::Function)
         record["cohort_unit"] = S.cohort_name(invocation)
         record["unit_files"] = Dict{String,Any}()
         launch_record!(runtime, record) # Complete role/name intent before any process starts.
-        core_env = owner_environment(paths, spec, bindings, runtime, "core")
-        core_env["PIPEWIREAO_MODULE_DIR"] *=
-            ":" * dirname(PipeWireAOQueue_jll.libpipewire_module_queue)
         core = services["core"]
-        S.install_fragment!(
-            core.unit,
-            S.service_unit(
-                core,
-                [paths["daemon"], "-c", "daemon.conf"],
-                core_env,
-                joinpath(runtime, "core"),
-                spec["placement"]["core"],
-            ),
-            runtime,
-            record,
-        )
-        S.reload_fragments!(record)
-        S.start_services!([core], core.unit, runtime, record)
+        if external === nothing
+            core_env = owner_environment(paths, spec, bindings, runtime, "core")
+            core_env["PIPEWIREAO_MODULE_DIR"] *=
+                ":" * dirname(PipeWireAOQueue_jll.libpipewire_module_queue)
+            S.install_fragment!(
+                core.unit,
+                S.service_unit(
+                    core,
+                    [paths["daemon"], "-c", "daemon.conf"],
+                    core_env,
+                    joinpath(runtime, "core"),
+                    spec["placement"]["core"],
+                ),
+                runtime,
+                record,
+            )
+            S.reload_fragments!(record)
+            S.start_services!([core], core.unit, runtime, record)
+        end
         wait_core!(core, remote)
+        if external !== nothing
+            client_env = owner_environment(paths, spec, bindings, runtime, "rtc")
+            verify_external_core(request.prefix, remote, S.pid(core), client_env)
+        end
 
         project = D.application_environment(spec, package)
-        hil_startup = PipeWireAORTC.HILStartup.interface(project)
+        hil_startup = external === nothing ? PipeWireAORTC.HILStartup.interface(project) : nothing
         function install_owner!(owner)
             role = owner["role"]
             env = owner_environment(paths, spec, bindings, runtime, role)
@@ -704,6 +724,7 @@ function prepare!(request::Request; render!::Function)
         # HEART's source command needs the real controller PID. Keep this
         # necessary stage; ordinary FGN/FilterGraphPipeWire owners start together below.
         staged_roles = Set(["core"])
+        external === nothing || push!(staged_roles, source_role)
         for owner in filter(D.uses_heart_protocol, spec["owners"])
             install_owner!(owner)
             service = services[owner["role"]]
@@ -735,15 +756,17 @@ function prepare!(request::Request; render!::Function)
             services[role] for
             role in sort!(collect(keys(services))) if !(role in staged_roles)
         ]
-        S.install_fragment!(
-            record["cohort_unit"],
-            S.cohort_unit(invocation, [service.unit for service in cohort]),
-            runtime,
-            record,
-        )
-        S.reload_fragments!(record)
         S.verify!(core)
-        S.start_services!(cohort, record["cohort_unit"], runtime, record)
+        if !isempty(cohort)
+            S.install_fragment!(
+                record["cohort_unit"],
+                S.cohort_unit(invocation, [service.unit for service in cohort]),
+                runtime,
+                record,
+            )
+            S.reload_fragments!(record)
+            S.start_services!(cohort, record["cohort_unit"], runtime, record)
+        end
         config = render!(
             spec, session, bindings, deepcopy(owner_records), runtime; links = declared_links
         )
@@ -762,12 +785,7 @@ function prepare!(request::Request; render!::Function)
         final_coordinator.cgroup == coordinator.cgroup ||
             fail("RTC unit incarnation changed during preparation")
         for (role, item) in owner_records
-            service = S.Service(coordinator, role)
-            service.main_pid = Int(item["pid"])
-            service.invocation = String(item["invocation"])
-            service.start_ticks = UInt64(item["start-ticks"])
-            service.cgroup = String(item["cgroup"])
-            S.running!(service)
+            service = recorded_service(coordinator, role, item)
             S.verify!(service)
         end
         record["phase"] = "prepared"
@@ -832,18 +850,13 @@ function retained_service(record, role)
 end
 _retained_service(record, role, item) = nothing
 function _retained_service(record, role, item::AbstractDict)
+    get(item, "external", false) && return nothing
     get(item, "state", "") in ("running", "uncertain") || return nothing
     get(item, "pid", 0) > 0 &&
     !isempty(get(item, "invocation", "")) &&
     !isempty(get(item, "cgroup", "")) || return nothing
     owner = S.Coordinator(String(record["unit"]), String(record["invocation"]), "", "")
-    service = S.Service(owner, role)
-    service.main_pid = Int(item["pid"])
-    service.invocation = String(item["invocation"])
-    service.start_ticks = UInt64(item["start-ticks"])
-    service.cgroup = String(item["cgroup"])
-    S.running!(service)
-    return service
+    return recorded_service(owner, role, item)
 end
 
 include("analysis_services.jl")
@@ -859,6 +872,12 @@ function cleanup_role!(
     record, role, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
 )
     validate_ledger(record)
+    item = get(record["owners"], role, nothing)
+    if item !== nothing && get(item, "external", false)
+        role in ("core", record["source_role"]) || fail("unexpected external owner role")
+        external_unit(item["unit"])
+        return nothing
+    end
     invocation = record["invocation"]
     unit = S.PREFIX * invocation * "-" * role * ".service"
     for job in S.listed_jobs(invocation; deadline, clock)

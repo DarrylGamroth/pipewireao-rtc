@@ -696,19 +696,28 @@ unit and verify recovery and fresh active generations separately.
 
 ### RTC-DEV-021 — Admission and coherent lifecycle
 
-The headless RTC MUST prepare and admit the exact session before ingress. It MUST
-verify exact topology and owner readiness, and required effective per-thread
-affinity, scheduler and memory/QoS prerequisites, before explicit source
-release. Readiness MUST bind current manager and owner incarnations; stale
-locators, markers and saved status files MUST NOT admit ingress. An external
-source MUST remain held until release and MUST stop when admission is revoked.
-A source without a hold contract MUST be rejected.
+The headless RTC MUST prepare and admit the exact session before enabling
+RTC-controlled execution. It MUST verify exact topology, owner readiness and
+the declared effective per-thread affinity, scheduler and memory/QoS
+prerequisites. Site services own their placement. The RTC MUST observe the
+declared placement before admission. Readiness MUST bind current manager and
+owner incarnations. A source declared under the managed acquisition contract
+MUST remain held until release and MUST stop when admission is revoked.
+A missing managed hold contract MUST fail admission.
+
+An explicitly declared independent stream MAY already be publishing. The RTC
+MUST verify its exact live provider, data Ports and negotiated Links before
+Ready. The provider owns model time and publication. RTC Start, Stop, Reset,
+Quit and failure cleanup MUST preserve that provider and its private core.
+A replacement RTC MUST verify the retained service identities and realize a
+fresh set of RTC-owned Links. RTC-controlled processing MUST remain held
+until explicitly started.
 
 Failure or loss of any required endpoint, Link, manager or owner MUST revoke
-admission and fault the session. Restart MUST use fresh incarnations, revalidate
-the dependent set and MUST NOT replay operator mutations. Shutdown MUST stop
-ingress before unloading consumers. Every invocation MUST use fresh owner unit
-names with `Restart=no`, bind owners to verified MainPIDs and process
+admission and fault the session. Restart MUST use a fresh session incarnation,
+revalidate the dependent set and MUST NOT replay operator mutations. Shutdown
+MUST revoke RTC-controlled processing before unloading consumers. Every
+invocation MUST use fresh managed owner unit names with `Restart=no`, bind owners to verified MainPIDs and process
 incarnations, and terminate only its owned processes. Before owner startup, it
 MUST verify the installed emergency cleanup hook. It MUST reconcile uncertain
 launches and pending starts before proceeding. User-manager operations MUST have
@@ -717,8 +726,8 @@ fence. Operation and cleanup deadlines MUST be finite; unknown revocation or
 cleanup MUST remain a fault.
 
 If the headless RTC service dies abruptly while its policy is unavailable, its installed
-systemd emergency cleanup hook MUST revoke ingress before tearing down
-consumers. Service activation MUST NOT authorize ingress. Foreground and
+systemd emergency cleanup hook MUST revoke owned ingress or withdraw the
+session's connections to independent ingress when tearing down consumers. Service activation MUST NOT authorize ingress. Foreground and
 user-service modes MUST use the same session contract. User units MUST NOT
 elevate the whole control or Julia deployment tooling to FIFO or assume
 unavailable rights.
@@ -729,8 +738,9 @@ do not qualify the current library-based headless implementation.
 
 Verification intent: delayed owner, wrong contract, bad placement/rights,
 stale manager/owner incarnation, partial launch failure, dependency loss and
-repeated fresh admission; source silence before admission and clean shutdown
-with systemd-supervised processes.
+repeated fresh admission. Verify managed source silence before release. For an
+independent stream, observe advancing sequence and model timestamps during RTC
+absence and verify fresh admission on replacement.
 
 ### RTC-DEV-022 — Bounded local control
 
@@ -821,7 +831,7 @@ and validate encoding, order and unit conversion against a direct oracle.
 
 ### RTC-DEV-025 — Acknowledged simulator admission and controls
 
-This section applies to a source admitted through a managed RTC profile. The
+This section applies to a source whose acquisition lifecycle the RTC controls. The
 provider owns the process-side bootstrap and SourceControl implementation.
 RTC owns admission, links and ordering across the declared endpoints.
 

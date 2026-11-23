@@ -1,4 +1,4 @@
-using Test, PipeWireAORTC
+using Test, PipeWireAORTC, Sockets
 using PipeWireAORTC: SessionConfiguration
 
 @testset "declared core-hosted session nodes" begin
@@ -89,6 +89,48 @@ using PipeWireAORTC: SessionConfiguration
             end
             @test !ispath(joinpath(directory, "missing"))
         end
+    end
+
+    @testset "independent source binds the sealed data ports" begin
+        launch = PipeWireAORTC.SessionLaunch
+        owner = only(deepcopy(spec["owners"]))
+        independent = merge(spec, Dict("owners" => [owner]))
+        launch.external_source!(independent, owner)
+        @test owner == Dict("role" => "simulator", "control-protocol" => "external-stream")
+        independent_records = deepcopy(records)
+        delete!(independent_records["simulator"], "control-instance")
+        policy = SessionConfiguration.session_configuration(
+            independent, session, bindings, independent_records; node_owners = mapping
+        )["pipewireao.session"]
+        @test policy["source"] == merge(owner, Dict("pid" => 42))
+        @test policy["owners"] == [policy["source"]]
+        @test policy["node.pids"] == Dict("simulator-wfs" => 42, "core-sink" => 43)
+        @test policy["session"]["links"] == session["links"]
+        @test isempty(policy["auxiliary-sources"])
+        D = PipeWireAORTC.DeploymentConfiguration
+        D.validate_external_owner!(owner, "simulator", [], Set{String}())
+        mktempdir() do directory
+            remote = joinpath(directory, "private-core")
+            socket = listen(remote)
+            try
+                independent_records["core"]["external"] = true
+                local_bindings = merge(bindings, Dict("REMOTE" => remote))
+                config = SessionConfiguration.session_configuration(
+                    independent, session, local_bindings, independent_records; node_owners = mapping)
+                @test config["context.properties"]["remote.name"] == remote
+                @test D.substitute("@RUNTIME@/@REMOTE@", local_bindings) == remote
+                @test D.substitute("@RUNTIME@/rtc", local_bindings) == joinpath(bindings["RUNTIME"], "rtc")
+                symlink(remote, joinpath(directory, "alias"))
+                @test_throws ArgumentError SessionConfiguration.session_configuration(
+                    independent, session, merge(local_bindings, Dict("REMOTE" => joinpath(directory, "alias"))),
+                    independent_records; node_owners = mapping)
+            finally
+                close(socket)
+            end
+        end
+        @test_throws D.DeploymentError D.validate_external_owner!(
+            merge(owner, Dict("control-node" => "held")), "simulator", [], Set{String}())
+        @test_throws D.DeploymentError D.validate_external_owner!(owner, "other", [], Set{String}())
     end
 
     spec["startup-timeout-ms"] = 900000

@@ -410,6 +410,9 @@ function validate_bootstrap_arguments(owner)
     return nothing
 end
 
+const EXTERNAL_STREAM = "external-stream"
+uses_external_stream(owner) = get(owner, "control-protocol", nothing) == EXTERNAL_STREAM
+
 const SESSION_PRIVATE_ENVIRONMENT = Set([
     "INVOCATION_ID",
     "NOTIFY_SOCKET",
@@ -425,6 +428,9 @@ const SESSION_PRIVATE_ENVIRONMENT = Set([
     "PIPEWIREAO_REMOTE",
     "PIPEWIREAORTC_JULIA",
     "PIPEWIREAORTC_PROJECT",
+    "PIPEWIREAORTC_CORE_UNIT",
+    "PIPEWIREAORTC_CORE_SOCKET",
+    "PIPEWIREAORTC_SOURCE_UNIT",
 ])
 
 """
@@ -898,6 +904,11 @@ replacements within JSON strings.
 """
 function substitute(value::AbstractString, bindings::AbstractDict; quoted = false)
     result = String(value)
+    # Sealed launchers address the managed core as @RUNTIME@/@REMOTE@.
+    # A separately supervised core supplies its own absolute private socket.
+    if isabspath(get(bindings, "REMOTE", ""))
+        result = replace(result, "@RUNTIME@/@REMOTE@" => "@REMOTE@")
+    end
     for (name, replacement) in bindings
         escaped = quoted ? String(JSON.json(replacement))[2:(end-1)] : string(replacement)
         result = replace(result, "@$name@" => escaped)
@@ -1287,6 +1298,15 @@ collect_core_queue_properties!(nodes, properties::AbstractDict) =
 validate_external_owner!(owner, source_role, auxiliary, roles) =
     fail("external owner fields do not match the deployment contract")
 function validate_external_owner!(owner::AbstractDict, source_role, auxiliary, roles)
+    if uses_external_stream(owner)
+        role = get(owner, "role", nothing)
+        require(Set(keys(owner)) == Set(("role", "control-protocol")) &&
+                role == source_role && isempty(auxiliary),
+                "external stream requires a primary source role without launch or control fields")
+        validate_external_owner_role(role, roles)
+        push!(roles, role)
+        return nothing
+    end
     ordinary = !uses_heart_protocol(owner) && !uses_acquisition_protocol(owner)
     require(
         !ordinary || uses_bootstrap_protocol(owner),

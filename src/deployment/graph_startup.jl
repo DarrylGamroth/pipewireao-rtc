@@ -1,11 +1,12 @@
 module GraphStartup
 
-using ..DeploymentConfiguration: bootstrap_instance_key
+using ..DeploymentConfiguration: bootstrap_instance_key, uses_external_stream
 
 const ENTRY = "using PipeWireAORTC; PipeWireAORTC.GraphOwner.main(ARGS)"
 const DIRECTORY = "graph-startup"
 
 function owner_arguments(owner)
+    uses_external_stream(owner) && return nothing
     argv = owner["argv"]
     idx = findfirst(==(ENTRY), argv)
     idx === nothing && return nothing

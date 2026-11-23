@@ -63,8 +63,13 @@ owner_scheduling!(kind::AbstractString, owner, process) =
 function prepare_owner_scheduling!(spec, profile)
     processes = profile["scheduling"]["processes"]
     for owner in spec["owners"]
-        D.validate_owner_argv(owner["argv"])
         role = owner["role"]
+        if D.uses_external_stream(owner)
+            isempty(processes[role]["workers"]) ||
+                throw(ArgumentError("independently supervised source owns its worker placement"))
+            continue
+        end
+        D.validate_owner_argv(owner["argv"])
         haskey(processes, role) ||
             throw(ArgumentError("missing owner process scheduling for $role"))
         kind = pop!(owner, "kind", nothing)

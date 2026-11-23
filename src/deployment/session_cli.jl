@@ -175,15 +175,7 @@ function _placement_snapshot(
     for (role, item) in record["owners"]
         item["role"] == role && item["state"] == "running" ||
             throw(ArgumentError("recorded owner is not running at session publication"))
-        service = S.Service(owner, role)
-        item["unit"] == service.unit || throw(
-            ArgumentError("recorded owner unit differs from exclusive invocation name")
-        )
-        service.main_pid = Int(item["pid"])
-        service.invocation = String(item["invocation"])
-        service.start_ticks = UInt64(item["start-ticks"])
-        service.cgroup = String(item["cgroup"])
-        S.running!(service)
+        service = SessionLaunch.recorded_service(owner, role, item)
         S.verify!(service)
         snapshots[role] = P.snapshot(service.main_pid, item["placement"])
         S.verify!(service)

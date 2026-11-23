@@ -2,7 +2,6 @@ import ..DeploymentConfiguration
 
 const MAX_PARAMETER_PUBLISHERS = 1
 const SOURCE_CONTROL_PROFILE = "pipewireao.source-control/1"
-const EXTERNAL_STREAM = "external-stream"
 const PARAMETER_SOURCE_PROFILE = ControlClient.profile_name(ParameterSource.PROFILE)
 
 """
@@ -116,7 +115,7 @@ end
 
 function external_stream(configuration)
     source = get(configuration, "source", nothing)
-    return source isa AbstractDict && get(source, "control-protocol", nothing) == EXTERNAL_STREAM
+    return source isa AbstractDict && DeploymentConfiguration.uses_external_stream(source)
 end
 
 function validate_external_stream(configuration, links)

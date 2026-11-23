@@ -31,7 +31,7 @@ function installed_launcher(
 end
 
 _installed_source_owner(value) =
-    throw(ArgumentError("new session install requires a declared held source owner"))
+    throw(ArgumentError("new session install requires a declared source owner"))
 _installed_source_owner(::String) = nothing
 _installed_session_cpu(cpu) =
     throw(ArgumentError("RTC CPU placement must exclude CPU 0 and 1"))
@@ -69,7 +69,7 @@ function session_assets(spec, package, prefix)
     return nothing
 end
 
-function installed_unit(template, spec; launcher, package, prefix, executable)
+function installed_unit(template, spec; launcher, package, prefix, executable, external = nothing)
     quote_unit(value) = String(JSON.json(replace(String(value), "%" => "%%")))
     leader = spec["placement"]["session"]["leader-cpu"]
     unit = replace(
@@ -85,6 +85,12 @@ function installed_unit(template, spec; launcher, package, prefix, executable)
     )
     occursin(r"@[A-Z_]+@", unit) &&
         throw(ArgumentError("unresolved RTC unit template binding"))
+    if external !== nothing
+        unit *= "\n[Service]\n"
+        for (key, value) in zip(PipeWireAORTC.SessionLaunch.EXTERNAL_SERVICE_ENV, external)
+            unit *= "Environment=" * quote_unit(key * "=" * value) * "\n"
+        end
+    end
     return unit
 end
 
@@ -174,12 +180,16 @@ function finish_install(destination, prefix, julia, commit)
     chmod(launcher, 0o755)
     # Graph preparation validates controller recovery before the optical image build.
     PipeWireAORTC.GraphStartup.precompile!(julia, destination, environment, installed_spec["owners"])
-    PipeWireAORTC.HILStartup.install!(environment, destination, installed_spec["owners"], prefix)
+    external = PipeWireAORTC.SessionLaunch.external_services()
+    if external === nothing
+        owners = filter(!D.uses_external_stream, installed_spec["owners"])
+        PipeWireAORTC.HILStartup.install!(environment, destination, owners, prefix)
+    end
     template = read(
         joinpath(PipeWireAORTC.package_root(), "assets/deployment/pipewireao-session@.service.in"), String
     )
     unit = installed_unit(
-        template, installed_spec; launcher, package = destination, prefix, executable
+        template, installed_spec; launcher, package = destination, prefix, executable, external
     )
     systemd = joinpath(destination, "systemd")
     mkpath(systemd)

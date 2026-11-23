@@ -150,6 +150,49 @@ identify host timestamp readings; they do not establish clock synchronization
 or physical acquisition time. Execution/capture properties are refreshed from
 actual prepared owners, including after changing the compute target.
 
+### Attach an RTC to an already-publishing source
+
+Provision a private PipeWire core and a detector or HIL service as separate
+user services. Start each with its own lifetime. The core must provide any
+queue and factory Nodes that the instrument declares as core-owned. The source
+service's MainPID must own the declared data Nodes. Configure both services
+to meet the placement declared in the instrument profile. The RTC checks
+placement again at admission. A clocked optical source
+advances its model clock with the most recently accepted command. An external
+pupil source needs an independently delivered stream of timestamped pupils.
+A lockstep frame/command simulation still needs its matching command peer.
+
+On an installation with independent-source support, bind the three site values
+when installing the RTC, or set them in a drop-in for its service instance.
+For example, a site using two separately started services could use this drop-in.
+
+```ini
+[Unit]
+After=ao-private-core.service ao-simulator.service
+
+[Service]
+Environment=PIPEWIREAORTC_CORE_UNIT=ao-private-core.service
+Environment=PIPEWIREAORTC_CORE_SOCKET=%t/ao-private/core
+Environment=PIPEWIREAORTC_SOURCE_UNIT=ao-simulator.service
+```
+
+Use an absolute socket path when setting the installer environment directly.
+The socket and its private parent directory must belong to the service user.
+Installation with these bindings records them in the RTC unit and prepares
+only the controller startup assets. Install and prepare the simulator under
+its own service. Existing sealed applications can supply the primary source's
+data port declarations. A new RTC-only deployment can declare its primary
+owner with `role` and `control-protocol: external-stream`. Its instrument
+declares exact Node names, ports, formats and Links in the usual way.
+
+Each RTC activation verifies both service incarnations and admits fresh Links
+to the live source. Start, Stop and Reset apply to RTC-owned processing.
+Quitting withdraws RTC-owned Links and services. The simulator retains its
+process, model time, acquisition generation and separately owned connections.
+A replacement RTC repeats admission against the current live endpoints.
+This mode supports one independent primary source. Profiles requiring managed
+auxiliary acquisition or explicit source End use the managed launch contract.
+
 ## Migrate an RTC application
 
 Export the simulation from the selected instrument declaration before changing

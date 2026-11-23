@@ -127,4 +127,34 @@ end
     @test occursin("--package \"/application/100%%\"", unit)
     @test occursin("--source-role simulator", unit)
     @test !occursin(r"@[A-Z_]+@", unit)
+    external = (; core = "ao-core.service", socket = "/private/100% core", source = "ao-input.service")
+    attached = I.installed_unit(template, spec; launcher = "/launcher", package = "/app",
+                               prefix = "/sdk", executable = "/sdk/bin/rtc", external)
+    @test occursin("Environment=\"PIPEWIREAORTC_CORE_SOCKET=/private/100%% core\"", attached)
+    @test occursin("Environment=\"PIPEWIREAORTC_SOURCE_UNIT=ao-input.service\"", attached)
+end
+
+
+@testset "site bindings for independent core and source services" begin
+    L = PipeWireAORTC.SessionLaunch
+    @test L.external_services(Dict()) === nothing
+    keys = L.EXTERNAL_SERVICE_ENV
+    env = Dict(zip(keys, ("ao-private.service", "/run/user/42/ao/private", "ao-simulator.service")))
+    external = L.external_services(env)
+    @test external == (; core = env[keys[1]], socket = env[keys[2]], source = env[keys[3]])
+    for key in keys
+        @test_throws L.LaunchError L.external_services(filter(pair -> first(pair) != key, env))
+    end
+    for unit in (env[keys[1]], "pipewireao-session@one.service",
+                 "pipewireao-owner-a-source.service", "x.target", "../x.service")
+        @test_throws L.LaunchError L.external_services(merge(env, Dict(keys[3] => unit)))
+    end
+    @test_throws L.LaunchError L.external_services(merge(env, Dict(keys[2] => "pipewire-0")))
+    record = Dict("source_role" => "simulator", "version" => 2,
+                  "owners" => Dict("simulator" => Dict("external" => true, "unit" => external.source)))
+    @test L.cleanup_role!(record, "simulator", 0) === nothing
+    @test L.retained_service(record, "simulator") === nothing
+    @test PipeWireAORTC.SessionRuntime._source_endpoint(
+        Dict("external" => true, "control-protocol" => "external-stream")
+    ) == Dict("profile" => "external-stream")
 end

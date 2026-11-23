@@ -266,6 +266,9 @@ function compose(
     base_root, main = sealed_application(base, prefix)
     component_root, extra = sealed_application(component, prefix)
     composition_environment(main, extra, base_root, component_root)
+    if any(D.uses_external_stream, main["owners"]) || any(D.uses_external_stream, extra["owners"])
+        throw(ArgumentError("composed primary and auxiliary acquisitions require managed source controls"))
+    end
     isempty(get(extra, "analysis", [])) ||
         throw(ArgumentError("component analysis processes are not supported"))
     Set(keys(roles)) == Set(owner["role"] for owner in extra["owners"]) ||

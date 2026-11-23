@@ -158,6 +158,23 @@ end
         @test isfile(joinpath(offline, "rtc/bin/pipewireao-rtc"))
         @test P.InstrumentDefinition.load(joinpath(offline, "instrument.json")).document["id"] ==
             "install-sensor"
+        # A site-supervised detector has no simulator binary or command endpoint.
+        independent = joinpath(directory, "independent instrument")
+        cp(authored, independent)
+        declaration = deepcopy(spec)
+        declaration["source-owner"] = "detector"
+        declaration["owners"] = [Dict("role" => "detector", "control-protocol" => "external-stream")]
+        declaration["client"]["detector"] = pop!(declaration["client"], "simulator")
+        external_profile = deepcopy(profile)
+        placements = external_profile["scheduling"]["processes"]
+        placements["detector"] = pop!(placements, "simulator")
+        P.Common.write_yaml(joinpath(independent, "rtc/application.yaml"), declaration)
+        destination = joinpath(directory, "external export")
+        @test P.InstrumentExport.prepare(independent, destination; profile = external_profile, prefix) == destination
+        external_spec = D.decode(joinpath(destination, "deployment.conf"), prefix)
+        @test external_spec["owners"] == declaration["owners"]
+        @test !ispath(joinpath(destination, "optical-startup"))
+
         "--prepare-only" in ARGS && return nothing
         # Resolve separately so export never mutates the authored instrument or
         # a sealed application; no copied manifest or source override is used.

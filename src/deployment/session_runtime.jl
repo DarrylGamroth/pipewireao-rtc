@@ -449,6 +449,7 @@ function _reconcile_failed_start!(
             S.listed_units(id; deadline, clock),
         ) || throw(ArgumentError("failed session retained a live owner or start job"))
         for item in Base.values(record["owners"])
+            get(item, "external", false) && continue
             get(item, "pid", 0) > 0 &&
                 haskey(item, "start-ticks") &&
                 S.old_process_exists(Int(item["pid"]), UInt64(item["start-ticks"])) &&
@@ -502,7 +503,9 @@ function start!(
         throw(ArgumentError("calibration package has no RTC session contract"))
     startup_ms = DeploymentConfiguration.startup_timeout_ms(spec)
     environment = DeploymentConfiguration.application_environment(spec, source)
-    optical = PipeWireAORTC.HILStartup.requested(environment, source, spec["owners"])
+    owners = filter(!DeploymentConfiguration.uses_external_stream, spec["owners"])
+    optical = PipeWireAORTC.SessionLaunch.external_services() === nothing &&
+              PipeWireAORTC.HILStartup.requested(environment, source, owners)
     install_seconds = optical ? startup_ms / 1000 + 120 : 120
     if deadline === nothing
         # Allow for installation and verification outside the configured systemd start.
@@ -670,14 +673,7 @@ function _verify_owners(
         PipeWireAORTC.SessionLaunch.is_optional(item) && continue
         item["state"] == "running" ||
             throw(ArgumentError("recorded owner $role is not running"))
-        service = S.Service(coordinator, role)
-        item["unit"] == service.unit ||
-            throw(ArgumentError("recorded owner unit differs from its invocation name"))
-        service.main_pid = Int(item["pid"])
-        service.invocation = String(item["invocation"])
-        service.start_ticks = UInt64(item["start-ticks"])
-        service.cgroup = String(item["cgroup"])
-        S.running!(service)
+        service = PipeWireAORTC.SessionLaunch.recorded_service(coordinator, role, item)
         values = S.properties(service.unit; deadline, clock)
         values["LoadState"] == "loaded" &&
         values["ActiveState"] == "active" &&
@@ -690,6 +686,9 @@ function _verify_owners(
 end
 
 function _source_endpoint(source)
+    if DeploymentConfiguration.uses_external_stream(source) && get(source, "external", false)
+        return Dict("profile" => source["control-protocol"])
+    end
     source_control = DeploymentConfiguration.uses_source_control_protocol(source)
     source_control ||
         DeploymentConfiguration.uses_acquisition_protocol(source) ||

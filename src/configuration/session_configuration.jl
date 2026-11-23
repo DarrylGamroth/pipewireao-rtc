@@ -217,9 +217,15 @@ function session_configuration(
     name = session_name(get(spec, "name", nothing))
     source_role = declared_source_role(get(spec, "source-owner", nothing))
     verified_pid(records, source_role)
-    runtime, remote_name = private_remote_bindings(
-        get(bindings, "RUNTIME", nothing), get(bindings, "REMOTE", nothing)
-    )
+    core_pid = verified_pid(records, "core")
+    remote = if get(records["core"], "external", false)
+        PipeWireAORTC.ControlClient.private_remote(bindings["REMOTE"])
+    else
+        parent, socket_name = private_remote_bindings(
+            get(bindings, "RUNTIME", nothing), get(bindings, "REMOTE", nothing)
+        )
+        joinpath(parent, socket_name)
+    end
     uuid = session_uuid(get(bindings, "SESSION_UUID", nothing))
     public_instance = positive_instance(bindings, "SESSION_CONTROL_INSTANCE")
     controller_instance = positive_instance(bindings, "SESSION_CONTROLLER_INSTANCE")
@@ -229,7 +235,7 @@ function session_configuration(
         fail("admission controller instance must be distinct from session endpoints")
     pids = node_pids(session, records, node_owners)
     core_nodes = sort!([name for (name, role) in node_owners if role == "core"])
-    core_owner = Dict("pid" => verified_pid(records, "core"), "nodes" => core_nodes)
+    core_owner = Dict("pid" => core_pid, "nodes" => core_nodes)
     declarations = owner_specs(spec)
     all(role -> haskey(declarations, role) || role in ("core", "fgn"), keys(records)) ||
         fail("an owner process record has no matching owner declaration")
@@ -240,12 +246,13 @@ function session_configuration(
     haskey(declarations, source_role) || fail("source owner has no declaration")
     source_declaration = declarations[source_role]
     source = owner_record(source_role, source_declaration, records, bindings)
-    for field in ("control-protocol", "control-node")
-        haskey(source, field) || fail("source owner is missing $field")
-    end
+    haskey(source, "control-protocol") || fail("source owner is missing control-protocol")
+    external = D.uses_external_stream(source)
+    external || haskey(source, "control-node") || fail("source owner is missing control-node")
     auxiliary_roles = auxiliary_source_roles(
         get(spec, "auxiliary-source-owners", String[]), declarations, source_role
     )
+    external && !isempty(auxiliary_roles) && fail("independent input cannot control auxiliary sources")
     auxiliary = map(auxiliary_roles) do role
         declaration = declarations[role]
         D.uses_source_control_protocol(declaration) &&
@@ -253,9 +260,8 @@ function session_configuration(
             fail("auxiliary source requires native SourceControl and owner bootstrap")
         owner_record(role, declaration, records, bindings)
     end
-    source_nodes = [
-        source["control-node"], [entry["control-node"] for entry in auxiliary]...
-    ]
+    source_nodes = String[entry["control-node"] for entry in auxiliary]
+    external || push!(source_nodes, source["control-node"])
     length(unique(source_nodes)) == length(source_nodes) ||
         fail("primary and auxiliary sources require distinct control node names")
     policy = Dict{String,Any}(
@@ -281,7 +287,7 @@ function session_configuration(
         "context.properties" => Dict{String,Any}(
             "library.use-fallback" => false,
             "support.dbus" => false,
-            "remote.name" => joinpath(runtime, remote_name),
+            "remote.name" => remote,
         ),
         "context.modules" => Any[
             Dict("name" => "libpipewire-module-protocol-native"),
