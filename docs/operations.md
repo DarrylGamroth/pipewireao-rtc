@@ -167,6 +167,14 @@ cleanup; external owner nodes may remain. A zero-links observation alone MUST
 NOT establish cleanup completion or permit a new generation. `CORRECTING` MUST
 NOT exist in this profile.
 
+On a failed Quit, RTC MUST retain the first failed shutdown effect and its
+known owner incarnation, operation ticket, deadline and submission state,
+including a failure that follows an already-settled Fault. The original
+trigger and any subsequent cleanup failure MUST remain distinguishable.
+After a submitted mutation has an unknown outcome, recovery MUST NOT replay
+it. A source that has already been fenced during owner shutdown MUST NOT
+receive another scientific Hold.
+
 Verification intent (informative): exercise every transition, retry after
 each injected creation and streaming failure, repeat load/start/stop/unload,
 and verify that invalid commands leave the state and owned objects coherent.
@@ -852,6 +860,19 @@ graph before resuming the source, and reset the held model only with the stopped
 session. A reset MUST change acquisition generation and clear sequence/timing
 state. Source-local pause/reset/query remains an owner contract; session
 ordering belongs solely to the headless RTC.
+
+When an admitted session loses a required dependency, RTC MAY explicitly
+revoke a managed lockstep source that advertises the versioned revocation
+capability on its captured incarnation. The owner MUST stop new exposures
+and return a correlated stopped receipt for the acquired and last coherently
+adopted sequences. It MAY abandon an outstanding command response. The last
+applied correction MUST survive abandonment, and a late reply for that
+exposure MUST NOT become active. Ordinary Pause retains its outstanding
+adoption requirement. A V1-only owner retains graceful Pause and the
+existing bounded unknown-outcome path. Finite completion MUST require actual
+adoption of the final correction. An abandoned final response MUST NOT
+publish successful finite completion or admit a replacement exposure past
+the declared limit. [Native revocation contract](SIMULATOR_CONTROL.md#explicit-fault-revocation-for-managed-lockstep)
 
 Complete-frame simulator live controls MUST use native SPA `Props` parameters
 on the exact owned source-node incarnation. They MUST retain native Version 1

@@ -286,6 +286,61 @@ end
     @test length(runtime.submitted) == 1
     @test runtime.mutations == 0 && runtime.queries == 1
 end
+@testset "explicit source revocation and its two cursors" begin
+    function ack(; token = 1, instance = 17, generation = 1, acquired = 2, adopted = 1)
+        values = (SourceControl.VERSION, Int64(instance), Int64(token), Int64(generation),
+            Int64(acquired), Int64(adopted))
+        return PropsBuffer(SourceControl.REVOKE_ACK_NAMES, values).pod
+    end
+    properties = Dict("pipewireao.source-control.instance" => "17",
+        "pipewireao.source-control.owner-pid" => "19")
+    receipt = source_control_pod(; kind = SourceControl.REVOKE, token = Int64(1),
+        sequence = Int64(1))
+    baseline = source_control_pod()
+    source = SourceControlBinding(UInt64(1), UInt32(19), Int64(17), nothing)
+    runtime = Runtime([[baseline], [receipt, ack()]]; properties)
+    @test !supports_revocation(runtime, source)
+    @test_throws ArgumentError source_operation!(runtime, job(runtime), source, :revoke)
+    @test isempty(runtime.submitted)
+    properties[SourceControl.REVOCATION_PROPERTY] = "1"
+    @test supports_revocation(runtime, source)
+    stopped = source_operation!(runtime, job(runtime), source, :revoke)
+    @test runtime.mutations == 1 && runtime.queries == 0
+    @test Tuple(first.(SPA.Props(only(runtime.submitted)).values)) == SourceControl.REVOKE_NAMES
+    @test !stopped.running && !stopped.completed
+    @test stopped.sequence == 1 && stopped.details.acquired_sequence == 2
+    prior = source_control_snapshot(named_values(baseline), Int64(17))
+    for invalid in ([receipt], [receipt, ack(; token=2)], [receipt, ack(; generation=2)],
+                    [receipt, ack(; adopted=0)])
+        records = control_records(invalid, Int64(17))
+        @test_throws ArgumentError matching_source_control_record(records, :revoke, Int64(1), "", prior)
+    end
+    completed = source_control_pod(; kind=SourceControl.REVOKE, token=Int64(1),
+        sequence=Int64(1), completed=true)
+    @test_throws ArgumentError matching_source_control_record(
+        control_records([completed, ack()], Int64(17)), :revoke, Int64(1), "", prior)
+    @test_throws ArgumentError control_records([receipt, ack(; instance=18)], Int64(17))
+    @test_throws ArgumentError control_records([receipt, ack(; acquired=0)], Int64(17))
+end
+
+@testset "revocation arriving during an outstanding source request" begin
+    legacy = SourceControl.Mailbox(Int64(17))
+    @test !haskey(SourceControl.source_properties(legacy), SourceControl.REVOCATION_PROPERTY)
+    SourceControl.stage!(legacy, SourceControl.REVOKE, Int64(1))
+    @test SourceControl.pending(legacy)[1] == SourceControl.INITIAL
+    @test legacy.rejected_result == -Base.Libc.EOPNOTSUPP
+
+    inbox = SourceControl.Mailbox(Int64(17); revocation=true)
+    SourceControl.stage!(inbox, SourceControl.RUN, Int64(1), false)
+    @test SourceControl.pending(inbox) == (SourceControl.RUN, 1, false)
+    SourceControl.stage!(inbox, SourceControl.REVOKE, Int64(2))
+    SourceControl.stage!(inbox, SourceControl.REVOKE, Int64(2))
+    @test inbox.rejected_kind == SourceControl.INITIAL
+    @test SourceControl.pending(inbox) == (SourceControl.REVOKE, 2, false)
+    @test (inbox.rejected_kind, inbox.rejected_token, inbox.rejected_result) ==
+        (SourceControl.RUN, 1, -Base.Libc.ECANCELED)
+end
+
 @testset "read-only owner queries never mark a scientific mutation" begin
     status_reply = ControlClient.encode_completion(
         BC.PROFILE,

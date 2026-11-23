@@ -3,10 +3,10 @@ using Test, PipeWireAO, PipeWireAORTC
 module MediaSessionObjectsTests
 using Test, PipeWireAO
 import Clocks
-import PipeWireAORTC.MediaSession: Owner
+import PipeWireAORTC.MediaSession: Job, Owner, QUIT_OPERATION, submitted!
 import PipeWireAORTC:
     OwnerBootstrapCodec, ControlClient, AcquisitionLifecycleCodec, DeploymentConfiguration,
-    ParameterSource
+    ParameterSource, SourceControl
 const PolicySPA = PipeWireAO.SPA
 const PolicyPod = PipeWireAO.Pod
 const SECOND = Int64(1_000_000_000)
@@ -583,6 +583,11 @@ function pump!(runtime::TestRuntime{Nothing,Nothing,Nothing})
     end
     return nothing
 end
+job_time(runtime, job) = haskey(job, :clock) ? job.clock() : now(runtime)
+function check_job(runtime::TestRuntime, job)
+    job_time(runtime, job) < job.ticket.deadline || error("private object gate expired")
+    return nothing
+end
 function await_condition!(f, runtime, job)
     while true
         runtime.cancel_creation &&
@@ -591,7 +596,7 @@ function await_condition!(f, runtime, job)
         pump!(runtime)
         value = f()
         value === nothing || return value
-        now(runtime) < job.ticket.deadline || error("private object gate expired")
+        check_job(runtime, job)
         sleep(0.001)
     end
 end
@@ -889,7 +894,10 @@ end
     record = link_record()
     record.creation_pending = true
     push!(runtime.links, record)
-    job = (; ticket = (; deadline = now(runtime) + Int64(10_000_000)))
+    expired_job = (; ticket = (; deadline = Int64(0)), clock = () -> Int64(0))
+    @test_throws ErrorException remove_links!(runtime, expired_job)
+    @test !runtime.withdrawing && !record.retiring
+    job = (; ticket = (; deadline = Int64(1)), clock = () -> Int64(runtime.withdrawing))
     @test_throws ErrorException remove_links!(runtime, job)
     @test isempty(runtime.objects) && length(runtime.links) == 1 && runtime.withdrawing
     @test isempty(runtime.done)

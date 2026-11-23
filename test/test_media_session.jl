@@ -62,6 +62,18 @@ function running(; kwargs...)
     return m
 end
 
+@testset "ordinary Stop drains while a required loss revokes admission" begin
+    m = running()
+    S.submit!(m, S.Request(S.Stop(); token=10))
+    @test m.effect.effect isa S.HoldSources && !m.effect.effect.revoke
+    S.required_lost!(m, "Required Link removed")
+    @test m.effect.effect isa S.HoldSources && m.effect.effect.revoke
+    m = running()
+    S.submit!(m, S.Request(S.Stop(); token=10))
+    S.fail!(m, m.effect, "uncorrelated acknowledgement"; submitted=true)
+    @test m.effect.effect isa S.HoldSources && !m.effect.effect.revoke
+end
+
 @testset "Warmup retains Configuring until exact launcher admission" begin
     m = S.Machine(101; clock = zero_clock())
     @test m.lifecycle == R.Configuring && !m.warmed
@@ -394,7 +406,7 @@ end
     @test m.effect === nothing && m.failure == "required source lost"
 end
 
-@testset "Startup cancellation disconnects after failed owner shutdown" begin
+@testset "Local Quit disconnects after an unsubmitted Hold expires" begin
     for cleanup in (:complete, :fail, :expire)
         clock = zero_clock()
         m = S.Machine(101; clock)
@@ -404,11 +416,12 @@ end
             m, :AdmissionControllerRemoved, (; id = LAUNCHER.global_id, LAUNCHER.serial)
         )
         S.take_cancelled!(m)
-        sequence!(m, (S.HoldSources, S.HoldGraphs, S.ShutdownGraphOwners, S.WithdrawLinks, S.ShutdownSources))
-        @test m.effect.effect === S.ShutdownOwners()
+        first_hold = m.effect
+        @test first_hold.effect === S.HoldSources()
         Clocks.update!(clock, m.deadline)
         S.tick!(m)
-        S.take_cancelled!(m)
+        @test S.take_cancelled!(m) === first_hold
+        @test m.quit_failure.ticket === first_hold && !m.quit_failure.submitted
         sequence!(m, (S.HoldSources, S.HoldGraphs))
         @test m.effect.effect === S.WithdrawLinks()
         if cleanup === :complete
@@ -481,6 +494,13 @@ end
               Hsm.current(m) === :Offline &&
               m.effect === nothing
         @test isempty(S.take_replies!(m)) && m.failure === nothing
+        if disposition === :complete
+            @test m.quit_failure === nothing
+        else
+            @test m.quit_failure.ticket === fence
+            @test m.quit_failure.reason == m.cleanup_failure
+            @test !m.quit_failure.submitted
+        end
         S.complete!(m, fence)
         S.fail!(m, fence, "late publication failure")
         @test m.lifecycle == R.Offline && isempty(S.take_replies!(m))
@@ -534,5 +554,157 @@ end
     @test_throws OverflowError S.submit!(m, S.Request(S.Properties(); payload = "science"))
     @test m.effect === nothing && m.request === nothing && m.epoch == epoch
     @test m.lifecycle === R.Ready
+end
+
+@testset "Failed Quit preserves its first effect and supervises partially retired owners" begin
+    for (step, trigger) in (
+        (S.ShutdownOwners, :error),
+        (S.ShutdownOwners, :tick),
+        (S.ShutdownOwners, :late_completion),
+        (S.ShutdownOwners, :required_loss),
+        (S.RemoveControls, :error),
+    )
+        clock = zero_clock()
+        m = running(; clock)
+        S.required_lost!(m, "Required woofer Link removed")
+        sequence!(m, (S.HoldSources, S.HoldGraphs, S.WithdrawLinks))
+        @test Hsm.current(m) === :HeldFault
+
+        Clocks.update!(clock, SECOND)
+        S.submit!(m, S.Request(S.Quit(); token = 47, controller = LAUNCHER))
+        index = findfirst(==(step), SHUTDOWN)
+        sequence!(m, SHUTDOWN[1:(index-1)])
+        failed = m.effect
+        @test failed.effect isa step
+
+        source_id, first_owner_id, second_owner_id = UInt32.((9, 10, 11))
+        source_serial, first_owner_serial, second_owner_serial = UInt64.((275, 280, 290))
+        objects = Dict(source_id => (; serial = source_serial))
+        runtime = (;
+            machine = m, objects,
+            captured = Dict(
+                source_id => objects[source_id],
+                first_owner_id => (; serial = first_owner_serial),
+                second_owner_id => (; serial = second_owner_serial),
+            ),
+            retired = Dict{UInt32,UInt64}(),
+        )
+        job = S.Job(failed, false)
+        S.retire_object!(runtime, source_id)
+        @test runtime.retired[source_id] == source_serial
+        @test !haskey(runtime.captured, source_id)
+
+        if step === S.ShutdownOwners
+            S.quit_target!(
+                runtime, job, :bootstrap, "source bootstrap", first_owner_id;
+                pid = 325, instance = 60,
+            )
+            S.submitted!(m, failed)
+            S.quit_acknowledge!(runtime, job)
+            S.quit_target!(
+                runtime, job, :bootstrap, "parameter bootstrap", second_owner_id;
+                pid = 326, instance = 70,
+            )
+            S.submitted!(m, failed)
+        else
+            S.quit_target!(
+                runtime, job, :retired_global, "registry withdrawal", source_id;
+                serial = source_serial,
+            )
+        end
+
+        reason = if trigger === :error
+            message = step === S.RemoveControls ? "inventory unavailable" : "bootstrap rejected"
+            S.fail!(m, failed, message; submitted = false)
+            message
+        elseif trigger === :required_loss
+            message = "remote core incarnation changed"
+            S.required_lost!(m, message)
+            message
+        else
+            Clocks.update!(clock, failed.deadline)
+            trigger === :tick ? S.tick!(m) : S.complete!(m, failed)
+            "Session effect expired"
+        end
+        @test m.lifecycle == R.Fault && Hsm.current(m) === :EmergencyDisconnect
+        disconnect = m.effect
+        @test disconnect.effect === S.Disconnect()
+        @test disconnect.deadline == typemax(Int64)
+        @test m.failure == "Required woofer Link removed"
+        first = m.quit_failure
+        @test first.ticket === failed && first.reason == reason
+        @test first.admitted_at == SECOND && first.failed_at == Clocks.time_nanos(clock)
+        @test first.ticket.deadline == SECOND + S.SESSION_EFFECT_TIMEOUT_NS
+        @test first.submitted == (step === S.ShutdownOwners)
+        if step === S.ShutdownOwners
+            source, parameter = first.targets
+            @test source.target.serial == first_owner_serial
+            @test source.submitted && source.acknowledged
+            @test parameter.target.name == "parameter bootstrap"
+            @test parameter.target.id == second_owner_id
+            @test parameter.target.serial == second_owner_serial
+            @test parameter.target.pid == UInt32(326) && parameter.target.instance == 70
+            @test parameter.submitted && !parameter.acknowledged
+        else
+            @test only(first.targets).target.serial == source_serial
+        end
+        S.take_cancelled!(m)
+        S.quit_acknowledge!(runtime, job)
+        S.fail!(m, failed, "stale error")
+        S.submit!(m, S.Request(S.Quit(); token = 48, controller = LAUNCHER))
+        @test only(S.take_replies!(m)).outcome === :Failed
+        @test m.effect === disconnect && m.quit_failure === first
+        S.fail!(m, disconnect, "supervised transport close failed")
+        reply = only(S.take_replies!(m))
+        @test reply.token == 47 && reply.outcome === :Failed && reply.unknown
+        @test occursin(string(nameof(step)), reply.error)
+        @test occursin(reason, reply.error)
+        @test m.failure == "Required woofer Link removed"
+        @test m.quit_failure === first
+        @test m.quit_cleanup_failure == "supervised transport close failed"
+    end
+end
+
+@testset "An unsubmitted Quit Hold still checks the exact source identity" begin
+    m = running()
+    S.submit!(m, S.Request(S.Quit(); token = 53, controller = LAUNCHER))
+    first_hold = m.effect
+    source_id = UInt64(9)
+    source = S.SourceControlBinding(source_id, UInt32(21), Int64(52), nothing)
+    runtime = (;
+        sources = [source], machine = m, captured = Dict{UInt32,S.Captured}(),
+    )
+    job = S.Job(first_hold, false)
+    err = try
+        S.perform!(runtime, job, first_hold.effect)
+        nothing
+    catch failure
+        failure
+    end
+    @test err == ArgumentError("object is not captured")
+    S.fail!(m, first_hold, sprint(showerror, err); submitted = false)
+    first = m.quit_failure
+    @test first.ticket === first_hold && !first.submitted
+    @test only(first.targets).target.instance == source.instance
+    @test m.effect.effect === S.HoldSources()
+    @test Hsm.current(m) === :HoldingFaultSources
+    @test_throws ArgumentError S.perform!(runtime, S.Job(m.effect, false), m.effect.effect)
+    S.fail!(m, m.effect, "source identity was lost"; submitted = false)
+    @test m.effect.effect === S.Disconnect()
+    @test m.quit_failure === first
+    @test m.quit_cleanup_failure == "source identity was lost"
+end
+
+@testset "A submitted Quit Hold is never repeated after expiry" begin
+    m = running()
+    S.submit!(m, S.Request(S.Quit(); token = 54, controller = LAUNCHER))
+    first_hold = m.effect
+    S.submitted!(m, first_hold)
+    Clocks.update!(m.clock, m.deadline)
+    S.tick!(m)
+    @test S.take_cancelled!(m) === first_hold
+    @test m.quit_failure.ticket === first_hold && m.quit_failure.submitted
+    @test m.effect.effect === S.Disconnect()
+    @test m.fault_unknown
 end
 end
