@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
+
+The candidate exporter derives the live display from the operator view.
+Omitting that view removes the publisher and queue. Both modes remove one
+managed Link and preserve the required decisions for the three correctors.
+The [verification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)
+records bit-identical science commands across both profiles and the release.
+Required woofer Link loss delivered Hold to the installed simulator. Its
+stopped acknowledgement remains an open acceptance gate.
+
 ### Simulator lifetime and CAL2 startup — 2026-11-23
 
 Site-supervised core and source services can run across RTC replacement.
@@ -49,6 +59,12 @@ Installer checks retain the exact byte format of explicitly sealed launchers
 with the same executable, project and export commit. The [startup experiments](validation/hil-installed-startup-20261122/startup-performance.md)
 also isolate repeated CAL2 fixed-pupil optical propagation during simulator warmup.
 
+### Classic CPU shutdown — 2026-11-22 Pacific
+
+An instrumented v0.7.28 stop helper recorded every admission and shutdown
+milestone in one bridge-free Classic CPU run. Quit completed Offline and the
+service stopped successfully. [Measurements and cleanup receipt](validation/classic-stop-deadline-20261122.json)
+
 ### MediaSession control polling — 2026-11-22
 
 The [Agent.jl polling trial](validation/session-agent-idle-20261122/README.md)
@@ -59,12 +75,6 @@ and groups requests, and shutdown with a request outstanding. The
 [installed GPI2 qualification](validation/session-agent-idle-20261122/GPI2.md)
 passed Stop → Ready → Quit and Quit directly from Running on both versions.
 The candidate reduced median Groups response time while using more control CPU.
-
-### Classic CPU shutdown — 2026-11-22 Pacific
-
-An instrumented v0.7.28 stop helper recorded every admission and shutdown
-milestone in one bridge-free Classic CPU run. Quit completed Offline and the
-service stopped successfully. [Measurements and cleanup receipt](validation/classic-stop-deadline-20261122.json)
 
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 

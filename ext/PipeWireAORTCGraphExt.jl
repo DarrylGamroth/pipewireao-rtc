@@ -13,6 +13,7 @@ const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
 
 include("analysis.jl")
 include("correction_supervision.jl")
+include("latest_output.jl")
 
 function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(
     declaration::NamedTuple, selection::AbstractDict, count::Int
@@ -80,12 +81,13 @@ function shape_parameter_formats(document, names, count)
     ))
 end
 
-function Owner.metadata_profiles(graph; feedback = nothing)
+function Owner.metadata_profiles(graph; feedback = nothing, local_output = nothing)
     inputs = keys(FilterGraphs.input_formats(graph))
     outputs = keys(FilterGraphs.output_formats(graph))
     sources = NamedTuple{outputs}(FilterGraphs.output_metadata_source_inputs(graph))
     public_inputs = feedback === nothing ? inputs : filter(!=(first(feedback)), inputs)
     public_outputs = feedback === nothing ? outputs : filter(!=(last(feedback)), outputs)
+    local_output === nothing || (public_outputs = filter(!=(local_output), public_outputs))
     required = FilterGraphPipeWire.required_input_metadata(graph)
     return (;
         input_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
@@ -233,6 +235,7 @@ end
 
 function graph_node(options, graph, instance)
     validate_owner_feedback(graph, options.feedback)
+    local_output, display = prepare_latest_output(options, graph)
     correction_properties = options.correction_properties
     !isempty(correction_properties) &&
         !isnothing(options.capture_backend) &&
@@ -296,7 +299,8 @@ function graph_node(options, graph, instance)
         name = options.name,
         remote = options.remote,
         rate = options.rate,
-        Owner.metadata_profiles(graph; feedback = options.feedback)...,
+        Owner.metadata_profiles(graph; feedback = options.feedback,
+            local_output = local_output === nothing ? nothing : first(local_output))...,
         connect = false,
         run_control = options.session_run_control,
         channel_units = options.channel_units,
@@ -310,8 +314,9 @@ function graph_node(options, graph, instance)
             boundary_layout = options.boundary_layout,
             fifo_inputs = options.fifo_inputs,
             feedback = options.feedback,
+            (local_output === nothing ? (;) : (; local_output))...,
         ) : FilterGraphPipeWire.PipeWireNode(graph; common...)
-    return (; node, observer, offset_receiver, offset_clock)
+    return (; node, observer, offset_receiver, offset_clock, display)
 end
 
 function warm_graph!(node, graph, options)
@@ -327,10 +332,11 @@ function warm_graph!(node, graph, options)
 end
 
 function Owner.precompile_graph_warmup(args)
-    _, graph_args, fits, properties, timeout, recovery, supervision, offsets, warmup =
+    _, graph_args, fits, properties, timeout, recovery, supervision, offsets, warmup, local_output =
         Owner.arguments(args)
     options = Owner.graph_options(
         FilterGraphPipeWire, graph_args, properties, timeout, recovery, supervision, offsets, warmup,
+        local_output,
     )
     # Offline construction is limited to complete-frame CPU owners without
     # optional physical offset transport or progressive worker placement.
@@ -364,9 +370,10 @@ end
 
 function run_prepared(options, runtime, graph)
     Bootstrap.preparation_check!(runtime)
-    (; node, observer, offset_receiver, offset_clock) =
+    (; node, observer, offset_receiver, offset_clock, display) =
         graph_node(options, graph, runtime.transport.endpoint.instance)
     offsets_path = get(options, :physical_offsets, nothing)
+    publisher = nothing
     try
         isnothing(observer) || PipeWireAORTC.CorrectionLoops.check_ready(observer)
         isnothing(observer) || PipeWireAORTC.CorrectionLoops.attach_timers!(
@@ -380,6 +387,13 @@ function run_prepared(options, runtime, graph)
             end
         end
         Bootstrap.preparation_check!(runtime)
+        if display !== nothing
+            try
+                publisher = open_scalar_publisher(display, options.remote)
+            catch error
+                @warn "Could not start latest output publisher" node = display.node exception = (error, catch_backtrace())
+            end
+        end
         Bootstrap.prepared!(runtime)
         ticket = Bootstrap.take_connect!(runtime)
         Bootstrap.connecting!(
@@ -417,7 +431,17 @@ function run_prepared(options, runtime, graph)
             try
                 isnothing(observer) || close(observer)
             finally
-                close(node)
+                try
+                    if publisher !== nothing
+                        try
+                            close(publisher)
+                        catch error
+                            @warn "Could not close latest output publisher" node = display.node exception = (error, catch_backtrace())
+                        end
+                    end
+                finally
+                    close(node)
+                end
             end
         end
     end

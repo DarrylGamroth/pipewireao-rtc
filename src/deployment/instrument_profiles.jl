@@ -35,7 +35,7 @@ function _merge_profile_field(base, value, field)
 end
 
 const INSTRUMENT_PROFILE_FIELDS = Set([
-    "application", "mode", "bindings", "devices", "calibration"
+    "application", "mode", "bindings", "devices", "calibration", "omit-views"
 ])
 const HOST_PROFILE_FIELDS = Set([
     "scheduling", "bindings", "environment", "analysis", "simulation", "runtime-backends"
@@ -90,9 +90,9 @@ end
 
 Combine portable instrument choices and host configuration without overriding values.
 
-The instrument profile accepts `application`, `mode`, device `bindings`, `devices` and
-`calibration`. The host accepts `scheduling`, non-scheduling `bindings`, `environment`,
-`analysis`, `simulation` and optional `runtime-backends`. The latter promotes
+The instrument profile accepts `application`, `mode`, device `bindings`, `devices`,
+`calibration` and `omit-views`. The host accepts `scheduling`, non-scheduling `bindings`,
+`environment`, `analysis`, `simulation` and optional `runtime-backends`. The latter promotes
 declared accelerator packages into the generated runtime without changing the
 simulation backend or importing those packages. Named loops and workers let launcher adapters derive native placement,
 client configuration and worker arguments from the same process declaration. Host

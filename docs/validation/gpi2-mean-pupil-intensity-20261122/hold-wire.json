@@ -1,0 +1,22 @@
+{
+  "events": [
+    {
+      "role": "rtc",
+      "thread": 329930,
+      "request_token": 27,
+      "syscall": "sendmsg",
+      "time_unix_s": 1795423933.387719
+    },
+    {
+      "role": "simulator",
+      "thread": 330081,
+      "request_token": 27,
+      "syscall": "recvmsg",
+      "time_unix_s": 1795423933.387897
+    }
+  ],
+  "request_tokens_at_both_processes": [
+    27
+  ],
+  "matching_stopped_acks": []
+}
