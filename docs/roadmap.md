@@ -14,7 +14,7 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
 
-The candidate exporter derives the live display from the operator view.
+The published RTC 0.7.29 exporter derives the live display from the operator view.
 Omitting that view removes the publisher and queue. Both modes remove one
 managed Link and preserve the required decisions for the three correctors.
 The [verification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)
