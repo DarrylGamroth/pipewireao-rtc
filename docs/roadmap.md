@@ -12,6 +12,12 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Classic CPU shutdown — 2026-11-22 Pacific
+
+An instrumented v0.7.28 stop helper recorded every admission and shutdown
+milestone in one bridge-free Classic CPU run. Quit completed Offline and the
+service stopped successfully. [Measurements and cleanup receipt](validation/classic-stop-deadline-20261122.json)
+
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 
 RTC now selects the registered PipeWireAO.jl 0.9.6 and PipeWireAO_jll
