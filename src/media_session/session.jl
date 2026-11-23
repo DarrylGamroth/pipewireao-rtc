@@ -355,13 +355,9 @@ function report_quit_failure!(session)
     ticket = failure.ticket
     ticket.serial == session.reported_quit_failure && return nothing
     session.reported_quit_failure = ticket.serial
-    targets = map(failure.targets) do attempt
-        target = attempt.target
-        (;
-            target.kind, target.name, target.id, target.serial, target.pid, target.instance,
-            attempt.submitted, attempt.acknowledged,
-        )
-    end
+    principal = findlast(attempt -> !attempt.acknowledged, failure.targets)
+    attempt = principal === nothing ? nothing : failure.targets[principal]
+    target = attempt === nothing ? nothing : attempt.target
     @error(
         "Session Quit effect failed",
         effect = nameof(typeof(ticket.effect)),
@@ -372,12 +368,39 @@ function report_quit_failure!(session)
         deadline_ns = ticket.deadline,
         failed_ns = failure.failed_at,
         submitted = failure.submitted,
-        targets,
+        target_count = length(failure.targets),
+        target_kind = target === nothing ? nothing : target.kind,
+        target_name = target === nothing ? nothing : target.name,
+        global_id = target === nothing ? nothing : target.id,
+        object_serial = target === nothing ? nothing : target.serial,
+        owner_pid = target === nothing ? nothing : target.pid,
+        owner_instance = target === nothing ? nothing : target.instance,
+        target_submitted = attempt === nothing ? nothing : attempt.submitted,
+        target_acknowledged = attempt === nothing ? nothing : attempt.acknowledged,
         reason = failure.reason,
         fault = machine.failure,
         cleanup = machine.quit_cleanup_failure,
         outcome_unknown = machine.fault_unknown,
     )
+    # The console logger can truncate typed collections even for two targets.
+    # Write scalar records so the journal retains each exact incarnation.
+    for (index, attempt) in pairs(failure.targets)
+        index == principal && continue
+        target = attempt.target
+        @error(
+            "Session Quit effect target",
+            session_instance = ticket.session,
+            ticket = ticket.serial,
+            kind = target.kind,
+            name = target.name,
+            global_id = target.id,
+            object_serial = target.serial,
+            owner_pid = target.pid,
+            owner_instance = target.instance,
+            submitted = attempt.submitted,
+            acknowledged = attempt.acknowledged,
+        )
+    end
     return nothing
 end
 
