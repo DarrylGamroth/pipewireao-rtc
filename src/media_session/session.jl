@@ -51,6 +51,7 @@ mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     overflow_seen::Bool
     transport_error::Union{Nothing,String}
     fault_reported::Bool
+    reported_quit_failure::UInt64
     done::Bool
     exitcode::Int
 end
@@ -255,6 +256,7 @@ function drain!(session::Session)
 end
 
 function start_effect!(session::Session)
+    session.done && return 0
     task = session.active_task
     task !== nothing && !istaskdone(task) && return 0
     ticket = session.machine.effect
@@ -328,6 +330,9 @@ function Agent.do_work(session::Session)
     )
     drain!(session)
     work += start_effect!(session)
+    if session.done || Hsm.current(session.machine) === :HeldFault
+        report_quit_failure!(session)
+    end
     # HeldFault has finished compensation. Emergency Disconnect already logs.
     if !session.done && !session.fault_reported && Hsm.current(session.machine) === :HeldFault
         session.fault_reported = true
@@ -341,6 +346,62 @@ function Agent.do_work(session::Session)
         )
     end
     return work
+end
+
+function report_quit_failure!(session)
+    machine = session.machine
+    failure = machine.quit_failure
+    failure === nothing && return nothing
+    ticket = failure.ticket
+    ticket.serial == session.reported_quit_failure && return nothing
+    session.reported_quit_failure = ticket.serial
+    principal = findlast(attempt -> !attempt.acknowledged, failure.targets)
+    attempt = principal === nothing ? nothing : failure.targets[principal]
+    target = attempt === nothing ? nothing : attempt.target
+    @error(
+        "Session Quit effect failed",
+        effect = nameof(typeof(ticket.effect)),
+        session_instance = ticket.session,
+        epoch = ticket.epoch,
+        ticket = ticket.serial,
+        admitted_ns = failure.admitted_at,
+        deadline_ns = ticket.deadline,
+        failed_ns = failure.failed_at,
+        submitted = failure.submitted,
+        target_count = length(failure.targets),
+        target_kind = target === nothing ? nothing : target.kind,
+        target_name = target === nothing ? nothing : target.name,
+        global_id = target === nothing ? nothing : target.id,
+        object_serial = target === nothing ? nothing : target.serial,
+        owner_pid = target === nothing ? nothing : target.pid,
+        owner_instance = target === nothing ? nothing : target.instance,
+        target_submitted = attempt === nothing ? nothing : attempt.submitted,
+        target_acknowledged = attempt === nothing ? nothing : attempt.acknowledged,
+        reason = failure.reason,
+        fault = machine.failure,
+        cleanup = machine.quit_cleanup_failure,
+        outcome_unknown = machine.fault_unknown,
+    )
+    # The console logger can truncate typed collections even for two targets.
+    # Write scalar records so the journal retains each exact incarnation.
+    for (index, attempt) in pairs(failure.targets)
+        index == principal && continue
+        target = attempt.target
+        @error(
+            "Session Quit effect target",
+            session_instance = ticket.session,
+            ticket = ticket.serial,
+            kind = target.kind,
+            name = target.name,
+            global_id = target.id,
+            object_serial = target.serial,
+            owner_pid = target.pid,
+            owner_instance = target.instance,
+            submitted = attempt.submitted,
+            acknowledged = attempt.acknowledged,
+        )
+    end
+    return nothing
 end
 
 controller_fact(session, object::Object) = nothing
@@ -434,17 +495,25 @@ end
 function perform!(session::Session, job, ::RemoveControls)
     identity = session.controller
     if identity !== nothing
+        quit_target!(
+            session, job, :controller, session.configuration["controller.node.name"],
+            identity.global_id; pid = getpid(), instance = identity.instance,
+            serial = identity.serial,
+        )
         object = find_object(session, identity.global_id)
         object !== nothing && object.serial == identity.serial ||
             throw(ArgumentError("session controller changed before retirement"))
         retire_object!(session, identity.global_id)
     end
+    check_job(session, job)
+    submitted!(session.machine, job.ticket)
     close(session.controller_endpoint)
     synchronize!(session, job)
-    await_condition!(session, job) do
-        all(session.retired) do (id, serial)
-            registry_serial(session, id) != serial
-        end
+    identity === nothing || quit_acknowledge!(session, job)
+    for (id, serial) in session.retired
+        quit_target!(session, job, :retired_global, "registry withdrawal", id; serial)
+        await_condition!(() -> registry_serial(session, id) != serial, session, job)
+        quit_acknowledge!(session, job)
     end
     return nothing
 end
@@ -615,7 +684,7 @@ function prepare_dispatch!(::Type{T}) where {T<:Session}
             ControlClient.completion_type(bootstrap),ControlClient.rejection_type(bootstrap)
         }
     }
-    for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin)
+    for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin, FaultOrigin)
         for effect in (ShutdownGraphOwners, ShutdownOwners)
             job = Job{EffectTicket{effect,origin}}
             Base.precompile(perform!, (T, job, effect))
@@ -640,7 +709,7 @@ function prepare_dispatch!(::Type{T}) where {T<:Session}
             # The simulated Quit discovers the effect sequence while Configuring.
             # Real Ready and Running requests use distinct backend job types.
             effect = typeof(ticket.effect)
-            for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin)
+            for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin, FaultOrigin)
                 job = Job{EffectTicket{effect,origin}}
                 Base.precompile(execute_effect!, (T, job))
             end
@@ -788,6 +857,7 @@ function Session(
             false,
             nothing,
             false,
+            UInt64(0),
             false,
             1,
         )

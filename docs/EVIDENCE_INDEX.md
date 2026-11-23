@@ -7,6 +7,14 @@ separates RTC readiness, arrival of the first usable live exposure or SCC pair,
 and execution of the controller callback. It also checks the projected first
 correction against each installed calibration after native loop closure.
 
+## Shared lockstep Hold and RTC shutdown — 2026-11-23 UTC
+
+The [fault lifecycle review](reviews/20261123-lockstep-faults/REVIEW.md) traces
+required-Link removal through the stopped source acknowledgement and terminal
+Quit. It records a healthy three-corrector Pause counterexample, a finite run
+reported complete after its last correction was discarded, and three passing
+installed shutdown controls alongside the earlier failure.
+
 ## GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
 
 The [qualification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)

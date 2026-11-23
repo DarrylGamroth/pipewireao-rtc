@@ -96,6 +96,36 @@ mutable struct Job{T<:EffectTicket}
     ticket::T
     cancelled::Bool
 end
+# Only Quit needs to retain per-target progress across effect cancellation.
+# Other jobs and effect-test adapters need no diagnostic state.
+quit_target!(runtime, job, args...; kwargs...) = nothing
+function quit_target!(
+    runtime,
+    job::Job,
+    kind::Symbol,
+    name::AbstractString,
+    handle::Union{Nothing,Integer};
+    pid = nothing,
+    instance = nothing,
+    serial = nothing,
+)
+    ticket = job.ticket
+    ticket.operation == QUIT_OPERATION || return nothing
+    id = handle === nothing ? nothing : UInt32(handle)
+    captured = get(runtime.captured, id, nothing)
+    serial === nothing && captured !== nothing && (serial = captured.serial)
+    target = QuitTarget(kind, String(name), id, serial, pid, instance)
+    Hsm.dispatch!(runtime.machine, :QuitTargetStarted, (; ticket, target))
+    return nothing
+end
+
+quit_acknowledge!(runtime, job) = nothing
+function quit_acknowledge!(runtime, job::Job)
+    job.ticket.operation == QUIT_OPERATION &&
+        Hsm.dispatch!(runtime.machine, :QuitTargetAcknowledged, job.ticket)
+    return nothing
+end
+
 mutable struct Parameters
     param::UInt32
     records::Vector{Pod}
@@ -234,10 +264,10 @@ end
 function setparam!(runtime, job, handle::UInt64, name::AbstractString, pod::Pod)
     check_job(runtime, job)
     assert_identity!(runtime, handle)
-    submitted!(runtime.machine, job.ticket)
     object = something(find_object(runtime, handle))
     param = parameter_id(Val(Symbol(name)))
     check_job(runtime, job)
+    submitted!(runtime.machine, job.ticket)
     PipeWireAO.set_param!(object.proxy, param, pod)
     return nothing
 end

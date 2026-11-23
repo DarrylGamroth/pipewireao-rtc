@@ -1,0 +1,24 @@
+[
+  {
+    "case": "pre-injection-helpers",
+    "invocation": "7fc9e1219f9c43aa87b4a5a165f7d0c2",
+    "phase": "stopped",
+    "service_result": "success",
+    "cleanup_complete": true,
+    "systemd_quit": {
+      "accepted": true,
+      "attempted": true
+    }
+  },
+  {
+    "case": "pre-injection-preflight",
+    "invocation": "aecb5a8b596647e58ea6c3ffe91f4a5f",
+    "phase": "stopped",
+    "service_result": "success",
+    "cleanup_complete": true,
+    "systemd_quit": {
+      "accepted": true,
+      "attempted": true
+    }
+  }
+]

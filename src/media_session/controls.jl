@@ -359,13 +359,19 @@ struct SourceControlDetails
     kind::Int32
     token::Int64
     result::Int32
+    acquired_sequence::Union{Nothing,UInt64}
 end
+SourceControlDetails(kind, token, result) = SourceControlDetails(kind, token, result, nothing)
 mutable struct SourceControlBinding <: AbstractSource
     handle::UInt64
     pid::UInt32
     instance::Int64
     previous::Union{Nothing,SourceSnapshot{SourceControlDetails}}
 end
+supports_revocation(runtime, ::AbstractSource) = false
+supports_revocation(runtime, source::SourceControlBinding) =
+    property(runtime, source.handle, SourceControl.REVOCATION_PROPERTY) == "1"
+
 function source(runtime, handle::UInt64, declaration)
     pid = Int64(declaration["pid"])
     0 < pid < typemax(UInt32) || throw(ArgumentError("invalid acquisition owner PID"))
@@ -556,11 +562,18 @@ struct ControlStatus
     result::Int32
     state::String
 end
+struct RevocationAck
+    token::Int64
+    generation::UInt64
+    acquired::UInt64
+    adopted::UInt64
+end
 struct ControlRecords
     run::Union{Nothing,ControlStatus}
     reset::Union{Nothing,ControlStatus}
     snapshot::Union{Nothing,SourceSnapshot{SourceControlDetails}}
     rejection::Union{Nothing,SourceSnapshot{SourceControlDetails}}
+    revocation::Union{Nothing,RevocationAck}
     maximum::Int64
 end
 function exact_named(values, names)
@@ -617,7 +630,7 @@ function source_control_snapshot(values, instance::Int64; rejection = false)
     elseif rejection && kind == SourceControl.INVALID
         token == 0 && result < 0
     else
-        kind in (SourceControl.RUN, SourceControl.RESET, SourceControl.QUERY) &&
+        kind in (SourceControl.RUN, SourceControl.RESET, SourceControl.QUERY, SourceControl.REVOKE) &&
             token > 0 &&
             (rejection ? result < 0 : result <= 0)
     end
@@ -632,13 +645,25 @@ function source_control_snapshot(values, instance::Int64; rejection = false)
         SourceControlDetails(kind, token, result),
     )
 end
+function revocation_ack(values, instance::Int64)
+    names = SourceControl.REVOKE_ACK_NAMES
+    exact_named(values, names)
+    policy_int(values[names[1]]) == SourceControl.VERSION &&
+    policy_long(values[names[2]]) == instance ||
+        throw(ArgumentError("revocation receipt identity mismatch"))
+    token, generation, acquired, adopted = map(name -> policy_long(values[name]), names[3:end])
+    token > 0 && generation > 0 && 0 <= adopted <= acquired ||
+        throw(ArgumentError("invalid revocation receipt cursor"))
+    return RevocationAck(token, UInt64(generation), UInt64(acquired), UInt64(adopted))
+end
 function control_records(records, instance::Union{Nothing,Int64} = nothing)
-    length(records) <= (instance === nothing ? 3 : 4) ||
+    length(records) <= (instance === nothing ? 3 : 5) ||
         throw(ArgumentError("node published too many Props records"))
     run = nothing
     reset = nothing
     snapshot = nothing
     rejection = nothing
+    revocation = nothing
     maximum = Int64(0)
     for pod in records
         values = named_values(pod)
@@ -657,6 +682,10 @@ function control_records(records, instance::Union{Nothing,Int64} = nothing)
             snapshot === nothing || throw(ArgumentError("duplicate source snapshot"))
             snapshot = source_control_snapshot(values, instance)
             maximum = max(maximum, snapshot.details.token)
+        elseif instance !== nothing && haskey(values, first(SourceControl.REVOKE_ACK_NAMES))
+            revocation === nothing || throw(ArgumentError("duplicate revocation receipt"))
+            revocation = revocation_ack(values, instance)
+            maximum = max(maximum, revocation.token)
         elseif instance !== nothing && haskey(values, "pipewireao.source-rejection.version")
             rejection === nothing || throw(ArgumentError("duplicate source rejection"))
             rejection = source_control_snapshot(values, instance; rejection = true)
@@ -677,7 +706,7 @@ function control_records(records, instance::Union{Nothing,Int64} = nothing)
     instance === nothing ||
         snapshot !== nothing ||
         throw(ArgumentError("source snapshot unavailable"))
-    return ControlRecords(run, reset, snapshot, rejection, maximum)
+    return ControlRecords(run, reset, snapshot, rejection, revocation, maximum)
 end
 control_records!(runtime, job, handle, instance::Union{Nothing,Int64} = nothing) =
     control_records(enumerate!(runtime, job, handle, "Props"), instance)
@@ -695,12 +724,16 @@ control_request(::Val{:run}, token::Int64, argument, instance) =
     PipeWireAO.run_control_request(token, Symbol(argument))
 control_request(::Val{:reset}, token::Int64, argument, instance) =
     PipeWireAO.reset_control_request(token)
-function control_request(::Val{:query}, token::Int64, argument, instance::Int64)
-    values = SourceControl.query_values(token, instance)
+control_request(::Val{:query}, token::Int64, argument, instance::Int64) =
+    source_request(SourceControl.QUERY_NAMES, token, instance)
+control_request(::Val{:revoke}, token::Int64, argument, instance::Int64) =
+    source_request(SourceControl.REVOKE_NAMES, token, instance)
+function source_request(names, token::Int64, instance::Int64)
+    values = (SourceControl.VERSION, token, instance)
     return PolicyPod(
         PipeWireAO.props_param(
             PolicySPA.Props([
-                SourceControl.QUERY_NAMES[i] => PolicyPod(values[i]) for
+                names[i] => PolicyPod(values[i]) for
                 i in eachindex(values)
             ]),
         ),
@@ -736,6 +769,8 @@ function matching_source_control_record(
         SourceControl.RUN
     elseif kind === :reset
         SourceControl.RESET
+    elseif kind === :revoke
+        SourceControl.REVOKE
     else
         SourceControl.QUERY
     end
@@ -771,6 +806,16 @@ function matching_source_control_record(
         !snapshot.running &&
         !snapshot.completed ||
             throw(ArgumentError("source reset did not commit a new paused generation"))
+    end
+    if kind === :revoke
+        ack = records.revocation
+        ack !== nothing && ack.token == token && ack.generation == snapshot.generation &&
+        ack.adopted == snapshot.sequence && !snapshot.running &&
+        (!snapshot.completed || ack.adopted == ack.acquired) ||
+            throw(ArgumentError("source revocation has no matching stopped cursor"))
+        details = SourceControlDetails(expected, token, snapshot.details.result, ack.acquired)
+        snapshot = SourceSnapshot(snapshot.running, snapshot.completed, snapshot.generation,
+            snapshot.sequence, snapshot.report_generation, snapshot.report_sequence, details)
     end
     if kind === :reset || snapshot.completed
         snapshot.generation == snapshot.report_generation &&
@@ -820,6 +865,8 @@ function source_control_operation!(
     runtime, job, source::SourceControlBinding, kind::Symbol, state = ""
 )
     check_source_control!(runtime, source)
+    kind === :revoke && !supports_revocation(runtime, source) &&
+        throw(ArgumentError("source does not advertise fault revocation"))
     records = control_records!(runtime, job, source.handle, source.instance)
     previous = records.snapshot
     token = next_control_token!(runtime, records.maximum)
@@ -853,7 +900,7 @@ send_source_control_request!(
 function source_operation!(
     runtime, job, source::SourceControlBinding, kind::Symbol; running = false
 )
-    kind in (:run, :query, :reset) || throw(ArgumentError("invalid acquisition operation"))
+    kind in (:run, :query, :reset, :revoke) || throw(ArgumentError("invalid acquisition operation"))
     snapshot = source_control_operation!(
         runtime, job, source, kind, running ? "running" : "stopped"
     )

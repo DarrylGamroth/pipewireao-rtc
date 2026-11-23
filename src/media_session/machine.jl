@@ -203,7 +203,10 @@ struct PrepareSources <: AbstractEffect end
 
 struct DiscoverGraphs <: AbstractEffect end
 
-struct HoldSources <: AbstractEffect end
+struct HoldSources <: AbstractEffect
+    revoke::Bool
+end
+HoldSources() = HoldSources(false)
 
 struct ConnectLinks <: AbstractEffect end
 
@@ -318,6 +321,32 @@ struct EffectSubmitted <: AbstractEvent
     ticket::EffectTicket
 end
 
+"""Incarnation and acknowledgement state of one target in a Quit effect."""
+struct QuitTarget
+    kind::Symbol
+    name::String
+    id::Union{Nothing,UInt32}
+    serial::Union{Nothing,UInt64}
+    pid::Union{Nothing,UInt32}
+    instance::Union{Nothing,Int64}
+end
+
+struct QuitTargetAttempt
+    target::QuitTarget
+    submitted::Bool
+    acknowledged::Bool
+end
+
+"""Retained evidence for the first failed effect of one Quit attempt."""
+struct QuitFailure
+    ticket::EffectTicket
+    admitted_at::Int64
+    failed_at::Int64
+    reason::String
+    submitted::Bool
+    targets::Vector{QuitTargetAttempt}
+end
+
 struct Reply{D}
     token::UInt64
     operation::UInt32
@@ -379,6 +408,11 @@ addition is checked; an unrepresentable deadline raises `OverflowError`.
     mutated::Bool
     failure::Union{Nothing,String}
     cleanup_failure::Union{Nothing,String}
+    quit_failure::Union{Nothing,QuitFailure}
+    quit_cleanup_failure::Union{Nothing,String}
+    quit_admitted_at::Int64
+    quit_submitted::Bool
+    quit_targets::Vector{QuitTargetAttempt}
     fault_unknown::Bool
     observation::Observation
 end
@@ -467,6 +501,10 @@ _deadline(m::Machine, duration_ns::Int64) = Base.Checked.checked_add(_now(m), du
 function _issue!(m::Machine, effect::AbstractEffect; target = nothing)
     m.effect === nothing || error("session effect already pending")
     m.serial = Base.Checked.checked_add(m.serial, UInt64(1))
+    if m.request isa Request{Quit}
+        m.quit_submitted = false
+        empty!(m.quit_targets)
+    end
     m.effect = EffectTicket(
         m.session,
         m.epoch,
@@ -561,7 +599,7 @@ function _receive_failure!(m, event)
     m.effect = nothing
     return true
 end
-function _enter_fault!(m::Machine, reason)
+function _enter_fault!(m::Machine, reason; initial_effect::AbstractEffect = HoldSources())
     deadline = _deadline(m, SESSION_EFFECT_TIMEOUT_NS)
     _retire!(m)
     m.failure === nothing && (m.failure = String(reason))
@@ -570,15 +608,40 @@ function _enter_fault!(m::Machine, reason)
     _lifecycle!(m, FaultOrigin())
     m.origin = FaultOrigin()
     m.deadline = deadline
-    _issue!(m, HoldSources())
+    _issue!(m, initial_effect)
     return nothing
 end
 function _fault_reply!(m::Machine)
     r = m.fault_request
     m.fault_request = nothing
-    r === nothing || _reply!(m, r, :Failed; error = m.failure, unknown = m.fault_unknown)
+    r === nothing && return nothing
+    diagnostic = r isa Request{Quit} ? quit_failure_message(m.quit_failure) : m.failure
+    _reply!(m, r, :Failed; error = diagnostic, unknown = m.fault_unknown)
     return nothing
 end
+
+function quit_failure_message(failure::QuitFailure)
+    ticket = failure.ticket
+    attempt = findlast(attempt -> !attempt.acknowledged, failure.targets)
+    target = attempt === nothing ? nothing : failure.targets[attempt].target
+    location = if target === nothing
+        ""
+    else
+        " for $(target.kind) $(target.name) (id=$(target.id), serial=$(target.serial), " *
+        "pid=$(target.pid), instance=$(target.instance))"
+    end
+    return "Quit $(nameof(typeof(ticket.effect)))$location failed: $(failure.reason)"
+end
+
+function _record_quit_failure!(m::Machine, reason; submitted = false)
+    m.quit_failure === nothing || return nothing
+    m.quit_failure = QuitFailure(
+        something(m.effect), m.quit_admitted_at, _now(m), String(reason),
+        m.quit_submitted || submitted, copy(m.quit_targets),
+    )
+    return nothing
+end
+
 _local_quit(::Union{Nothing,Request}) = false
 _local_quit(r::Request{Quit}) = r.token == 0 && r.controller === nothing
 
@@ -607,13 +670,23 @@ function _begin_quit!(m::Machine, r::Request{Quit}, admitted_at::Int64)
         _reply!(m, old, :Failed; error = "Cancelled by shutdown", unknown = m.mutated)
     _fault_reply!(m)
     m.request, m.origin = r, m.lifecycle_origin
+    m.quit_failure = nothing
+    m.quit_cleanup_failure = nothing
+    m.quit_admitted_at = admitted_at
     m.deadline = deadline
     m.mutated = false
     _issue!(m, HoldSources())
     return nothing
 end
-function _cleanup_failed!(m::Machine, reason)
+function _record_cleanup_failure!(m::Machine, reason)
     m.cleanup_failure = String(reason)
+    if m.fault_request isa Request{Quit} && m.quit_cleanup_failure === nothing
+        m.quit_cleanup_failure = m.cleanup_failure
+    end
+    return nothing
+end
+function _cleanup_failed!(m::Machine, reason)
+    _record_cleanup_failure!(m, reason)
     _retire!(m)
     return nothing
 end
@@ -636,7 +709,28 @@ end
     return Hsm.EventHandled
 end
 @on_event function (m::Machine, ::Root, ::Submitted, event)
-    _matches(m, event.ticket) && (m.mutated = true)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    m.mutated = true
+    if event.ticket.operation == QUIT_OPERATION
+        m.quit_submitted = true
+        if !isempty(m.quit_targets)
+            target = last(m.quit_targets).target
+            m.quit_targets[end] = QuitTargetAttempt(target, true, false)
+        end
+    end
+    return Hsm.EventHandled
+end
+@on_event function (m::Machine, ::Root, ::QuitTargetStarted, event)
+    if _matches(m, event.ticket)
+        push!(m.quit_targets, QuitTargetAttempt(event.target, false, false))
+    end
+    return Hsm.EventHandled
+end
+@on_event function (m::Machine, ::Root, ::QuitTargetAcknowledged, ticket)
+    if _matches(m, ticket)
+        attempt = last(m.quit_targets)
+        m.quit_targets[end] = QuitTargetAttempt(attempt.target, attempt.submitted, true)
+    end
     return Hsm.EventHandled
 end
 @on_event function (m::Machine, ::Root, ::Observed, observation)
@@ -644,7 +738,9 @@ end
     return Hsm.EventHandled
 end
 @on_event function (m::Machine, ::Managed, ::RequiredLost, reason)
-    _enter_fault!(m, reason)
+    # Losing a required dependency revokes the admitted session as a whole.
+    admitted = m.lifecycle == RunnerCodec.Running || m.lifecycle == RunnerCodec.Ready
+    _enter_fault!(m, reason; initial_effect = HoldSources(admitted))
     return Hsm.transition!(m, :HoldingFaultSources)
 end
 @on_event function (m::Machine, ::Fault, ::RequiredLost, _)
@@ -825,9 +921,59 @@ end
     return Hsm.transition!(m, :Running)
 end
 
+# Quit is exclusive. A phase can advance only after a correlated in-budget
+# acknowledgement, and no Run can intervene. Once retirement or withdrawal can
+# have started, pass the outstanding work to the exact supervised cleanup path.
+# Re-entering ordinary Hold would address endpoints that Quit can have fenced.
+function _prepare_quit_recovery!(m::Machine)
+    failure = something(m.quit_failure)
+    # An unsubmitted first Hold can still establish ingress revocation with
+    # the separate fault budget. Once submitted, its outcome may be unknown.
+    retry_hold = failure.ticket.effect isa HoldSources && !failure.submitted
+    _enter_fault!(m, failure.reason; initial_effect = retry_hold ? HoldSources() : Disconnect())
+    return retry_hold
+end
+
+@on_event function (m::Machine, ::ShuttingDown, ::Failure, event)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    _record_quit_failure!(m, event.reason; submitted = event.submitted)
+    _receive_failure!(m, event)
+    if _prepare_quit_recovery!(m)
+        return Hsm.transition!(m, :HoldingFaultSources)
+    end
+    return Hsm.transition!(m, :EmergencyDisconnect)
+end
+@on_event function (m::Machine, ::ShuttingDown, ::Completion, event)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    _record_quit_failure!(m, "Session effect expired")
+    if _prepare_quit_recovery!(m)
+        return Hsm.transition!(m, :HoldingFaultSources)
+    end
+    return Hsm.transition!(m, :EmergencyDisconnect)
+end
+@on_event function (m::Machine, ::ShuttingDown, ::Tick, _)
+    m.effect !== nothing && _now(m) >= m.deadline || return Hsm.EventHandled
+    _record_quit_failure!(m, "Session effect expired")
+    if _prepare_quit_recovery!(m)
+        return Hsm.transition!(m, :HoldingFaultSources)
+    end
+    return Hsm.transition!(m, :EmergencyDisconnect)
+end
+@on_event function (m::Machine, ::ShuttingDown, ::RequiredLost, reason)
+    _record_quit_failure!(m, reason)
+    if _prepare_quit_recovery!(m)
+        return Hsm.transition!(m, :HoldingFaultSources)
+    end
+    return Hsm.transition!(m, :EmergencyDisconnect)
+end
+
 @on_event function (m::Machine, ::PublishingQuit, ::Completion, event)
     _matches(m, event.ticket) || return Hsm.EventHandled
-    _expired(m, event) && (m.cleanup_failure = "Quit completion publication fence expired")
+    if _expired(m, event)
+        reason = "Quit completion publication fence expired"
+        _record_quit_failure!(m, reason)
+        m.cleanup_failure = reason
+    end
     m.effect, m.request = nothing, nothing
     return Hsm.transition!(m, :Offline)
 end
@@ -841,15 +987,19 @@ end
     return Hsm.transition!(m, :PublishingQuit)
 end
 @on_event function (m::Machine, ::PublishingQuit, ::Failure, event)
-    _receive_failure!(m, event) || return Hsm.EventHandled
-    m.cleanup_failure = String(event.reason)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    _record_quit_failure!(m, event.reason; submitted = event.submitted)
+    _receive_failure!(m, event)
+    m.cleanup_failure = event.reason
     m.request = nothing
     return Hsm.transition!(m, :Offline)
 end
 @on_event function (m::Machine, ::PublishingQuit, ::Tick, _)
     m.effect === nothing && return Hsm.EventHandled
     _now(m) < m.deadline && return Hsm.EventHandled
-    m.cleanup_failure = "Quit completion publication fence expired"
+    reason = "Quit completion publication fence expired"
+    _record_quit_failure!(m, reason)
+    m.cleanup_failure = reason
     _retire!(m)
     m.request = nothing
     return Hsm.transition!(m, :Offline)
@@ -874,7 +1024,7 @@ end
 end
 @on_event function (m::Machine, ::EmergencyDisconnect, ::Failure, event)
     _receive_failure!(m, event) || return Hsm.EventHandled
-    m.cleanup_failure = String(event.reason)
+    _record_cleanup_failure!(m, event.reason)
     _fault_reply!(m)
     return Hsm.transition!(m, :HeldFault)
 end
@@ -1029,6 +1179,10 @@ end
 @on_event function (m::Machine, ::Managed, ::QuitRequested, event)
     _begin_quit!(m, event.request, event.admitted_at)
     return Hsm.transition!(m, :HoldingQuitSources)
+end
+@on_event function (m::Machine, ::EmergencyDisconnect, ::QuitRequested, event)
+    _reply!(m, event.request, :Failed; error = "Session transport retirement is pending")
+    return Hsm.EventHandled
 end
 @on_event function (m::Machine, ::ShuttingDown, ::QuitRequested, event)
     _reply!(m, event.request, :Failed; error = "Session shutdown already pending")
@@ -1286,6 +1440,11 @@ function Machine(
         false,
         nothing,
         nothing,
+        nothing,
+        nothing,
+        Int64(0),
+        false,
+        QuitTargetAttempt[],
         false,
         Observation(nothing, nothing),
     )

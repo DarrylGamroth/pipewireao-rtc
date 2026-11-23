@@ -1,0 +1,26 @@
+{
+  "original": [
+    "[345786.807652] rtc-devel pipewireao-rtc[693222]: ┌ Error: Session fault handling settled",
+    "[345786.807652] rtc-devel pipewireao-rtc[693222]: │   failure = \"Required Link removed\"",
+    "[345786.807652] rtc-devel pipewireao-rtc[693222]: │   cleanup = nothing",
+    "[345792.241910] rtc-devel systemd[1418]: Stopping pipewireao-session@ec85145c5eac.service - Headless PipeWireAO RTC session ec85145c5eac...",
+    "[345792.242236] rtc-devel systemd[1418]: Stopping pipewireao-owner-3ecdaf5df0be4e40a4b65d3fccb2ec24-analysis-pupil-flux.service - PipeWireAO owner analysis-pupil-flux...",
+    "[345792.392102] rtc-devel systemd[1418]: Stopped pipewireao-owner-3ecdaf5df0be4e40a4b65d3fccb2ec24-analysis-pupil-flux.service - PipeWireAO owner analysis-pupil-flux.",
+    "[345806.025207] rtc-devel pipewireao-rtc[693222]: ┌ Error: Session disconnected during cleanup",
+    "[345806.025207] rtc-devel pipewireao-rtc[693222]: │   failure = \"Required Link removed\"",
+    "[345806.025207] rtc-devel pipewireao-rtc[693222]: │   cleanup = \"ArgumentError: object is not captured\"",
+    "[345807.650148] rtc-devel pipewireao-rtc-session[695605]: RTC systemd stop timing {\"unit\":\"pipewireao-session@ec85145c5eac.service\",\"invocation\":\"3ecdaf5df0be4e40a4b65d3fccb2ec24\",\"outcome\":\"failed\",\"deadline_ns\":345825332181038,\"capability_remaining_ns\":26775861208,\"completion_remaining_ns\":26775816654,\"rejection_remaining_ns\":26775785786,\"controller_admission_remaining_ns\":26775861208,\"connection_ready_remaining_ns\":26775556537,\"quit_submission_remaining_ns\":25897209911,\"offline_remaining_ns\":null,\"process_exit_remaining_ns\":null}",
+    "[345812.792444] rtc-devel julia[692979]: ERROR: native owner request deadline expired",
+    "[345818.417649] rtc-devel systemd[1418]: Stopped pipewireao-session@ec85145c5eac.service - Headless PipeWireAO RTC session ec85145c5eac."
+  ],
+  "matched": [
+    "[349094.449430] rtc-devel pipewireao-rtc[778114]: ┌ Error: Session fault handling settled",
+    "[349094.449430] rtc-devel pipewireao-rtc[778114]: │   failure = \"Required Link removed\"",
+    "[349094.449430] rtc-devel pipewireao-rtc[778114]: │   cleanup = nothing",
+    "[349097.693825] rtc-devel systemd[1418]: Stopping pipewireao-session@679a7832d12b.service - Headless PipeWireAO RTC session 679a7832d12b...",
+    "[349097.694126] rtc-devel systemd[1418]: Stopping pipewireao-owner-8e289c5bb855413eab5be9d18506d014-analysis-pupil-flux.service - PipeWireAO owner analysis-pupil-flux...",
+    "[349097.740406] rtc-devel systemd[1418]: Stopped pipewireao-owner-8e289c5bb855413eab5be9d18506d014-analysis-pupil-flux.service - PipeWireAO owner analysis-pupil-flux.",
+    "[349104.357547] rtc-devel pipewireao-rtc-session[779370]: RTC systemd stop timing {\"unit\":\"pipewireao-session@679a7832d12b.service\",\"invocation\":\"8e289c5bb855413eab5be9d18506d014\",\"outcome\":\"completed\",\"deadline_ns\":349128852091445,\"capability_remaining_ns\":28710312101,\"completion_remaining_ns\":28710261106,\"rejection_remaining_ns\":28710219398,\"controller_admission_remaining_ns\":28710312101,\"connection_ready_remaining_ns\":28709990639,\"quit_submission_remaining_ns\":28366829742,\"offline_remaining_ns\":24884007379,\"process_exit_remaining_ns\":24570403844}",
+    "[349106.919522] rtc-devel systemd[1418]: Stopped pipewireao-session@679a7832d12b.service - Headless PipeWireAO RTC session 679a7832d12b."
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "unit": "pipewireao-session@ec85145c5eac.service",
+  "invocation": "3ecdaf5df0be4e40a4b65d3fccb2ec24",
+  "original_processes_remaining": [],
+  "private_socket_removed": true,
+  "discovery_row_removed": true,
+  "managed_quit": {
+    "accepted": false,
+    "attempted": true
+  },
+  "managed_final_phase": "failed",
+  "managed_ledger_cleanup_complete": true,
+  "launcher_residue_removed": [
+    "/run/user/1000/pipewireao-session-ec85145c5eac",
+    "/var/tmp/gpi2-shared-simulator-hold.R3zWbvYJ/arm/installed/systemd/pipewireao-session@ec85145c5eac.service",
+    "/run/user/1000/systemd/user/pipewireao-session@ec85145c5eac.service",
+    "/run/user/1000/systemd/user/pipewireao-session@ec85145c5eac.service.d"
+  ],
+  "unit_state_after_residue_removal": {
+    "MainPID": "0",
+    "LoadState": "not-found",
+    "ActiveState": "inactive"
+  }
+}

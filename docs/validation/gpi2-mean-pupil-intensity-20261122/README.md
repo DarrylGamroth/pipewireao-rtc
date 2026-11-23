@@ -20,7 +20,9 @@ The graph-host observer passed 132 assertions with registered graph
 dependencies and again with the rebased monorepo sources. The responsive
 native woofer fixture passed all 19 assertions. The installed lockstep
 simulator's acknowledgement after required woofer loss remains open.
-The installed fault evidence below belongs to the pre-rebase cohort.
+The installed fault evidence below belongs to the pre-rebase cohort. The later
+[shared simulator and RTC review](../../reviews/20261123-lockstep-faults/REVIEW.md)
+records a confirmed Hold on the candidate and a separate ordinary Pause defect.
 
 ## Initial qualification sources
 

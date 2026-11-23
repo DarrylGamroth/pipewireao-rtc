@@ -37,8 +37,13 @@ Omitting that view removes the publisher and queue. Both modes remove one
 managed Link and preserve the required decisions for the three correctors.
 The [verification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)
 records bit-identical science commands across both profiles and the release.
-Required woofer Link loss delivered Hold to the installed simulator. Its
-stopped acknowledgement remains an open acceptance gate.
+The released simulator received Hold after required woofer Link loss but failed
+to acknowledge within fault cleanup. The shared candidate acknowledged in an
+installed run. A healthy three-port counterexample blocks promotion until
+ordinary Pause preserves outstanding adoption and finite completion reports the
+last adopted sequence. The
+[fault lifecycle review](reviews/20261123-lockstep-faults/REVIEW.md) also
+records the separate Quit failures and the owner-retirement checks needed.
 
 ### Simulator lifetime and CAL2 startup — 2026-11-23
 
