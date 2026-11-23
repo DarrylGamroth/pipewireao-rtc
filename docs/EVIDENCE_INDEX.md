@@ -5,6 +5,9 @@
 An observer and replacement RTC received frames across native and systemd
 restart tests. The [independent source record](validation/independent-source-20261123/README.md)
 records the process boundaries, stream identities and delivery evidence.
+Two CAL2 RTCs attached to the same running simulator in 104.0 s and 58.3 s.
+Both cameras advanced between activations. A final observation timed out
+after the second RTC exited.
 
 Two sealed CAL2 activations reached Ready in 419.839 s and 89.696 s. See
 the [optical comparison](validation/cal2-fixed-pupil-20261122/README.md) and

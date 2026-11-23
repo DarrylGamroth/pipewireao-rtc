@@ -17,8 +17,11 @@ chronology. Architecture/requirement decisions remain authoritative.
 Site-supervised core and source services can run across RTC replacement.
 MediaSession admits their live data Ports and the RTC-owned Links. The
 [restart record](validation/independent-source-20261123/README.md) covers
-frame delivery and native identities through process replacement. Managed
-acquisition continues to use its declared hold and release controls.
+frame delivery and native identities through process replacement. With both
+CAL2 cameras already publishing, the first RTC reached Ready in 104.0 s and its
+replacement in 58.3 s. Both delivered fresh physical offsets. The final
+observation after the second shutdown timed out on pupil 43. Managed
+acquisition uses its declared hold and release controls.
 
 The fixed-pupil CAL2 candidate reached service Ready in 89.7 s, compared
 with 419.8 s for the paired ordinary activation. The [optical verification

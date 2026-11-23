@@ -53,7 +53,10 @@ CPU 11 and the RTC on CPU 9. An earlier fixture omitted the configured native
 data-loop threads. The installed admission check rejected that service. A
 separate private-core test accepted the actual server PID and rejected the
 same socket paired with a different process PID. The final installed fixture
-included this early Core identity check. The [installed evidence archive](installed-restart.tar.zst)
+included this early Core identity check. The matching private-core selector
+passed three checks. After integrating the upstream shutdown diagnostics at
+RTC commit `2728607`, the full Julia 1.13.4 RTC suite passed all 10,724
+checks across 516 test sets. The [installed evidence archive](installed-restart.tar.zst)
 contains complete unit definitions, immutable candidate patches, lifecycle
 receipts, traces, failed attempts and a checksum inventory.
 
@@ -75,3 +78,65 @@ available. The existing managed optical regression passed all 27 checks.
 The independent launcher accepts external-pupil and clocked optical exports.
 The legacy GPI2 coupled replay still follows its command-driven contract.
 [Optical selectors, logs and exact revisions](independent-optical.tar.zst)
+
+## CAL2 RTC replacement with the simulator already publishing
+
+A fixed-pupil CAL2 application ran the actual SCC and LLOWFS controller
+graphs with eight native queue modules and ten RTC-owned Links. Before the
+first start request, independent observers had already received both cameras
+from one warmed HIL process. Both RTCs admitted the same core, source, pupil
+feed and camera observers. Each received its own process, session UUID and
+ten new Link serials. The RTC-owned graphs loaded their installed package
+images in each activation. The installation selected RTC tree
+`764219a5109568325223d97dbeaff61758df2976` and HIL tree
+`d0354f40493eefc8e3e9597c690df224d12ee566`. This RTC verified the
+core PID during admission. The later pre-launch native Core PID check was
+exercised in the installed fixture above. The CAL2 timings predate that check
+and the upstream shutdown diagnostics.
+
+| Elapsed wall time on the shared workstation | First RTC | Replacement RTC |
+| --- | ---: | ---: |
+| Service start request to Ready | 103.976 s | 58.287 s |
+| RTC MainPID start to systemd active | 63.254 s | 43.669 s |
+
+The following intervals partition the first row, using monotonic systemd
+and journal timestamps. Launching the service includes the installed
+preparation and publication helpers. Graph owners and the coordinator can
+work concurrently within an interval.
+
+| Interval | First RTC | Replacement RTC |
+| --- | ---: | ---: |
+| Service start request to RTC MainPID start | 40.709 s | 14.568 s |
+| RTC MainPID start to publisher waiting for the control endpoint | 24.580 s | 15.766 s |
+| Control endpoint wait to publisher waiting for owners and RTC warmup | 5.643 s | 4.794 s |
+| Owner and RTC warmup wait to acknowledged warmup | 26.453 s | 15.986 s |
+| Acknowledged warmup to service start returning Ready | 6.591 s | 7.174 s |
+
+The second RTC started after the first RTC and all its Links had gone away.
+During 86.4 s with the RTC absent, LLOWFS advanced from sequence 22 to 25 and
+SCC from 4 to 5. The acquisition domains and generation stayed the same. The
+independent core (PID 341891) and simulator (PID 341896) stayed up. These
+intervals measure software service startup under shared-host load. The
+paced test feed verifies publication across restarts. An optical throughput
+measurement would require an independently paced load.
+
+After native Start each RTC received fresh, finite physical offsets from both
+controllers. The first RTC observed LLOWFS sequence 10 at model time 18 ms and SCC
+sequence 3 at 20 ms. The replacement observed LLOWFS sequence 28 at 54 ms
+and SCC sequence 7 at 60 ms. All four carried their respective
+camera domains and generation. The simulated profile produced zero correction
+demand in these samples.
+
+Both sessions acknowledged native Stop and Quit. Their ledgers recorded
+complete cleanup. The first service stop took 51.3 s and the second 41.6 s,
+including the systemd stop and cleanup helpers.
+
+After the second service stopped, the observer received LLOWFS sequence 42.
+The feeder then staged pupil 43 and waited 200 s for the corresponding LLOWFS
+exposure. Its timeout ended the test. All three permanent Links still reported
+Active. The feeder waits for LLOWFS before sending the following pupil. The
+trace lacks a dequeue receipt at the feeder and receipts for HIL ingress and
+publication of that pupil. Delivery after the second shutdown remains
+unresolved. The first attempt at this test also exposed a missing metadata
+declaration in the SCC probe, corrected before the two timings above.
+[Reproducer, journal, traces, package identities and partial outcome](cal2-restart.tar.gz)
