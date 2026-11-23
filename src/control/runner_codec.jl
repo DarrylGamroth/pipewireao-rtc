@@ -298,6 +298,9 @@ function _parameter_shape(shape::AbstractVector{UInt32})
     return shape
 end
 
+# Vectors and matrices cover mirror offsets and calibration parameters.
+const PARAMETER_NDARRAY_PRECOMPILE_RANKS = (1, 2)
+
 # Small representatives of both op17 payload types. Cold preparation uses
 # these codecs without opening a command endpoint or publishing a parameter.
 function parameter_ndarray_workload(rank::Int)

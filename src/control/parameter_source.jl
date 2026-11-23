@@ -3,7 +3,9 @@ module ParameterSource
 
 using PipeWireAO
 using SHA
+using PrecompileTools: @compile_workload
 import Clocks
+import Hsm
 import ..Common
 import ..Artifacts
 import ..ControlCodec
@@ -692,6 +694,9 @@ struct ParameterPublisher
     enabled::Bool
 end
 
+const ParameterEndpoint{C} = Endpoint.Endpoint{Profile,ParameterCommand,Lifecycle,ParameterPublisher,C}
+const ParameterTicket = Endpoint.Ticket{ParameterCommand}
+
 function (publisher::ParameterPublisher)(filter, params)
     if publisher.enabled
         update_params!(filter, params)
@@ -712,6 +717,19 @@ function _control_endpoint(options, transport, clock, wake)
         clock,
         publisher = ParameterPublisher(wake, true),
     )
+end
+
+parameter_timer(loop, wake) = TimerSource(loop, (_, _) -> notify(wake))
+
+function precompile_parameter_timer!(timer_type)
+    for delay in (Float64, Nothing)
+        precompile(
+            Core.kwcall,
+            (NamedTuple{(:delay,),Tuple{delay}}, typeof(update_timer!), timer_type),
+        )
+    end
+    precompile(close, (timer_type,))
+    return nothing
 end
 
 function _completion!(endpoint, ticket, source, result::Int32, message)
@@ -882,6 +900,44 @@ function stage_parameter!(runtime, endpoint, active, sources, session_controller
     return selected
 end
 
+function precompile_parameter_dispatch!(runtime_type, endpoint_type, ticket_type)
+    transport_type = fieldtype(runtime_type, :transport)
+    bootstrap_type = fieldtype(transport_type, :endpoint)
+    registry_type = Registry{fieldtype(transport_type, :core)}
+    command_type = Runner.RunnerCommand{:parameter,Arguments}
+    precompile(Runner.encode_request, (Envelope.RequestHeader, command_type))
+    precompile(Client.decode_request, (Profile, Envelope.RequestHeader, SPA.Struct))
+    precompile(Endpoint.stage!, (endpoint_type, Pod))
+    precompile(Endpoint.take!, (endpoint_type,))
+    precompile(Endpoint.check_ticket, (endpoint_type, ticket_type))
+    precompile(stage_parameter!, (runtime_type, endpoint_type, ticket_type, Vector{Source},
+        Envelope.ControllerIdentity))
+    for storage in (Vector{Float32}, Runner.ParameterStream)
+        precompile(receive_parameter!, (
+            runtime_type, endpoint_type, ticket_type, Source, Envelope.ControllerIdentity, storage,
+        ))
+    end
+    precompile(parameter_controller, (registry_type, Envelope.ControllerIdentity))
+    for value_type in (transport_type, bootstrap_type, ticket_type)
+        precompile(getproperty, (value_type, Symbol))
+    end
+    precompile(_completion!, (endpoint_type, ticket_type, Source, Int32, String))
+    precompile(Endpoint.complete!, (endpoint_type, ticket_type, Pod))
+    precompile(Core.kwcall, (
+        NamedTuple{(:terminal,),Tuple{Bool}}, typeof(Endpoint.complete!), endpoint_type, ticket_type, Pod,
+    ))
+    precompile(close, (endpoint_type,))
+    return nothing
+end
+
+function preparation_request(controller, instance, token, parameter)
+    header = Envelope.RequestHeader(
+        controller, instance, token, Runner.PARAMETER_NDARRAY_OPERATION, Int64(30_000_000_000),
+    )
+    command = NdArrayParameter("graph", "parameter", parameter, controller)
+    return command, Client.encode_request(PROFILE, header, command)
+end
+
 function prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, sources, wake, clock)
     ranks = sort!(unique(length(source.shape) for source in sources))
     isempty(ranks) && return nothing
@@ -899,13 +955,6 @@ function prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, source
     )
     transport = runtime.transport
     bootstrap = transport.endpoint
-    precompile(
-        parameter_controller,
-        (typeof(something(bootstrap.registry)), Envelope.ControllerIdentity),
-    )
-    precompile(getproperty, (typeof(transport), Symbol))
-    precompile(getproperty, (typeof(bootstrap), Symbol))
-    precompile(getproperty, (ticket_type, Symbol))
     # Use the running bootstrap loop only for the Endpoint's local state
     # checks. The scratch endpoint has no registry, does not publish any
     # Props, and has no parameter output stream. Its publisher has the same
@@ -918,12 +967,7 @@ function prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, source
     token = Int64(0)
     for rank in ranks, parameter in Runner.parameter_ndarray_workload(rank)
         token += 1
-        header = Envelope.RequestHeader(
-            controller, instance, token, Runner.PARAMETER_NDARRAY_OPERATION,
-            Int64(30_000_000_000),
-        )
-        command = NdArrayParameter("graph", "parameter", parameter, controller)
-        encoded = Client.encode_request(PROFILE, header, command)
+        command, encoded = preparation_request(controller, instance, token, parameter)
         with_thread_loop_lock(transport.loop) do _
             Endpoint.stage!(scratch, encoded)
         end
@@ -971,7 +1015,7 @@ function run_owner(
     active = selected = nothing
     failures = Exception[]
     try
-        timer = TimerSource(transport.loop, (_, _) -> notify(wake))
+        timer = parameter_timer(transport.loop, wake)
         sources = read_declarations(
             options.config, wake; check = () -> Bootstrap.preparation_check!(runtime)
         )
@@ -993,36 +1037,10 @@ function run_owner(
         )
         # Compile the first sparse update before reporting the owner prepared.
         # The actual endpoint, ticket and payload remain operator-owned.
-        endpoint_type = Endpoint.Endpoint{
-            Profile,ParameterCommand,Lifecycle,ParameterPublisher,typeof(clock)
-        }
-        ticket_type = Endpoint.Ticket{ParameterCommand}
-        command_type = Runner.RunnerCommand{:parameter,Arguments}
-        precompile(Runner.encode_request, (Envelope.RequestHeader, command_type))
-        precompile(Client.decode_request, (Profile, Envelope.RequestHeader, SPA.Struct))
-        precompile(Endpoint.take!, (endpoint_type,))
-        precompile(
-            stage_parameter!,
-            (typeof(runtime), endpoint_type, ticket_type, typeof(sources),
-                Envelope.ControllerIdentity),
-        )
-        for storage in (Vector{Float32}, Runner.ParameterStream)
-            precompile(receive_parameter!, (
-                typeof(runtime), endpoint_type, ticket_type, Source,
-                Envelope.ControllerIdentity, storage,
-            ))
-        end
-        prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, sources, wake, clock)
-        precompile(_completion!, (endpoint_type, ticket_type, Source, Int32, String))
-        precompile(Endpoint.complete!, (endpoint_type, ticket_type, Pod))
-        for delay in (Float64, Nothing)
-            precompile(
-                Core.kwcall,
-                (NamedTuple{(:delay,),Tuple{delay}}, typeof(update_timer!), typeof(timer)),
-            )
-        end
-        precompile(close, (typeof(timer),))
-        precompile(close, (endpoint_type,))
+        endpoint_type = ParameterEndpoint{typeof(clock)}
+        precompile_parameter_dispatch!(typeof(runtime), endpoint_type, ParameterTicket)
+        prepare_parameter_ndarrays!(runtime, endpoint_type, ParameterTicket, sources, wake, clock)
+        precompile_parameter_timer!(typeof(timer))
         for source in sources
             precompile(close, (typeof(source.stream),))
         end
@@ -1203,6 +1221,46 @@ function main(arguments = ARGS)
     return Bootstrap.with_owner(options; application_name = "RTC parameters") do admitted
         run_owner(admitted, admitted.bootstrap_runtime)
     end
+end
+
+function precompile_parameter_codecs!(runtime_type, endpoint_type, ranks)
+    controller = Envelope.ControllerIdentity(UInt32(3), UInt64(4), Int64(5))
+    instance = Int64(1)
+    token = Int64(0)
+    for rank in ranks, parameter in Runner.parameter_ndarray_workload(rank)
+        token += 1
+        command, encoded = preparation_request(controller, instance, token, parameter)
+        header, decoded = Client.decode_request(PROFILE, encoded)
+        request = Endpoint.requested_event(header, decoded, UInt8[], Int64(0))
+        precompile(Hsm.dispatch!, (endpoint_type, Symbol, typeof(request)))
+        reply = Envelope.ReplyHeader(header.controller, instance, token, header.operation, Int32(0))
+        Client.decode_completion(PROFILE, Client.encode_completion(
+            PROFILE, reply, decoded.graph, decoded.inlet, Int64(1), true, false, "",
+        ))
+        isconcretetype(runtime_type) && precompile(read_parameter!, (
+            runtime_type, endpoint_type, ParameterTicket, Source,
+            typeof(command), Envelope.ControllerIdentity,
+        ))
+    end
+    return nothing
+end
+
+@compile_workload begin
+    # Infer the production wrappers. Only the value-only codec round trips run
+    # during image generation. Live preparation still uses the installed SDK's
+    # loop, timer, registry and exact declared ranks before owner readiness.
+    clock = Clocks.SystemNanoClock
+    endpoint_type = ParameterEndpoint{clock}
+    runtime_type = Core.Compiler.return_type(Bootstrap.Runtime, Tuple{String,String,Int64})
+    precompile_parameter_codecs!(runtime_type, endpoint_type, Runner.PARAMETER_NDARRAY_PRECOMPILE_RANKS)
+    if isconcretetype(runtime_type)
+        precompile_parameter_dispatch!(runtime_type, endpoint_type, ParameterTicket)
+        precompile(prepare_parameter_ndarrays!, (
+            runtime_type, Type{endpoint_type}, Type{ParameterTicket}, Vector{Source}, Base.Event, clock,
+        ))
+    end
+    timer_type = Core.Compiler.return_type(parameter_timer, Tuple{ThreadLoop,Base.Event})
+    isconcretetype(timer_type) && precompile_parameter_timer!(timer_type)
 end
 
 end # module ParameterSource

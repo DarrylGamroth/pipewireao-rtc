@@ -1029,6 +1029,11 @@ end
     controller = Core.Compiler.return_type(session_controller, Tuple{core,Dict{String,String}})
     types = (core, registry, endpoint, controller)
     if all(isconcretetype, types)
-        prepare_dispatch!(Session{types...,clock})
+        session_type = Session{types...,clock}
+        Base.precompile(prepare_dispatch!, (session_type,))
+        prepare_dispatch!(session_type)
+        for rank in RunnerCodec.PARAMETER_NDARRAY_PRECOMPILE_RANKS
+            prepare_parameter_ndarray!(session_type, rank)
+        end
     end
 end

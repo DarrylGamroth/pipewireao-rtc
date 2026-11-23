@@ -22,6 +22,11 @@ forwarding and publication. With these paths prepared at startup, the
 first edit took 334 ms from Status send to reply. The remaining writes
 took 126–213 ms and the private owner stopped cleanly. [Trace and startup warmup verification](validation/ndarray-first-update-20261123/README.md)
 
+On a matched pair of fresh sessions, moving vector and matrix command handling
+into Julia package precompilation reduced the startup step from 65.162 s to
+0.086 s. The previous build spent 44.212 s waiting for CPU during that
+step. [Package-image comparison](validation/ndarray-first-update-20261123/package-image.md)
+
 ## Published PipeWireAO 4.0.8 SDK and Julia 0.9.6 wrapper — 2026-11-22
 
 A fresh depot resolved the registered wrapper and JLL and verified the

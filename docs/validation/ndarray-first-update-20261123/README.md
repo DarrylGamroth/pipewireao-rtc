@@ -5,7 +5,9 @@ and the same release builds of the GUI bridge, module and browser. The
 RTC baseline was `76c96fb` on the native NDArray branch based on v0.7.28.
 The DM was a simulated 277-actuator mirror. Every run started a fresh RTC
 from prepared package caches and exercised the ordinary scalar edit and
-restore before the first NDArray update.
+restore before the first NDArray update. For the subsequent change that
+stores the compiled methods in the package image, see the
+[package-precompilation comparison](package-image.md).
 
 ## What compiled on the first edit
 
