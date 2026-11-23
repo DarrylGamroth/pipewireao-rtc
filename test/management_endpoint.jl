@@ -1,5 +1,5 @@
 # Standalone local IPC acceptance. Uses only a test-owned native service/worker.
-using Test, JSON, Sockets
+using Test, JSON, Sockets, FITSIO, PipeWireAORTC
 
 const ENDPOINT = get(ENV, "PIPEWIREAO_MANAGEMENT_BINARY", "")
 isfile(ENDPOINT) || error("set PIPEWIREAO_MANAGEMENT_BINARY to the built native companion")
@@ -64,6 +64,49 @@ function attach_first(socket, byte, file)
         ) == 1
     end
 end
+
+function receive_artifact(socket)
+    payload = zeros(UInt8, 1)
+    control = zeros(UInt8, 24)
+    vector = Ref(InputVector(pointer(payload), 1))
+    descriptor = GC.@preserve payload control vector begin
+        header = Ref(
+            MessageHeader(
+                C_NULL,
+                0,
+                0,
+                Base.unsafe_convert(Ptr{Cvoid}, vector),
+                1,
+                pointer(control),
+                24,
+                0,
+                0,
+            ),
+        )
+        deadline = time() + 60
+        while true
+            count = ccall(
+                :recvmsg,
+                Cssize_t,
+                (Cint, Ref{MessageHeader}, Cint),
+                reinterpret(Cint, Base._fd(socket)),
+                header,
+                0x40000000, # MSG_CMSG_CLOEXEC
+            )
+            count == 1 && break
+            (count < 0 && Libc.errno() == Libc.EAGAIN && time() < deadline) ||
+                error("artifact reply did not arrive")
+            sleep(0.01)
+        end
+        header[].flags & 0x08 == 0 && header[].controllen == 24 || # MSG_CTRUNC
+            error("missing artifact descriptor: " * String(payload) * readline(socket))
+        @test unsafe_load(Ptr{Csize_t}(pointer(control))) == 20
+        @test unsafe_load(Ptr{Cint}(pointer(control) + 8)) == 1 # SOL_SOCKET
+        @test unsafe_load(Ptr{Cint}(pointer(control) + 12)) == 1 # SCM_RIGHTS
+        unsafe_load(Ptr{Cint}(pointer(control) + 16))
+    end
+    return JSON.parse(String(payload) * readline(socket)), Base.fdio(descriptor, true)
+end
 function submit(path, request; input = nothing, disconnect = false)
     socket = connect(path)
     text = JSON.json(request) * "\n"
@@ -119,6 +162,62 @@ function start_service(directory; idle = 2, deadline = 3, activation = false)
     wait_until(() -> ispath(socket) || !process_running(process))
     process_running(process) || error(read(joinpath(directory, "service.log"), String))
     return process, socket
+end
+
+@testset "original FITS descriptor from the catalog owner" begin
+    mktempdir() do directory
+        script = "using PipeWireAORTC\nPipeWireAORTC.ManagementCLI.serve()\n"
+        write(joinpath(directory, "worker.jl"), script)
+        input = joinpath(directory, "source.fits")
+        FITS(input, "w") do fits
+            write(fits, Float32[9])
+            write(fits, reshape(Float32[1, 2, 3, 4, 5, 6], 2, 3))
+            write_key(fits[2], "BUNIT", "adu")
+        end
+        bytes = read(input)
+        process, path = start_service(directory; deadline = 120)
+        try
+            arguments = Dict(
+                "type" => "Float32", "shape" => [3, 2], "hdu" => 2, "axes" => [2, 1],
+                "label" => "Matrix", "scope" => "science",
+            )
+            registered = open(input) do descriptor
+                submit(path, envelope("register"; arguments); input = descriptor)
+            end
+            registered["ok"] || error("catalog registration failed: $registered")
+            @test registered["ok"]
+            artifact = registered["result"]
+            request = envelope("read-artifact"; arguments = Dict("id" => artifact["id"]))
+            socket = connect(path)
+            try
+                println(socket, JSON.json(request))
+                flush(socket)
+                reply, output = receive_artifact(socket)
+                try
+                    @test reply["id"] == request["id"]
+                    @test reply["ok"]
+                    @test reply["result"] == artifact
+                    @test read(output) == bytes
+                    @test ccall(
+                        :fcntl, Cint, (Cint, Cint), Base.fd(output), 1034, # F_GET_SEALS
+                    ) & 0x0f == 0x0f
+                finally
+                    close(output)
+                end
+            finally
+                close(socket)
+            end
+            @test !ispath(joinpath(directory, "configuration", "materialized"))
+            @test !submit(
+                path, envelope("read-artifact"; arguments = Dict("id" => artifact["id"], "path" => input))
+            )["ok"]
+            @test !submit(
+                path, envelope("receipt"; domain = MANAGEMENT, arguments = Dict("id" => request["id"]))
+            )["ok"]
+        finally
+            stop_service(process)
+        end
+    end
 end
 
 const WORKER = raw"""

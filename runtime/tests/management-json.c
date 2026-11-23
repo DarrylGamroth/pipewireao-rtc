@@ -136,7 +136,9 @@ invalid_envelopes (void)
   for (int i = 0; invalid[i]; i++)
     {
       gboolean admitted = FALSE, ok = TRUE;
-      g_autoptr (json_object) response = dispatch (&management, invalid[i], -1, &admitted);
+      int artifact_fd = -1;
+      g_autoptr (json_object) response = dispatch (&management, invalid[i], -1, &admitted, &artifact_fd);
+      g_assert_cmpint (artifact_fd, ==, -1);
       g_assert_false (admitted);
       g_assert_true (boolean_member (response, "ok", &ok));
       g_assert_false (ok);
@@ -171,13 +173,15 @@ receipt_compatibility (void)
   g_assert_cmpstr (json_object_to_json_string_ext (member (result, "coefficient"), JSON_FORMAT), ==,
                    "1.234567890123456789e-123");
   gboolean admitted = FALSE;
+  int artifact_fd = -1;
   g_autoptr (json_object) duplicate
       = dispatch (&management,
                   "{\"protocol\":\"pipewireao.management/"
                   "1\",\"id\":\"00000000000000000000000000000001\","
                   "\"request\":{\"protocol\":\"pipewireao.configuration/"
                   "1\",\"op\":\"get\",\"arguments\":{}}}",
-                  -1, &admitted);
+                  -1, &admitted, &artifact_fd);
+  g_assert_cmpint (artifact_fd, ==, -1);
   g_assert_true (admitted);
   g_mutex_unlock (&management.operation);
   g_assert_cmpstr (string_member (duplicate, "error"), ==,

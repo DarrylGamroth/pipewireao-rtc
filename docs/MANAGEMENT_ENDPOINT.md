@@ -52,6 +52,15 @@ path for the existing handler. It never opens a browser/client-supplied path.
 Other operations reject descriptors. Reading a bounded descriptor retains inode
 lifetime across client unlink/exit; conversion/registration remain owner work.
 
+The read-only `read-artifact` operation takes a catalog ID. On success, the
+companion attaches one sealed anonymous descriptor to the first response byte
+with SCM_RIGHTS. It contains the original registered FITS snapshot. The JSON
+result identifies the catalog entry and its preparation manifest. Consumers
+verify the snapshot digest and apply the recorded HDU, axes, units and layout
+when preparing parameter values. A rejected fetch returns no descriptor.
+The existing `get` operation remains available to clients requesting a
+filesystem materialization.
+
 Reply:
 
 ```json

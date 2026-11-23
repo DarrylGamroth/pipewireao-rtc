@@ -25,30 +25,20 @@ registration(request, arguments, path, parent) =
 function registration(request, arguments, path::AbstractString, parent)
     occursin(Regex("^/proc/$parent/fd/[0-9]+\$"), path) ||
         throw(ArgumentError("registration requires an owner-retained input descriptor"))
-    # This is the one intentional proc-fd boundary. Artifacts.snapshot continues
-    # rejecting symlinks and reads only our private regular-file copy below.
+    # Only the retained descriptor may supply the bounded original FITS snapshot.
     return open(path, "r") do input
         before = stat(input)
         isfile(before) && 0 <= before.size <= Artifacts.MAX_FITS_BYTES ||
             throw(ArgumentError("registration input must be a bounded regular file"))
-        mktemp() do temporary, output
-            buffer = Vector{UInt8}(undef, min(1024 * 1024, before.size))
-            remaining = before.size
-            while remaining > 0
-                count = min(length(buffer), remaining)
-                read!(input, view(buffer, 1:count))
-                write(output, view(buffer, 1:count))
-                remaining -= count
-            end
-            flush(output)
-            after = stat(input)
-            (before.size, before.mtime, before.ctime) ==
-            (after.size, after.mtime, after.ctime) ||
-                throw(ArgumentError("registration input changed during transfer"))
-            owned = copy(request)
-            owned["arguments"] = merge(arguments, Dict("path" => temporary))
-            ConfigurationStoreCLI.request_result(owned)
-        end
+        original = read(input, before.size)
+        after = stat(input)
+        length(original) == before.size &&
+        (before.size, before.mtime, before.ctime) == (after.size, after.mtime, after.ctime) ||
+            throw(ArgumentError("registration input changed during transfer"))
+        root = get(request, "root", ConfigurationStore.default_root())
+        ConfigurationStoreCLI.register(
+            ConfigurationStoreCLI.configuration_store(root), arguments; original,
+        )
     end
 end
 

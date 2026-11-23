@@ -211,13 +211,20 @@ function register!(
     metadata = Dict{String,Any}(),
     schema = "",
 ) where {T}
+    original = Artifacts.snapshot(source.path; check = () -> nothing)
+    return register_snapshot!(store, source, T, shape, original; label, scope, metadata, schema)
+end
+
+function register_snapshot!(
+    store::Store, source::Artifacts.FITSArtifact, ::Type{T}, shape, original::Vector{UInt8};
+    label, scope, metadata, schema,
+) where {T}
     label = bounded_name(label, "label")
     scope = artifact_scope(scope)
     schema = bounded_name(schema, "schema"; empty = true)
     checked_metadata(metadata)
     T in Artifacts.TARGET_TYPES || throw(ArgumentError("unsupported target type"))
     Artifacts.checked_shape(shape, sizeof(T))
-    original = Artifacts.snapshot(source.path; check = () -> nothing)
     prepared = Artifacts.prepare_snapshot(source, T, shape, original)
     provenance = copy(prepared.provenance)
     delete!(provenance, "source")
@@ -376,6 +383,10 @@ end
 Return catalog metadata after verifying the pinned Git manifest, tree and original bytes.
 """
 function get_artifact(store::Store, id::AbstractString)
+    return first(verified_artifact(store, id))
+end
+
+function verified_artifact(store::Store, id::AbstractString)
     id = checked_oid(store, id)
     record = database(store) do db
         for row in DBInterface.execute(db, "SELECT * FROM artifacts WHERE id=?", (id,))
@@ -395,16 +406,14 @@ function get_artifact(store::Store, id::AbstractString)
     tree = git_text(store.repository, "ls-tree", commit)
     expected = "100644 blob $(record["id"])\tmanifest.json\n100644 blob $(record["content_oid"])\toriginal.fits"
     tree == expected || throw(ArgumentError("artifact Git tree differs from catalog"))
-    read_blob(store, record["content_oid"])
-    return record
+    return record, read_blob(store, record["content_oid"])
 end
 """
     read_artifact(store, id)
 
 Read and verify the exact original FITS bytes by immutable catalog identity.
 """
-read_artifact(store::Store, id::AbstractString) =
-    read_blob(store, get_artifact(store, id)["content_oid"])
+read_artifact(store::Store, id::AbstractString) = last(verified_artifact(store, id))
 """
     materialize!(store, id; storage_order="row-major")
 
@@ -413,10 +422,9 @@ Publish verified read-only transport cache bytes and retain them until explicit 
 function materialize!(store::Store, id::AbstractString; storage_order = "row-major")
     storage_order in ("row-major", "column-major") ||
         throw(ArgumentError("unsupported storage order"))
-    record = get_artifact(store, id)
+    record, original = verified_artifact(store, id)
     preparation = record["manifest"]["preparation"]
     T = only(filter(T -> string(T) == preparation["target_type"], Artifacts.TARGET_TYPES))
-    original = read_artifact(store, id)
     source = Artifacts.FITSArtifact(
         "catalog-snapshot"; hdu = preparation["hdu"], axes = preparation["axes"]
     )
