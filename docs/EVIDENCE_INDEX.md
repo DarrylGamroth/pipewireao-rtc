@@ -22,6 +22,20 @@ was 396.732 and 430.600 µs. The [verification record](validation/rtc-0728-runni
 includes the sealed application and command receipts, preparation failures,
 cache and receiver build requirements, and raw timing evidence.
 
+## Agent.jl polling in MediaSession — 2026-11-22
+
+Across three paired private-core runs, median public control acknowledgement
+fell from 3.886 to 1.762 ms at 100 scheduled requests/s and from 4.502 to
+2.390 ms in serial bursts. Quiet CPU ranges overlapped and the largest
+observed deadline overshoot occurred in the candidate. All 9,216 timed
+replies correlated. The [trial record](validation/session-agent-idle-20261122/README.md)
+covers task fairness, effect scheduling, process shutdown and the limits
+of this software fixture.
+
+The [installed GPI2 comparison](validation/session-agent-idle-20261122/GPI2.md)
+covers two shutdown paths per RTC, live package identity, advancing science
+streams, operator latency distributions, CPU and cleanup.
+
 ## PipeWireAORTC 0.7.28 clean install — 2026-11-22
 
 With an empty project and depot on Julia 1.13.3, adding only
