@@ -1001,6 +1001,8 @@ function Base.close(client::Client)
     try
         client.closed = true
         with_thread_loop_lock(client.loop) do _
+            # Freeze the trace even if a native close leaves the loop running.
+            client.observation.trace = nothing
             for resource in (
                 client.timer,
                 client.node,

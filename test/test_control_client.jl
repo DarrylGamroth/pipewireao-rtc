@@ -217,7 +217,7 @@ mutable struct CountingNanoClock <: Clocks.AbstractNanoClock
 end
 Clocks.time_nanos(clock::CountingNanoClock) = (clock.reads += 1; clock.value)
 
-function clock_client(clock)
+function clock_client(clock; trace = nothing)
     return Client.Client(
         ThreadLoop("clock-contract"),
         nothing,
@@ -226,7 +226,7 @@ function clock_client(clock)
         nothing,
         nothing,
         nothing,
-        Client.Observation(TestProfile(), Int64(23), UInt32(getpid())),
+        Client.Observation(TestProfile(), Int64(23), UInt32(getpid()); trace),
         "owner",
         "marker",
         Int64(17),
@@ -241,6 +241,19 @@ function clock_client(clock)
         ReentrantLock();
         clock,
     )
+end
+
+@testset "close freezes the trace before native resource teardown" begin
+    trace = Client.Trace(TestProfile())
+    client = clock_client(CountingNanoClock(0, 0); trace)
+    source = TimerSource(client.loop, (_, _) -> nothing)
+    try
+        @test_throws CompositeException close(client)
+        @test client.observation.trace === nothing
+    finally
+        close(source)
+        close(client.loop)
+    end
 end
 
 @testset "one decision sample and fresh native submission guards" begin
