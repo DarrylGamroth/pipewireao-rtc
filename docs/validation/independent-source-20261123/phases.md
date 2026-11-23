@@ -11,6 +11,19 @@ The [zoomable event trace](cal2-timeline.trace.json) opens in Perfetto or anothe
 Chrome Trace Event viewer. Each graph slice includes the duration the application
 measured inside the call. The slice edges use journal receipt times.
 
+## What the three process names mean
+
+| Name in the measurements | What it does in this instrument | When it runs |
+| --- | --- | --- |
+| **Preparation helper** (`prepare`) | Reads the CAL2 deployment, identifies the existing private core and simulator, starts the SCC and LLOWFS controller processes, and writes their process identities and the configuration for this RTC launch. | A one-time systemd command. It exits before the RTC main process starts. |
+| **RTC coordinator** (`MediaSession`) | Finds the declared camera and controller ports, creates the PipeWire Links between them, keeps the controllers held until admission, and handles Start, Stop and Reset. The separate SCC and LLOWFS processes perform the image calculations. | The main RTC process. It stays alive during observing. |
+| **Publication helper** (`publish`) | Connects to that particular RTC, waits for its connected and held state, verifies actual CPU and thread placement and process identities, sends Admit and asks for fresh Status. It writes the discovery record that tools use to find the ready session. Camera frames come from the independent source throughout. | A one-time systemd command that runs alongside the coordinator. Its successful return completes service startup. |
+
+The repeated 190.9 s and 37.8 s labels on the earlier CPU chart identified
+the **total startup time for two different launches**. In the chart below,
+A and B identify those same launches on every row. The numbers at the end
+of each bar give that thread's CPU execution and runnable wait, in seconds.
+
 ## Service phases
 
 The top lane partitions the operator's wait. The rows below it show processes
@@ -20,11 +33,11 @@ time waiting for another process.
 
 | Phase and time from request | Elapsed | What happens | Why it matters |
 | --- | ---: | --- | --- |
-| Prepare, 0–14.57 s | 14.57 s | The systemd preparation helper validates the deployment, identifies the running core and source, starts the SCC and LLOWFS controller services, and writes the configuration for this RTC invocation. The RTC main process starts at the end of this interval. | A replacement RTC needs the identities of the processes and endpoints that exist now. Stale identifiers could attach it to the wrong instance. |
-| Initialize, 14.57–30.33 s | 15.77 s | The RTC constructs its MediaSession, opens its PipeWire connection and prepares its command handlers. A second systemd helper starts, checks the launch record and RTC process, and reaches its first logged endpoint wait. Both processes run during this interval. | The RTC needs a control endpoint that can receive a request and give a correlated reply. A new process ID alone cannot establish that. |
+| Start the controllers, 0–14.57 s | 14.57 s | The systemd preparation helper validates the deployment, identifies the running core and source, starts the SCC and LLOWFS controller services, and writes the configuration for this RTC invocation. The RTC main process starts at the end of this interval. | A replacement RTC needs the identities of the processes and endpoints that exist now. Stale identifiers could attach it to the wrong instance. |
+| Open RTC control, 14.57–30.33 s | 15.77 s | The RTC constructs its MediaSession, opens its PipeWire connection and prepares its command handlers. A second systemd helper starts, checks the launch record and RTC process, and reaches its first logged endpoint wait. Both processes run during this interval. | The RTC needs a control endpoint that can receive a request and give a correlated reply. A new process ID alone cannot establish that. |
 | Connect, 30.33–35.13 s | 4.79 s | The helper connects to the control endpoint belonging to the expected RTC process and instance. It then starts querying the session's preparation state. | Commands and status must come from this incarnation, especially when the previous RTC used the same node name. |
-| Check session preparation, 35.13–51.11 s | 15.99 s | The helper polls the native `Warmup` operation. MediaSession coordinates its graph owners, discovers endpoints, establishes the declared Links and confirms the execution groups are held. The positive reply still reports `Configuring`. The independent camera source keeps publishing. | A process can exist and a graph can execute locally while the wrong ports are linked or a controller is already running. This gate establishes the intended, connected, held session. |
-| Admit and publish Ready, 51.11–58.29 s | 7.17 s | The helper rechecks the process identities and actual placement, sends `Admit`, requires a fresh native `Status` confirming `Ready`, then publishes the discovery record. The service start request returns. | The operator can address this particular RTC and trust that its live session passed admission. `Ready` permits a later `Start`. |
+| Check that the Links exist and graphs are held, 35.13–51.11 s | 15.99 s | The helper polls the native `Warmup` operation. MediaSession coordinates its graph owners, discovers endpoints, establishes the declared Links and confirms the execution groups are held. The positive reply still reports `Configuring`. The independent camera source keeps publishing. | A process can exist and a graph can execute locally while the wrong ports are linked or a controller is already running. This gate establishes the intended, connected, held session. |
+| Confirm and announce Ready, 51.11–58.29 s | 7.17 s | The helper rechecks the process identities and actual placement, sends `Admit`, requires a fresh native `Status` confirming `Ready`, then publishes the discovery record. The service start request returns. | The operator can address this particular RTC and trust that its live session passed admission. `Ready` permits a later `Start`. |
 
 The trace records when the helper observes milestones. Owner preparation and
 Link establishment can begin before the helper starts polling. The last 7.17 s
