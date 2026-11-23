@@ -155,7 +155,9 @@ exited successfully, and cleanup removed every private child service.
 
 ## Software checks
 
-The RTC core suite passed 10,798 assertions in 515 testsets on Julia 1.13.4.
+The final RTC core suite passed 10,769 assertions in 515 testsets on Julia
+1.13.4. The initial warmup passed the same 515 testsets. The concurrent
+snapshot test collected 80 assertions in that run and 51 in the final run.
 The focused codec, golden-vector, deadline and private-core checks passed
 50 assertions, including the scratch-publication isolation check.
 
