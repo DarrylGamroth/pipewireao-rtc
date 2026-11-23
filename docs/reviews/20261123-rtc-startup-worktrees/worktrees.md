@@ -85,3 +85,19 @@ checkouts was removed by this review.
   released RTC containing the install-time qualification and live close gate.
   Carry that branch to the next compatible release. This is the instrument
   dependency relevant to this review. The census covers RTC.
+
+## Cleanup after the inventory
+
+Eleven clean RTC worktrees were removed against local `main@786a483`.
+The first eight tips below were reachable from main. For the other three,
+every branch-side patch matched one on main.
+
+| Relationship | Removed checkout tips |
+| --- | --- |
+| In main's history | `e0fe1e7`, `01c5537`, `c2c5ad5` (two checkouts), `5ffcaa7`, `a8b2029`, `52eda81`, `22f8b94` |
+| Equivalent patches on main | `e46035f` (two), `0ee4c0e` (one), `7af920a` (four) |
+
+The cleanup preserved the named branches. Before removal each checkout was
+checked for local changes, ignored files, active processes and references from
+installed applications and systemd units. The older stop-deadline checkout
+at `ccaa1d5` still had three local changes.
