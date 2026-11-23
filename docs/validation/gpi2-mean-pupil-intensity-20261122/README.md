@@ -1,6 +1,28 @@
 # GPI2 mean-pupil-intensity display
 
-## Qualified sources
+## Published versions after the upstream rebase
+
+FilterGraphPipeWire 0.5.11 at `e50809c` has package tree
+`601d7d8e32d4a818e3410b3c66bc943a0eca1ee0`. PipeWireAORTC 0.7.29 at
+`01c5537` has tree `3dc5cbca8c11f5035a1ac8a4ef11a26cf340d5a8`.
+The GPI2 instrument at `356f441` pins both versions. A fresh GPI2 project
+resolved these pins from the public registry without a prior Manifest or either
+package in its depot. Both downloaded source trees matched the registry and
+the trees used for replay. The fresh resolve also passed all 30 exported profile
+checks. [Graph-host tag](https://github.com/DarrylGamroth/JuliaFilterGraph.jl/tree/FilterGraphPipeWire-v0.5.11) · [RTC tag](https://github.com/DarrylGamroth/pipewireao-rtc/tree/v0.7.29) · [Registry entries](https://github.com/DarrylGamroth/PackageRegistry/commit/d1f51fb7ba29e872b1a2832134a0782591670554) · [Instrument](https://github.com/DarrylGamroth/adaptive-optics-simulations/commit/356f441101968b42415698b796e5db217cdc9e34)
+
+With the released cohort's other dependencies held fixed, all 62 command
+triples in each rebased profile matched the 0.7.28 capture byte for byte.
+The live replay held a viewer buffer, removed the optional Link, observed
+serial 153 replaced by 229, and checked scalar identities after reattachment.
+The rebased RTC passed 10,638 core assertions and 394 focused assertions.
+The graph-host observer passed 132 assertions with registered graph
+dependencies and again with the rebased monorepo sources. The responsive
+native woofer fixture passed all 19 assertions. The installed lockstep
+simulator's acknowledgement after required woofer loss remains open.
+The installed fault evidence below belongs to the pre-rebase cohort.
+
+## Initial qualification sources
 
 | Component | Revision |
 |---|---|

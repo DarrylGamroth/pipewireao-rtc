@@ -3,7 +3,8 @@
 ## GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
 
 The [qualification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)
-covers the two exported profiles, the native copy queue, reattachment,
+records the published 0.7.29 package tree, public install, captured-exposure
+comparison, the two profiles, the native copy queue, reattachment,
 science commands and the source's response to required woofer Link loss.
 
 ## Independent source and fixed-pupil CAL2 startup — 2026-11-23 Pacific
