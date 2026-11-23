@@ -155,8 +155,9 @@ journals. A target service-to-Ready deadline remains an operational decision.
 ## Order of work
 
 1. Use one RTC integration checkout for the native NDArray series and existing
-   CAL2 changes. Preserve the independent fault review and address its
-   release blockers before promoting an affected build.
+   CAL2 changes. Coordinate changes to MediaSession with the active
+   `fix/source-revocation-quit` worktree. Reuse its fault review and address
+   its release blockers before promoting an affected build.
 2. Use that same baseline to measure the Classic graph interval. Fold any
    applicable result from the old scoped-graph branch into that experiment.
 3. Simplify how the RTC announces Ready once the combined start, failure

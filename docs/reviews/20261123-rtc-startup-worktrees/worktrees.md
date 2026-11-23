@@ -5,7 +5,12 @@ The server advertised `main@2346963`. Local main contained that commit and
 25 more. The [inventory](branches.tsv) records all 260 named local branches,
 their exact commits and corresponding server tips where present. The two
 detached checkouts appear below. These counts exclude the temporary checkout
-used to write this review.
+used to write this review. A final check found a **21st worktree and 261st
+branch** created during the review. `fix/source-revocation-quit` started
+at the fault review's `e3113f5` in `~/workspaces/codex/worktrees/rtc-source-revocation`
+and had an edit to `src/media_session/machine.jl`. This is the active
+repair for the fault work. Coordinate session changes with that worker. The
+tables retain their original snapshot so the recorded counts reconcile.
 
 | Relation to local main | Local branches | Interpretation |
 | --- | ---: | --- |
