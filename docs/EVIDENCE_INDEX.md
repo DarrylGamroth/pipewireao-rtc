@@ -10,7 +10,10 @@ each published frame. [Timing and full ledgers](validation/gpi2-traced-replay-20
 
 The [fresh-depot startup record](validation/hil-installed-startup-20261122/README.md)
 tracks the GPI2 optical cache and the fitted SPIDERS command receiver with
-the same RTC, binding and native versions.
+the same RTC, binding and native versions. On GPI2, the generated launcher
+reached Ready in 54.0 s across a full managed lifecycle. In a separate
+CAL2 optical test, reusing the fixed synthetic pupil reduced warmup from
+226.3 s to 42.2 s with byte-identical outputs. [Startup experiments](validation/hil-installed-startup-20261122/startup-performance.md)
 
 ## RTC 0.7.28 managed simulation and GPI2 replay — 2026-11-22
 

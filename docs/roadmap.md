@@ -26,10 +26,12 @@ covers the HIL changes for the optical cache and synchronous command receiver.
 
 Newly installed session launchers select `-O0` for the one-shot `prepare` and
 `publish` commands. On the same sealed GPI2 CPU installation, ordinary runs
-reached Ready in 61.8 s and 63.1 s, and the `-O0` run reached Ready in 55.7 s.
+reached Ready in 61.8 s and 63.1 s. The generated launcher reached Ready in
+54.0 s.
 Each trial also passed Start, live frame observation, Stop and native Quit.
 Installer checks retain the exact byte format of explicitly sealed launchers
-with the same executable, project and export commit.
+with the same executable, project and export commit. The [startup experiments](validation/hil-installed-startup-20261122/startup-performance.md)
+also isolate repeated CAL2 fixed-pupil optical propagation during simulator warmup.
 
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 

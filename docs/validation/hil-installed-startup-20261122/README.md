@@ -61,7 +61,9 @@ a shared wait for endpoint discovery and owner preparation, which includes
 simulator work. Neither that wait nor coordinator lifetime measures
 standalone RTC CPU demand. Host activity and cache state differed between
 invocations. The data support individual timelines rather than a fixed
-controller startup cost.
+controller startup cost. The [startup experiments](startup-performance.md)
+measure the effects of Julia launcher options, management CPU placement and
+repeated CAL2 optical propagation.
 
 ## Dependency and application identity
 
@@ -111,7 +113,7 @@ receiver selector passed 38 checks, including synchronous receive, reset
 and Julia allocation checks, with the native compiler disabled in the
 receiver process. Its first attempt exhausted the Unix-domain socket path
 length in a nested temporary directory. It passed with a shorter private
-socket path.
+socket path. [Focused test logs](startup-experiments.tar.gz)
 
 ## Reproduction
 
