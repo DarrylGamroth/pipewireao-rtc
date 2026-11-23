@@ -24,7 +24,9 @@ function queue_spec(session, core, name, stem, media)
     wire = getproperty(NdArray, Symbol(port["element-type"]))
     type = wire == NdArray.U16_LE ? UInt16 : Float32
     wire in (NdArray.U16_LE, NdArray.F32_LE) || error("Unsupported element type for $output")
-    get(port, "layout", "ROW_MAJOR") == "ROW_MAJOR" || error("Unexpected layout for $output")
+    # An unconstrained port can negotiate the observer's row-major offer.
+    get(port, "layout", nothing) in (nothing, "ROW_MAJOR") ||
+        error("Unexpected layout for $output")
     rate = get(port, "rate", nothing)
     return (name = name, node = output, media = media, type, wire,
         shape = Tuple(Int.(port["shape"])), schema = port["schema"],
