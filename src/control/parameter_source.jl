@@ -1,4 +1,4 @@
-"""Cold parameter-only control and sparse ndarray output; RTC owns session policy."""
+"""Cold parameter control and sparse ndarray publication; RTC owns session policy."""
 module ParameterSource
 
 using PipeWireAO
@@ -50,8 +50,18 @@ const PROFILE = Profile()
 @doc "The parameter source has completed its owner connection." Connected
 @doc "The parameter source has failed; successful submission cannot be assumed." Fault
 @doc "The parameter source has stopped." Stopped
-"""Runner parameter command, restricted to the `:parameter` operation."""
+"""Released path-based parameter command."""
 const Command = Runner.RunnerCommand{:parameter}
+
+"The admitted session request and original native controller forwarded by the RTC."
+struct NdArrayParameter{P<:Runner.ParameterNdArray}
+    graph::String
+    inlet::String
+    parameter::P
+    controller::Envelope.ControllerIdentity
+end
+
+const ParameterCommand = Union{Command,NdArrayParameter}
 const Arguments = Tuple{String,String,String,Vector{UInt32},String,String}
 Client.profile_name(::Profile) = "pipewireao.rtc.parameter-source/1"
 Client.capability_names(::Profile) = Tuple(
@@ -60,14 +70,37 @@ Client.capability_names(::Profile) = Tuple(
 )
 Client.lifecycle_type(::Profile) = Lifecycle
 Client.operation_id(::Profile, ::Command) = UInt32(14)
+Client.operation_id(::Profile, ::NdArrayParameter) = Runner.PARAMETER_NDARRAY_OPERATION
 Client.encode_request(::Profile, header::Envelope.RequestHeader, command::Command) =
     Runner.encode_request(header, command)
+function Client.encode_request(
+    profile::Profile, header::Envelope.RequestHeader, command::NdArrayParameter
+)
+    base = Runner.RunnerCommand(:parameter_ndarray, command.graph, command.inlet, command.parameter)
+    header.operation == Client.operation_id(profile, command) ||
+        throw(ArgumentError("parameter owner operation differs from command"))
+    Runner._preflight_request(base, sizeof(Envelope.encode_request(header, _struct())))
+    fields = Runner._request_fields(base, base.args).values
+    controller = command.controller
+    push!(fields, Pod(_struct(
+        Pod(SPA.Id(controller.global_id)), Pod(reinterpret(Int64, controller.serial)),
+        Pod(controller.instance),
+    )))
+    return Envelope.encode_request(header, SPA.Struct(fields))
+end
 function Client.decode_request(
     ::Profile, header::Envelope.RequestHeader, payload::SPA.Struct
 )
-    header.operation == 14 ||
-        throw(ArgumentError("parameter source accepts only operation 14"))
-    return Runner.decode_request(header, payload)
+    header.operation == 14 && return Runner.decode_request(header, payload)
+    header.operation == Runner.PARAMETER_NDARRAY_OPERATION && length(payload.values) == 5 ||
+        throw(ArgumentError("unknown parameter owner request"))
+    base = Runner.decode_request(header, SPA.Struct(payload.values[1:4]))
+    identity = Runner._arity(Runner._fields(payload.values[5]), 3)
+    controller = Envelope.ControllerIdentity(
+        Runner._id(identity[1]), reinterpret(UInt64, Runner._long(identity[2])),
+        Runner._long(identity[3]),
+    )
+    return NdArrayParameter(base.args..., controller)
 end
 function Client.decode_request(profile::Profile, input::Union{Pod,AbstractVector{UInt8}})
     header, payload = Envelope.decode_request(input)
@@ -128,7 +161,8 @@ function Client.encode_completion(
     active::Bool,
     message::AbstractString,
 )
-    header.controller !== nothing && header.operation == 14 && header.result <= 0 ||
+    header.controller !== nothing &&
+        header.operation in (14, Runner.PARAMETER_NDARRAY_OPERATION) && header.result <= 0 ||
         throw(ArgumentError("invalid parameter completion header"))
     sequence >= 0 && (!submitted || sequence > 0) && !active ||
         throw(ArgumentError("parameter source cannot claim active adoption"))
@@ -187,9 +221,9 @@ function Client.decode_rejection(::Profile, input::Union{Pod,AbstractVector{UInt
     return Rejection(header, lifecycle, _text(payload.values[2]; empty = true))
 end
 function Client.encode_failure(
-    profile::Profile, header::Envelope.ReplyHeader, ::Lifecycle, command::Command
+    profile::Profile, header::Envelope.ReplyHeader, ::Lifecycle, command::ParameterCommand
 )
-    graph, inlet = command.args[1:2]
+    graph, inlet = parameter_address(command)
     return Client.encode_completion(
         profile,
         header,
@@ -201,6 +235,9 @@ function Client.encode_failure(
         "request expired or controller removed",
     )
 end
+
+parameter_address(command::Command) = command.args[1:2]
+parameter_address(command::NdArrayParameter) = (command.graph, command.inlet)
 
 "The exact applying ingress ticket that authorizes one requested publication."
 struct Publication{E<:Endpoint.Endpoint,T<:Endpoint.Ticket}
@@ -499,6 +536,10 @@ function _publication_valid!(source::Source)
         else
             authority = something(source.publication)
             Endpoint.check_ticket(authority.endpoint, authority.ticket)
+            command = authority.ticket.command
+            if command isa NdArrayParameter
+                parameter_controller(something(authority.endpoint.registry), command.controller)
+            end
         end
         Bootstrap.cancelled(runtime) && throw(InterruptException())
         return true
@@ -646,28 +687,35 @@ function _prepare_source!(source::Source, transport, runtime::Bootstrap.Runtime)
     return nothing
 end
 
-parameter_publisher(wake) = (filter, params) -> begin
-    update_params!(filter, params)
-    notify(wake)
-    nothing
+struct ParameterPublisher
+    wake::Base.Event
+    enabled::Bool
+end
+
+function (publisher::ParameterPublisher)(filter, params)
+    if publisher.enabled
+        update_params!(filter, params)
+        notify(publisher.wake)
+    end
+    return nothing
 end
 
 function _control_endpoint(options, transport, clock, wake)
     return Endpoint.Endpoint(
         PROFILE,
-        Command,
+        ParameterCommand,
         transport.loop,
         transport.core,
         options.control_node,
         options.control_instance,
         Connected;
         clock,
-        publisher = parameter_publisher(wake),
+        publisher = ParameterPublisher(wake, true),
     )
 end
 
 function _completion!(endpoint, ticket, source, result::Int32, message)
-    graph, inlet = ticket.command.args[1:2]
+    graph, inlet = parameter_address(ticket.command)
     sequence, submitted =
         source === nothing ? (Int64(0), false) :
         (source.sequence, source.phase == SUBMITTED)
@@ -681,41 +729,106 @@ function _completion!(endpoint, ticket, source, result::Int32, message)
     completion = Client.encode_completion(
         PROFILE, header, graph, inlet, sequence, submitted, false, message
     )
-    Endpoint.complete!(endpoint, ticket, completion)
+    previous = endpoint.completion
+    try
+        Endpoint.complete!(endpoint, ticket, completion)
+    catch error
+        # The exact ticket may expire after the caller's check but before
+        # Completed rechecks it. Preserve the actual submitted state and
+        # report a negative completion rather than losing the parameter owner.
+        result == 0 && endpoint.pending === ticket && endpoint.completion === previous &&
+            error isa ErrorException && error.msg in (
+                "native owner request deadline expired", "native controller disappeared",
+            ) || rethrow()
+        return _completion!(endpoint, ticket, source, Int32(-Base.Libc.ETIMEDOUT), _message(error))
+    end
     return nothing
 end
 
-function stage_parameter!(runtime, endpoint, active, sources)
+function check_parameter_ticket(runtime, endpoint, active)
+    Bootstrap.preparation_check!(runtime)
+    Endpoint.check_ticket(endpoint, active)
+    return nothing
+end
+
+function read_parameter!(runtime, endpoint, active, source, command::Command, _)
+    _, _, element_type, shape, schema, path = command.args::Arguments
+    element_type == "F32_LE" && shape == source.shape && schema == source.schema ||
+        throw(ArgumentError("parameter request differs from declared type, shape, or schema"))
+    _read_payload!(
+        source.bytes, path; check = () -> check_parameter_ticket(runtime, endpoint, active),
+    )
+    return nothing
+end
+
+function read_parameter!(
+    runtime, endpoint, active, source, command::NdArrayParameter, session_controller
+)
+    active.header.controller == session_controller ||
+        throw(ArgumentError("parameter ndarray requires the admitted session controller"))
+    parameter = command.parameter
+    parameter.format.element_type == source.format.element_type &&
+        parameter.format.shape == source.format.shape &&
+        parameter.format.layout == source.format.layout &&
+        something(parameter.schema, "") == source.schema ||
+        throw(ArgumentError("parameter ndarray differs from its declared format"))
+    receive_parameter!(runtime, endpoint, active, source, command.controller, parameter.data)
+    return nothing
+end
+
+function receive_parameter!(runtime, endpoint, active, source, controller, data::Vector{Float32})
+    with_thread_loop_lock(endpoint.loop) do _
+        parameter_controller(endpoint.registry, controller)
+    end
+    check_parameter_ticket(runtime, endpoint, active)
+    copyto!(source.bytes, reinterpret(UInt8, data))
+    check_parameter_ticket(runtime, endpoint, active)
+    return nothing
+end
+
+function parameter_global(registry, id, serial, interface)
+    global_object = PipeWireAO.find_global(registry, id)
+    global_object !== nothing && global_object.type == interface &&
+        tryparse(UInt64, get(global_object.properties, "object.serial", "")) == serial ||
+        throw(ArgumentError("parameter transfer registry incarnation changed"))
+    return global_object
+end
+
+function parameter_controller(registry, controller::Envelope.ControllerIdentity)
+    object = parameter_global(
+        registry, controller.global_id, controller.serial, "PipeWire:Interface:Node",
+    )
+    # MediaSession proved the original controller profile and instance from
+    # bound NodeInfo. Its authenticated forward pins that Node incarnation.
+    client_id = tryparse(UInt32, get(object.properties, "client.id", ""))
+    client_id !== nothing && client_id != 0 ||
+        throw(ArgumentError("parameter controller client is unavailable"))
+    client = PipeWireAO.find_global(registry, client_id)
+    client !== nothing && client.type == "PipeWire:Interface:Client" &&
+        tryparse(UInt64, get(client.properties, "object.serial", "")) !== nothing ||
+        throw(ArgumentError("parameter controller client incarnation is unavailable"))
+    return client_id
+end
+
+include("parameter_stream.jl")
+
+function stage_parameter!(runtime, endpoint, active, sources, session_controller)
     selected = nothing
     staged = false
     try
-        graph, inlet, element_type, shape, schema, path = active.command.args::Arguments
+        graph, inlet = parameter_address(active.command)
         index = findfirst(
             source -> source.graph == graph && source.inlet == inlet,
             sources,
         )
         index === nothing && throw(ArgumentError("no declared parameter mapping"))
         selected = sources[index]
-        element_type == "F32_LE" &&
-        shape == selected.shape &&
-        schema == selected.schema || throw(
-            ArgumentError(
-                "parameter request differs from declared type, shape, or schema",
-            ),
-        )
         with_thread_loop_lock(endpoint.loop) do _
             selected.phase == IDLE || throw(
                 ArgumentError("parameter publication already pending")
             )
         end
-        _read_payload!(
-            selected.bytes,
-            path;
-            check = () -> begin
-                Bootstrap.preparation_check!(runtime)
-                Endpoint.check_ticket(endpoint, active)
-            end,
-        )
+        read_parameter!(runtime, endpoint, active, selected, active.command, session_controller)
         with_thread_loop_lock(endpoint.loop) do _
             Endpoint.check_ticket(endpoint, active)
             selected.sequence < typemax(Int64) ||
@@ -763,6 +876,55 @@ function stage_parameter!(runtime, endpoint, active, sources)
     return selected
 end
 
+function prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, sources, wake, clock)
+    ranks = sort!(unique(length(source.shape) for source in sources))
+    isempty(ranks) && return nothing
+    controller = Envelope.ControllerIdentity(UInt32(3), UInt64(4), Int64(5))
+    controller_proof = Endpoint.Controller(
+        controller.global_id, controller.serial, controller, "unpublished-parameter-preparation",
+        UInt32(getpid()), nothing, true, false, false,
+    )
+    instance = Int64(1)
+    completion = Envelope.encode_completion(
+        Envelope.ReplyHeader(instance, Int32(0)), _struct(); endpoint = :lifecycle,
+    )
+    rejection = Client.encode_rejection(
+        PROFILE, Envelope.ReplyHeader(instance, Int32(-Base.Libc.EINVAL)), Connected,
+    )
+    transport = runtime.transport
+    # Use the running bootstrap loop only for the Endpoint's local state
+    # checks. The scratch endpoint has no registry, does not publish any
+    # Props, and has no parameter output stream. Its publisher has the same
+    # concrete type as the live endpoint's publisher.
+    scratch = endpoint_type(
+        PROFILE, transport.loop, nothing, transport.endpoint.filter, instance, Connected,
+        ParameterPublisher(wake, false), [controller_proof], nothing, Int64(0), nothing,
+        completion, rejection, nothing, false, controller, clock, nothing,
+    )
+    token = Int64(0)
+    for rank in ranks, parameter in Runner.parameter_ndarray_workload(rank)
+        token += 1
+        header = Envelope.RequestHeader(
+            controller, instance, token, Runner.PARAMETER_NDARRAY_OPERATION,
+            Int64(30_000_000_000),
+        )
+        command = NdArrayParameter("graph", "parameter", parameter, controller)
+        encoded = Client.encode_request(PROFILE, header, command)
+        with_thread_loop_lock(transport.loop) do _
+            Endpoint.stage!(scratch, encoded)
+        end
+        active = Endpoint.take!(scratch)
+        active !== nothing || error("parameter dispatch preparation did not stage its request")
+        Endpoint.check_ticket(scratch, active)
+        _completion!(scratch, active, (; sequence = Int64(1), phase = SUBMITTED), Int32(0), "")
+        precompile(read_parameter!, (
+            typeof(runtime), endpoint_type, ticket_type, Source,
+            typeof(command), Envelope.ControllerIdentity,
+        ))
+    end
+    return nothing
+end
+
 """
     run_owner(options, runtime; clock=runtime.transport.endpoint.clock)
 
@@ -801,17 +963,25 @@ function run_owner(
         # Compile the first sparse update before reporting the owner prepared.
         # The actual endpoint, ticket and payload remain operator-owned.
         endpoint_type = Endpoint.Endpoint{
-            Profile,Command,Lifecycle,typeof(parameter_publisher(wake)),typeof(clock)
+            Profile,ParameterCommand,Lifecycle,ParameterPublisher,typeof(clock)
         }
-        ticket_type = Endpoint.Ticket{Command}
+        ticket_type = Endpoint.Ticket{ParameterCommand}
         command_type = Runner.RunnerCommand{:parameter,Arguments}
         precompile(Runner.encode_request, (Envelope.RequestHeader, command_type))
         precompile(Client.decode_request, (Profile, Envelope.RequestHeader, SPA.Struct))
         precompile(Endpoint.take!, (endpoint_type,))
         precompile(
             stage_parameter!,
-            (typeof(runtime), endpoint_type, ticket_type, typeof(sources)),
+            (typeof(runtime), endpoint_type, ticket_type, typeof(sources),
+                Envelope.ControllerIdentity),
         )
+        for storage in (Vector{Float32}, Runner.ParameterStream)
+            precompile(receive_parameter!, (
+                typeof(runtime), endpoint_type, ticket_type, Source,
+                Envelope.ControllerIdentity, storage,
+            ))
+        end
+        prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, sources, wake, clock)
         precompile(_completion!, (endpoint_type, ticket_type, Source, Int32, String))
         precompile(Endpoint.complete!, (endpoint_type, ticket_type, Pod))
         precompile(close, (typeof(timer),))
@@ -875,7 +1045,9 @@ function run_owner(
                     selected = nothing
                     delay = max(1, Common.remaining_ns(active.deadline, at)) / 1e9
                     update_timer!(timer; delay)
-                    selected = stage_parameter!(runtime, endpoint, active, sources)
+                    selected = stage_parameter!(
+                        runtime, endpoint, active, sources, connect_ticket.header.controller,
+                    )
                     if selected === nothing
                         update_timer!(timer; delay = nothing)
                         active = nothing

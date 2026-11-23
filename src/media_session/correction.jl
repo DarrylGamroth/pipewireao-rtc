@@ -433,8 +433,13 @@ function finish_properties!(
 end
 update_properties!(runtime, job, command::RunnerCodec.RunnerCommand{:properties_set}) =
     update_properties!(runtime, job, job.ticket.origin, command.args)
-function submit_parameter!(runtime, job, payload::Tuple)
-    name, inlet = payload[1:2]
+submit_parameter!(runtime, job, payload::Tuple) =
+    submit_parameter!(runtime, job, RunnerCodec.RunnerCommand(:parameter, payload...))
+
+function submit_parameter!(runtime, job, command::Union{
+    RunnerCodec.RunnerCommand{:parameter},ParameterSource.NdArrayParameter,
+})
+    name, inlet = ParameterSource.parameter_address(command)
     handle = get(runtime.graphs, name, UInt64(0))
     handle != 0 || throw(ArgumentError("undeclared scientific graph"))
     check_parameter_correction(named_properties!(runtime, job, handle))
@@ -456,18 +461,24 @@ function submit_parameter!(runtime, job, payload::Tuple)
     end
     declaration !== nothing && runtime.parameters !== nothing ||
         throw(ArgumentError("parameter inlet has no captured publisher"))
-    reply = request_owner!(
-        runtime, job, runtime.parameters, RunnerCodec.RunnerCommand(:parameter, payload...)
-    )
-    reply.graph == name &&
-    reply.inlet == inlet &&
-    reply.sequence > 0 &&
-    reply.submitted &&
-    !reply.active_adoption_observed ||
+    if command isa ParameterSource.NdArrayParameter
+        port = only(declaration["ports"])
+        parameter = command.parameter
+        string(parameter.format.element_type) == port["element-type"] &&
+            parameter.format.shape == Tuple(port["shape"]) &&
+            string(parameter.format.layout) == get(port, "layout", "ROW_MAJOR") &&
+            something(parameter.schema, "") == get(port, "schema", "") ||
+            throw(ArgumentError("parameter ndarray differs from its declared format"))
+    end
+    reply = request_owner!(runtime, job, runtime.parameters, command)
+    reply.graph == name && reply.inlet == inlet && !reply.active_adoption_observed ||
+        throw(ArgumentError("parameter submission identity or result differs"))
+    if reply.header.result < 0
+        return ParameterRefusal(reply.message)
+    end
+    reply.sequence > 0 && reply.submitted ||
         throw(ArgumentError("parameter submission identity or result differs"))
     return policy_struct(
         PolicyPod(name), PolicyPod(inlet), PolicyPod(nothing), PolicyPod(false)
     )
 end
-submit_parameter!(runtime, job, command::RunnerCodec.RunnerCommand{:parameter}) =
-    submit_parameter!(runtime, job, command.args)

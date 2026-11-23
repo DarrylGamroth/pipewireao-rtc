@@ -137,6 +137,14 @@ operation(::SetParameter) = PARAMETER_OPERATION
 
 _command(::Val{PARAMETER_OPERATION}) = SetParameter()
 
+struct SetParameterNdArray <: AbstractCommand end
+
+const PARAMETER_NDARRAY_OPERATION = RunnerCodec.PARAMETER_NDARRAY_OPERATION
+operation(::SetParameterNdArray) = PARAMETER_NDARRAY_OPERATION
+
+_command(::Val{PARAMETER_NDARRAY_OPERATION}) = SetParameterNdArray()
+
+
 struct InspectWarmup <: AbstractCommand end
 
 const WARMUP_OPERATION = SessionCodec.operation_id(SessionCodec.WarmupCommand())
@@ -272,6 +280,11 @@ end
 
 struct SubmitParameter{P} <: AbstractEffect
     payload::P
+end
+
+"A correlated ndarray publisher completion that proves no scientific submission."
+struct ParameterRefusal
+    reason::String
 end
 
 """One effect, issued once by the owner outside Hsm dispatch.
@@ -817,7 +830,13 @@ end
 
 @on_event function (m::Machine, ::Updating, ::Completion, event)
     _accept!(m, event) || return Hsm.EventNotHandled
-    _finish!(m, :Updated, event.result)
+    if event.result isa ParameterRefusal &&
+            event.ticket.effect isa SubmitParameter{<:ParameterSource.NdArrayParameter}
+        m.mutated = false
+        _refuse_operation!(m, event.result.reason)
+    else
+        _finish!(m, :Updated, event.result)
+    end
     if _ready(m.origin)
         return Hsm.transition!(m, :Ready)
     end
@@ -1157,7 +1176,7 @@ _event(::SetProperties) = :SetPropertiesRequested
     return Hsm.EventHandled
 end
 
-_event(::SetParameter) = :SetParameterRequested
+_event(::Union{SetParameter,SetParameterNdArray}) = :SetParameterRequested
 
 @on_event function (m::Machine, ::Root, ::SetParameterRequested, r)
     _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
@@ -1230,9 +1249,20 @@ end
     return Hsm.transition!(m, :Updating)
 end
 
+parameter_request(r::Request{SetParameter}) = r.payload
+function parameter_request(r::Request{SetParameterNdArray})
+    controller = r.controller
+    controller !== nothing || throw(ArgumentError("parameter ndarray requires a native controller"))
+    origin = ControlCodec.ControllerIdentity(
+        controller.global_id, controller.serial, Int64(controller.instance),
+    )
+    return ParameterSource.NdArrayParameter(r.payload..., origin)
+end
+
 @on_event function (m::Machine, ::Admitted, ::SetParameterRequested, r)
+    command = parameter_request(r)
     _begin!(m, r, m.lifecycle_origin)
-    _issue!(m, SubmitParameter(r.payload))
+    _issue!(m, SubmitParameter(command))
     return Hsm.transition!(m, :Updating)
 end
 

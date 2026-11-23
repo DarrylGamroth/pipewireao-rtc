@@ -490,6 +490,13 @@ function serve!(session::Session)
     return session.exitcode
 end
 
+function publish_parameter_source!(session::Session, job, handle, properties)
+    PipeWireAO.update_properties!(session.endpoint, properties)
+    synchronize!(session, job)
+    assert_identity!(session, handle)
+    return nothing
+end
+
 function endpoint_properties(profile, instance, name)
     properties = Dict{String,String}(
         "node.name" => name,
@@ -500,6 +507,9 @@ function endpoint_properties(profile, instance, name)
         "pipewireao.rtc-control.instance" => string(instance),
         "pipewireao.rtc-control.owner-pid" => string(getpid()),
     )
+    if profile == SessionCodec.PROFILE
+        properties["pipewireao.rtc-control.parameter-ndarray"] = "true"
+    end
     return properties
 end
 
@@ -542,7 +552,42 @@ An unpublished machine with a private cached clock exercises cleanup events.
 RTC requests and backend methods compile without executing, so no native
 mutation or readiness observation is produced.
 """
-prepare_dispatch!(session::Session) = prepare_dispatch!(typeof(session))
+function prepare_dispatch!(session::Session)
+    prepare_dispatch!(typeof(session))
+    sources = get(session.configuration["session"], "sources", [])
+    ranks = Set{Int}()
+    for source in sources
+        get(source, "factory", nothing) == "pipewireao.runtime-parameter" || continue
+        push!(ranks, length(only(source["ports"])["shape"]))
+    end
+    for rank in sort!(collect(ranks))
+        prepare_parameter_ndarray!(typeof(session), rank)
+    end
+    return nothing
+end
+
+function prepare_parameter_ndarray!(::Type{T}, rank) where {T<:Session}
+    controller = ControlCodec.ControllerIdentity(UInt32(3), UInt64(4), Int64(5))
+    header = ControlCodec.RequestHeader(
+        controller, Int64(1), Int64(1), PARAMETER_NDARRAY_OPERATION, SESSION_EFFECT_TIMEOUT_NS,
+    )
+    for parameter in RunnerCodec.parameter_ndarray_workload(rank)
+        command = RunnerCodec.RunnerCommand(:parameter_ndarray, "graph", "parameter", parameter)
+        encoded = SessionCodec.encode_request(header, command)
+        _, decoded = RunnerCodec.decode_request(encoded)
+        request = Request{SetParameterNdArray,typeof(decoded.args)}
+        forwarded = ParameterSource.NdArrayParameter{typeof(parameter)}
+        effect = SubmitParameter{forwarded}
+        Base.precompile(submit!, (fieldtype(T, :machine), request))
+        Base.precompile(Ingress._canonical, (ControlCodec.RequestHeader, typeof(command)))
+        for origin in (ReadyOrigin, RunningOrigin)
+            job = Job{EffectTicket{effect,origin}}
+            Base.precompile(perform!, (T, job, effect))
+            Base.precompile(execute_effect!, (T, job))
+        end
+    end
+    return nothing
+end
 
 function prepare_dispatch!(::Type{T}) where {T<:Session}
     Base.precompile(update!, (T, EffectCompleted{Nothing}))

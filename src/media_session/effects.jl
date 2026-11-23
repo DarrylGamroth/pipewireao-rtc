@@ -103,13 +103,19 @@ function perform!(runtime, job, ::CaptureParameters)
     isempty(declarations) && return nothing
     declaration = only(declarations)
     handle = node!(runtime, job, declaration["control-node"], declaration["pid"])
-    runtime.parameters = capture_owner(
+    owner = capture_owner(
         runtime,
         handle,
         ParameterSource.PROFILE,
         _declared_instance(declaration, "control-instance"),
         declaration["pid"],
     )
+    node = something(find_object(runtime, handle))
+    publish_parameter_source!(runtime, job, handle, Dict(
+        "pipewireao.rtc-control.parameter-source.id" => string(node.id),
+        "pipewireao.rtc-control.parameter-source.serial" => string(node.serial),
+    ))
+    runtime.parameters = owner
     return nothing
 end
 
@@ -483,5 +489,5 @@ perform!(runtime, job, effect::QueryParameterGeneration{<:Tuple}) = _generation_
 )
 perform!(runtime, job, effect::UpdateProperties{<:Tuple}) =
     update_properties!(runtime, job, job.ticket.origin, effect.payload)
-perform!(runtime, job, effect::SubmitParameter{<:Tuple}) =
+perform!(runtime, job, effect::SubmitParameter) =
     submit_parameter!(runtime, job, effect.payload)

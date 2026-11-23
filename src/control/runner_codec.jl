@@ -6,6 +6,8 @@ using ..ControlCodec
 
 export RunnerCommand,
     RunnerScalar,
+    ParameterNdArray,
+    ParameterStream,
     RunnerResult,
     RunnerError,
     Completion,
@@ -23,6 +25,7 @@ const Envelope = ControlCodec
 const Pod = PipeWireAO.Pod
 const MAX_PROPERTIES = 42
 const MAX_PARAMETER_BYTES = 512 * 1024 * 1024
+const PARAMETER_NDARRAY_OPERATION = Envelope.PARAMETER_NDARRAY_OPERATION
 const MAX_ROWS = (64 * 1024) ÷ 40
 const OPERATIONS = (
     :quit,
@@ -72,12 +75,53 @@ function _check_scalar_kind(kind, value::String)
     return nothing
 end
 
+"""Exact PipeWire output node and port incarnations for one ndarray payload."""
+struct ParameterStream
+    node::UInt32
+    node_serial::UInt64
+    port::UInt32
+    port_serial::UInt64
+    function ParameterStream(node::UInt32, node_serial::UInt64, port::UInt32, port_serial::UInt64)
+        node != 0 && node != typemax(UInt32) && node_serial != 0 &&
+            port != 0 && port != typemax(UInt32) && port_serial != 0 ||
+            throw(ArgumentError("parameter output node/port identities must be assigned"))
+        new(node, node_serial, port, port_serial)
+    end
+end
+
+"""Declared packed parameter format and bounded inline or streamed payload."""
+struct ParameterNdArray{N,T<:Union{Vector{Float32},ParameterStream}}
+    format::NdArrayFormat{N}
+    schema::Union{Nothing,String}
+    data::T
+    function ParameterNdArray(
+        format::NdArrayFormat{N}, schema::Union{Nothing,String}, data::T
+    ) where {N,T<:Union{Vector{Float32},ParameterStream}}
+        format.element_type == NdArray.F32_LE && format.rate === nothing ||
+            throw(ArgumentError("parameter ndarray requires sparse F32_LE format"))
+        payload_size(format) <= MAX_PARAMETER_BYTES ||
+            throw(ArgumentError("parameter extent exceeds 512 MiB"))
+        schema == "" && (schema = nothing)
+        schema === nothing || _string_check(schema; limit = 16 * 1024)
+        _validate_parameter_data(format, data)
+        new{N,T}(format, schema, data)
+    end
+end
+
+_validate_parameter_data(_, ::ParameterStream) = nothing
+function _validate_parameter_data(format, data::Vector{Float32})
+    length(data) == element_count(format) && all(isfinite, data) ||
+        throw(ArgumentError("parameter ndarray data does not match its finite extent"))
+    return nothing
+end
+
 """Closed runner operation with typed tuple arguments; encoding checks exact arity."""
 struct RunnerCommand{O,T<:Tuple}
     args::T
 end
 function RunnerCommand(operation::Symbol, args...)
-    operation in OPERATIONS || throw(ArgumentError("unknown runner operation"))
+    operation in OPERATIONS || operation === :parameter_ndarray ||
+        throw(ArgumentError("unknown runner operation"))
     return RunnerCommand{operation,typeof(args)}(args)
 end
 
@@ -102,6 +146,10 @@ struct Rejection
 end
 
 _op(::RunnerCommand{O}) where {O} = UInt32(findfirst(==(O), OPERATIONS)::Int)
+_op(::RunnerCommand{:parameter_ndarray}) = PARAMETER_NDARRAY_OPERATION
+_operation(id) = id == PARAMETER_NDARRAY_OPERATION ? :parameter_ndarray :
+    (1 <= id <= length(OPERATIONS) ? OPERATIONS[Int(id)] :
+        throw(ArgumentError("unknown runner operation")))
 """
     operation_id(command)
 
@@ -250,6 +298,55 @@ function _parameter_shape(shape::AbstractVector{UInt32})
     return shape
 end
 
+# Small representatives of both op17 payload types. Cold preparation uses
+# these codecs without opening a command endpoint or publishing a parameter.
+function parameter_ndarray_workload(rank::Int)
+    format = NdArrayFormat(NdArray.F32_LE, ntuple(_ -> 1, rank); layout = NdArray.ROW_MAJOR)
+    return (
+        ParameterNdArray(format, nothing, Float32[0]),
+        ParameterNdArray(
+            format, "pipewireao/precompile-parameter/1",
+            ParameterStream(UInt32(3), UInt64(4), UInt32(5), UInt64(6)),
+        ),
+    )
+end
+
+function _parameter_format(pod::Pod)
+    PipeWireAO.pod_type(pod) == SPA.POD_OBJECT ||
+        throw(ArgumentError("expected parameter ndarray SPA Format"))
+    object = PipeWireAO.pod_value(SPA.Object, pod)
+    object.type == PipeWireAO.LibPipeWire.SPA_TYPE_OBJECT_Format &&
+        object.id == SPA.PARAM_FORMAT || throw(ArgumentError("expected parameter ndarray SPA Format"))
+    required = (
+        SPA.FORMAT_MEDIA_TYPE, SPA.FORMAT_MEDIA_SUBTYPE, SPA.FORMAT_NDARRAY_ELEMENT_TYPE,
+        SPA.FORMAT_NDARRAY_LAYOUT, SPA.FORMAT_NDARRAY_SHAPE,
+    )
+    keys = map(property -> property.key, object.properties)
+    all(in(keys), required) && all(in((required..., SPA.FORMAT_NDARRAY_SCHEMA)), keys) &&
+        allunique(keys) ||
+        throw(ArgumentError("unexpected or duplicate parameter ndarray format field"))
+    return NdArrayFormat(pod; require_fixed = true), ndarray_schema(pod)
+end
+
+function _parameter_payload(pod::Pod)
+    if PipeWireAO.pod_type(pod) == SPA.POD_ARRAY
+        return PipeWireAO.pod_value(SPA.Array{Float32}, pod).values
+    end
+    fields = _arity(_fields(pod), 4)
+    return ParameterStream(
+        _id(fields[1]), reinterpret(UInt64, _long(fields[2])),
+        _id(fields[3]), reinterpret(UInt64, _long(fields[4])),
+    )
+end
+
+_parameter_payload_pod(data::Vector{Float32}) = _pod(SPA.Array(data))
+function _parameter_payload_pod(data::ParameterStream)
+    return _pod(_struct(
+        _pod(SPA.Id(data.node)), _pod(reinterpret(Int64, data.node_serial)),
+        _pod(SPA.Id(data.port)), _pod(reinterpret(Int64, data.port_serial)),
+    ))
+end
+
 # Inspect borrowed command fields before creating any variable-size PODs. The
 # empty common envelope already includes the eight-byte payload Struct header;
 # every additional child is padded to eight bytes by SPA.
@@ -311,6 +408,22 @@ function _preflight_request(command::RunnerCommand{O}, base::Int) where {O}
             rows = _checked_add(rows, row, 16 * 1024)
         end
         total = _checked_add(total, _pod_size(rows), 16 * 1024)
+    elseif O === :parameter_ndarray
+        _arity(args, 3)
+        graph, inlet, parameter = args
+        parameter isa ParameterNdArray || throw(ArgumentError("expected a parameter ndarray"))
+        total = _checked_add(total, _string_size(graph), 16 * 1024)
+        total = _checked_add(total, _string_size(inlet), 16 * 1024)
+        if parameter.data isa Vector{Float32}
+            length(parameter.data) <= (16 * 1024) ÷ sizeof(Float32) ||
+                throw(ArgumentError("inline parameter exceeds 16 KiB"))
+            _validate_parameter_data(parameter.format, parameter.data)
+            total = _checked_add(total, _pod_size(8 + sizeof(parameter.data)), 16 * 1024)
+        else
+            total = _checked_add(total, _pod_size(64), 16 * 1024)
+        end
+        format = ndarray_format(parameter.format; id = SPA.PARAM_FORMAT, schema = parameter.schema)
+        total = _checked_add(total, (sizeof(format) + 7) & -8, 16 * 1024)
     elseif O === :parameter
         _arity(args, 6)
         graph, parameter, element_type, shape, schema, path = args
@@ -368,6 +481,13 @@ function _request_fields(::RunnerCommand{O}, args) where {O}
             )
         end
         return _struct(_pod(String(graph)), _pod(_struct(rows)))
+    elseif O === :parameter_ndarray
+        graph, inlet, parameter = args
+        return _struct(
+            _pod(String(graph)), _pod(String(inlet)),
+            ndarray_format(parameter.format; id = SPA.PARAM_FORMAT, schema = parameter.schema),
+            _parameter_payload_pod(parameter.data),
+        )
     elseif O === :parameter
         _arity(args, 6)
         graph, parameter, element_type, shape, schema, path = args
@@ -407,8 +527,7 @@ end
 "Decode the closed runner request schema without preparing artifacts or applying effects."
 function decode_request(header::RequestHeader, payload::SPA.Struct)
     op = Int(header.operation)
-    1 <= op <= length(OPERATIONS) || throw(ArgumentError("unknown runner operation"))
-    operation = OPERATIONS[op]
+    operation = _operation(op)
     f = payload.values
     command = if op in (1, 2, 3, 9, 10, 11, 12)
         _arity(f, 0)
@@ -432,6 +551,13 @@ function decode_request(header::RequestHeader, payload::SPA.Struct)
             properties[name] = _scalar_value(r[2]; finite = true)
         end
         RunnerCommand(operation, _name(f[1]), properties)
+    elseif op == PARAMETER_NDARRAY_OPERATION
+        _arity(f, 4)
+        format, schema = _parameter_format(f[3])
+        RunnerCommand(
+            operation, _name(f[1]), _name(f[2]),
+            ParameterNdArray(format, schema, _parameter_payload(f[4])),
+        )
     else
         _arity(f, 6)
         PipeWireAO.pod_type(f[4]) == SPA.POD_ARRAY ||
@@ -463,11 +589,11 @@ function _generation_pair(row)
     return (_long(fields[1]), _long(fields[2]))
 end
 function _result(operation::UInt32, outcome::Outcome, details::NamedTuple)
-    symbol = OPERATIONS[Int(operation)]
+    symbol = _operation(operation)
     return RunnerResult{symbol,typeof(details)}(outcome, details)
 end
 function _decode_details(operation::UInt32, fields, state::Lifecycle)
-    1 <= operation <= length(OPERATIONS) || throw(ArgumentError("unknown runner operation"))
+    _operation(operation)
     if operation == 1
         _arity(fields, 1)
         _bool(fields[1]) === true || throw(ArgumentError("quit must be true"))
@@ -582,7 +708,7 @@ function _decode_details(operation::UInt32, fields, state::Lifecycle)
                 active_adoption_observed = adopted,
             ),
         )
-    elseif operation == 14
+    elseif operation in (14, PARAMETER_NDARRAY_OPERATION)
         _arity(fields, 4)
         generation = _is_none(fields[3]) ? nothing : _generation_pair(fields[3])
         _bool(fields[4]) === false ||
@@ -614,8 +740,7 @@ function decode_completion(input::Union{Pod,AbstractVector{UInt8}})
     header, payload = Envelope.decode_completion(input; endpoint = :lifecycle)
     header.controller === nothing &&
         throw(ArgumentError("initial sentinel is not a fresh completion"))
-    1 <= header.operation <= length(OPERATIONS) ||
-        throw(ArgumentError("unknown runner operation"))
+    _operation(header.operation)
     fields = _fields(payload)
     if header.result < 0
         error, state = _error(fields)

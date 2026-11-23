@@ -69,6 +69,7 @@ Base.include(
     joinpath(@__DIR__, "test_calibration_materialization.jl"),
 )
 include("test_session_client.jl")
+Base.include(Module(:ParameterNdArrayTests), joinpath(@__DIR__, "test_parameter_ndarray.jl"))
 include("test_calibration_acquisition.jl")
 include("test_calibration_endpoint.jl")
 include("test_calibration_bundle.jl")

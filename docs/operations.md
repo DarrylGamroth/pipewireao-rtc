@@ -750,6 +750,23 @@ read/write deadlines MUST be finite. Malformed commands MUST reject without
 terminating a healthy session. The private core MUST restrict control access
 to the owning user.
 
+Sessions supporting native array updates advertise
+`pipewireao.rtc-control.parameter-ndarray=true`. Operation 17 accepts a graph,
+a declared parameter inlet, a fixed native NDArray Format POD and the payload.
+A SPA Float array carries a payload that fits the control envelope. For bulk
+transfer, the payload identifies an output node and port by global ID and
+object serial on the same private PipeWire core. Admission MUST bind the
+producer to the requesting controller’s client, verify the format against the
+declared parameter, and consume at most one complete frame before publication.
+The session advertises its captured parameter-source node ID and serial in
+`pipewireao.rtc-control.parameter-source.id` and
+`pipewireao.rtc-control.parameter-source.serial`. The sender verifies the
+receiving stream belongs to that node’s client before releasing its bytes.
+Each native hop receives the remaining relative budget and correlates its own
+terminal reply. A caller that expires after submission retains an unknown
+outcome and must never replay the update.
+The path-based operation 14 remains available for its existing clients.
+
 Client operations MUST cover session/group start and stop, reset, scalar
 transactions, declared ndarray parameter replacement, property/parameter
 generation queries, status and shutdown. Session operations MUST go to

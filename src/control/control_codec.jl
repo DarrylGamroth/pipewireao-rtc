@@ -15,6 +15,7 @@ export ControllerIdentity,
 
 const SPA = PipeWireAO.SPA
 const _MAX_REQUEST = 16 * 1024
+const PARAMETER_NDARRAY_OPERATION = UInt32(17)
 const _MAX_LIFECYCLE_REPLY = 64 * 1024
 const _MAX_CALIBRATION_REPLY = 128 * 1024
 const _VERSION = Int32(1)
@@ -271,10 +272,18 @@ function _pod_struct_size(values::AbstractVector{PipeWireAO.Pod}, limit::Int)
 end
 _pod_struct_size(value::SPA.Struct, limit::Int) = _pod_struct_size(value.values, limit)
 
-function _validate_payload(value::SPA.Struct)
-    for child in value.values
-        child_depth = PipeWireAO.pod_type(child) == SPA.POD_STRUCT ? 2 : 1
-        _check_payload(child, child_depth)
+function _validate_payload(value::SPA.Struct; parameter_ndarray::Bool = false)
+    for (index, child) in enumerate(value.values)
+        if parameter_ndarray && index == 3 && PipeWireAO.pod_type(child) == SPA.POD_OBJECT
+            _strict_pod_length(child)
+            format = PipeWireAO.pod_value(SPA.Object, child)
+            format.type == PipeWireAO.LibPipeWire.SPA_TYPE_OBJECT_Format &&
+                format.id == SPA.PARAM_FORMAT ||
+                throw(ArgumentError("parameter ndarray requires a SPA Format"))
+        else
+            depth = PipeWireAO.pod_type(child) == SPA.POD_STRUCT ? 2 : 1
+            _check_payload(child, depth)
+        end
     end
     return nothing
 end
@@ -295,11 +304,12 @@ function _envelope_size(
 end
 
 function _envelope(
-    kind::Symbol, header_values::Vector{PipeWireAO.Pod}, payload::SPA.Struct, limit::Int
+    kind::Symbol, header_values::Vector{PipeWireAO.Pod}, payload::SPA.Struct, limit::Int;
+    parameter_ndarray::Bool = false,
 )
     _envelope_size(kind, header_values, payload, limit) <= limit ||
         throw(ArgumentError("control POD exceeds its byte limit"))
-    _validate_payload(payload)
+    _validate_payload(payload; parameter_ndarray)
     hname, pname = _names(kind)
     value = SPA.Struct(
         PipeWireAO.Pod[
@@ -324,7 +334,10 @@ end
 Encode one bounded request envelope.
 """
 function encode_request(header::RequestHeader, payload::SPA.Struct)
-    return _envelope(:request, _header_values(header), payload, _MAX_REQUEST)
+    return _envelope(
+        :request, _header_values(header), payload, _MAX_REQUEST;
+        parameter_ndarray = header.operation == PARAMETER_NDARRAY_OPERATION,
+    )
 end
 
 function _encode_reply(
@@ -373,8 +386,13 @@ function _decode(kind::Symbol, pod::PipeWireAO.Pod, limit::Int)
     header = PipeWireAO.pod_value(SPA.Struct, outer.values[2])
     _string(outer.values[3]) == pname || throw(ArgumentError("wrong payload name or order"))
     payload = PipeWireAO.pod_value(SPA.Struct, outer.values[4])
-    _check_payload(outer.values[4], 1)
+    _strict_pod_length(outer.values[4])
     length(header.values) == 8 || throw(ArgumentError("wrong control header arity"))
+    _validate_payload(
+        payload;
+        parameter_ndarray = kind === :request &&
+            _id(header.values[7]) == PARAMETER_NDARRAY_OPERATION,
+    )
     return header.values, payload
 end
 
