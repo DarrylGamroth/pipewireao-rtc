@@ -1,5 +1,17 @@
 # Delivery evidence catalog
 
+## GPI2 per-frame CUDA deadline traces and sealed HIL startup — 2026-11-22 Pacific
+
+Four 120,000-slot windows on the released controller compare traces with the
+ordinary detector-to-command path. The untraced runs missed 125 deadlines
+and the traced runs missed 1,854. The record distinguishes source
+rejections from late completions and joins callback and CUDA timings to
+each published frame. [Timing and full ledgers](validation/gpi2-traced-replay-20261122/README.md)
+
+The [fresh-depot startup record](validation/hil-installed-startup-20261122/README.md)
+tracks the GPI2 optical cache and the fitted SPIDERS command receiver with
+the same RTC, binding and native versions.
+
 ## RTC 0.7.28 managed simulation and GPI2 replay — 2026-11-22
 
 GPI2, CAL2 and both fitted SPIDERS CPU profiles delivered their declared

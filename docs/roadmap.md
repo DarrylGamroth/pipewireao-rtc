@@ -14,12 +14,15 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### Instrument simulation and controller timing — 2026-11-22 Pacific
 
-The four sealed RTC 0.7.28 CPU profiles passed native Start, flow, Stop and
-Quit on private PipeWire cores. The separate GPI2 captured CUDA replay
-delivered all 240,000 measured command sets. Four exceeded 500 µs in the
-second 60-second trial. Workstation tail latency and the GPI2 startup cache
-dependency remain relevant to deployment. The [verification record](validation/rtc-0728-running/README.md)
-covers the passing profiles, both initial startup failures and the timing boundary.
+The [released-cohort run](validation/rtc-0728-running/README.md) exercises
+all four sealed CPU profiles and the GPI2 captured CUDA graph. Four further
+120,000-slot windows measured the 500 µs detector-to-command deadline on the
+shared workstation. For 1,112 of the 1,750 late traced completions, the
+largest delay above the run's segment median occurred before callback
+entry. The [per-frame timing record](validation/gpi2-traced-replay-20261122/README.md)
+includes source rejections and the variation between runs.
+The [installation record](validation/hil-installed-startup-20261122/README.md)
+covers the HIL changes for the optical cache and synchronous command receiver.
 
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 

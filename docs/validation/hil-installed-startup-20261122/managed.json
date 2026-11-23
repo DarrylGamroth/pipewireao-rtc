@@ -1,0 +1,852 @@
+{
+  "candidate": {
+    "base_commit": "f34b6b982659f0a2954d53a01e64e4cb3f670231",
+    "candidate_commit": "ae3190789f1d699a9adb5e1fc28d52d096bbdec0",
+    "candidate_tree": "910b2882af3212148dc0c3077ca1fe4098eee237",
+    "source_commit": "7440add6a2ec125ef1f28c8e9f3999e7018dc697",
+    "source_tree": "f3fcbf9c94ec4326dcde020788e6e4e75e7548a4",
+    "upstream_registry_commit": "273f7f80911077f4835eed956e90b8c79c0183b2",
+    "validation_registry_commit": "9ef624710c55d8b80e4153170acd43af0a361cdb",
+    "version": "0.5.12"
+  },
+  "pipewireao_artifact": "77da251765f3124df77322c562e67a7c7742ab1d",
+  "profiles": {
+    "cal2": {
+      "candidate_export": "03aea6055dd96948f5d44402cb8cc517044de4c4",
+      "changed_files": [
+        "Manifest.toml",
+        "Project.toml"
+      ],
+      "deployment_sha256": "fe874739e02df5da95bedb7c7eea42adcb0988df46bc71e7578c1fb5ade2753d",
+      "files": 479,
+      "hil": {
+        "deps": [
+          "AdaptiveOpticsSim",
+          "Agent",
+          "Clocks",
+          "FITSIO",
+          "Libdl",
+          "PipeWireAO",
+          "PipeWireAO_jll",
+          "SHA",
+          "UUIDs",
+          "YAML"
+        ],
+        "extensions": {
+          "AdaptiveOpticsSimPipeWireHILCUDAExt": "CUDA",
+          "PipeWireAORTCExt": [
+            "PipeWireAORTC",
+            "ThreadPinning"
+          ]
+        },
+        "git-tree-sha1": "910b2882af3212148dc0c3077ca1fe4098eee237",
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
+        "version": "0.5.12",
+        "weakdeps": {
+          "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+          "PipeWireAORTC": "a3e2c7da-f73f-4284-8482-36ac422b34e6",
+          "ThreadPinning": "811555cd-349b-4f26-b7bc-1f208b848042"
+        }
+      },
+      "julia": "1.13.3",
+      "manifest_sha256": "2f38ee6b9610c948cd99a040ea796aed8ff5555b70388f08923e80c6eed26896",
+      "original_export": "e38a94f44206fd7c69ebd8aefd8193f559ddefbc",
+      "other_manifest_entries_identical": 199,
+      "profile": "cal2",
+      "runs": [
+        {
+          "after_stop": {
+            "quiet_window_s": 2.0048915129736997,
+            "streams": {
+              "llowfs-image": {
+                "buffers_seen": 30,
+                "distinct_header_sequences": 30,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "d6ff3ddca1782fb8494d2282db63f59f",
+                  "generation": 1,
+                  "sequence": 30
+                },
+                "last_header_sequence": 30,
+                "max_abs_payload": 0.5754013
+              },
+              "llowfs-physical-offset": {
+                "buffers_seen": 30,
+                "distinct_header_sequences": 30,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "d6ff3ddca1782fb8494d2282db63f59f",
+                  "generation": 1,
+                  "sequence": 30
+                },
+                "last_header_sequence": 30,
+                "max_abs_payload": 0.0
+              },
+              "scc-image": {
+                "buffers_seen": 6,
+                "distinct_header_sequences": 6,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "f8535f7431ae5cb18749b15211fcb947",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.11033104
+              },
+              "scc-physical-offset": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 2,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "f8535f7431ae5cb18749b15211fcb947",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.0
+              }
+            }
+          },
+          "flow": {
+            "first_running_observation_counts": {
+              "llowfs-image": 0,
+              "llowfs-physical-offset": 0,
+              "scc-image": 0,
+              "scc-physical-offset": 0
+            },
+            "scc_chopper_exposures": {
+              "OPTICAL_FRINGED": {
+                "duration_ns": 10000000,
+                "identity": {
+                  "domain": "f8535f7431ae5cb18749b15211fcb947",
+                  "generation": 1,
+                  "sequence": 1
+                },
+                "start_ns": 0,
+                "trigger": "ACQUISITION_TRIGGER_HIGH"
+              },
+              "OPTICAL_UNFRINGED": {
+                "duration_ns": 10000000,
+                "identity": {
+                  "domain": "f8535f7431ae5cb18749b15211fcb947",
+                  "generation": 1,
+                  "sequence": 2
+                },
+                "start_ns": 10000000,
+                "trigger": "ACQUISITION_TRIGGER_LOW"
+              }
+            },
+            "streams": {
+              "llowfs-image": {
+                "buffers_seen": 30,
+                "distinct_header_sequences": 30,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "d6ff3ddca1782fb8494d2282db63f59f",
+                  "generation": 1,
+                  "sequence": 30
+                },
+                "last_header_sequence": 30,
+                "max_abs_payload": 0.5754013
+              },
+              "llowfs-physical-offset": {
+                "buffers_seen": 30,
+                "distinct_header_sequences": 30,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "d6ff3ddca1782fb8494d2282db63f59f",
+                  "generation": 1,
+                  "sequence": 30
+                },
+                "last_header_sequence": 30,
+                "max_abs_payload": 0.0
+              },
+              "scc-image": {
+                "buffers_seen": 6,
+                "distinct_header_sequences": 6,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "f8535f7431ae5cb18749b15211fcb947",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.11033104
+              },
+              "scc-physical-offset": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 2,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "f8535f7431ae5cb18749b15211fcb947",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.0
+              }
+            },
+            "synthetic_pupil": {
+              "duration_per_packet_ns": 2000000,
+              "input_domain": "9e9103b38643f7ba2d44337862285d03",
+              "last_paced_llowfs_sequence": 30,
+              "local_source_status": {
+                "dropped": 0,
+                "failed": false,
+                "gaps": 0,
+                "pending": false,
+                "rejected": 0
+              },
+              "maximum_astigmatic_opd_m": 3e-08,
+              "model_coverage_ns": 60000000,
+              "packet_count": 30
+            }
+          },
+          "flow_pass": true,
+          "loaded_asset_sha256": {
+            "optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/QwbKq_UEprk.so": "a125f3d8bad74c1078e90ed937abd34831465aba83642db9bde5f17d0d46e3b5"
+          },
+          "native_quit": {
+            "accepted": true,
+            "attempted": true
+          },
+          "original_processes_alive": 0,
+          "quit_pass": true,
+          "ready_s": 354.298,
+          "simulator_depots": "/var/tmp/rtc-flow-trace.nIscIx4f/installs/cal2/optical-startup/simulator/depot:/var/tmp/rtc-flow-trace.nIscIx4f/installs/cal2/optical-startup/simulator/sources/1:",
+          "simulator_libraries": [
+            "/var/tmp/rtc-flow-trace.nIscIx4f/depot/artifacts/77da251765f3124df77322c562e67a7c7742ab1d/lib/libpipewire-ao-0.3.so.0.4008.0",
+            "/var/tmp/rtc-flow-trace.nIscIx4f/installs/cal2/optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/QwbKq_UEprk.so"
+          ],
+          "start_reply": "Running",
+          "start_stop_same_processes": true,
+          "start_utc": "2026-11-23T05:50:23.693776+00:00",
+          "stop_reply": "Ready",
+          "unit": "pipewireao-session@f511cc4e6e1a.service"
+        }
+      ]
+    },
+    "gpi2": {
+      "candidate_export": "2dd85db7e636c361f1b9498a356cfee77dea3911",
+      "changed_files": [
+        "Manifest.toml",
+        "Project.toml",
+        "generated/startup-preparation.json"
+      ],
+      "deployment_sha256": "f3e6dd9e70a3af07a48fdb77d532e9d2bb2989b2b7302c71ccebdfd90939b6c0",
+      "files": 143,
+      "hil": {
+        "deps": [
+          "AdaptiveOpticsSim",
+          "Agent",
+          "Clocks",
+          "FITSIO",
+          "Libdl",
+          "PipeWireAO",
+          "PipeWireAO_jll",
+          "SHA",
+          "UUIDs",
+          "YAML"
+        ],
+        "extensions": {
+          "AdaptiveOpticsSimPipeWireHILCUDAExt": "CUDA",
+          "PipeWireAORTCExt": [
+            "PipeWireAORTC",
+            "ThreadPinning"
+          ]
+        },
+        "git-tree-sha1": "910b2882af3212148dc0c3077ca1fe4098eee237",
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
+        "version": "0.5.12",
+        "weakdeps": {
+          "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+          "PipeWireAORTC": "a3e2c7da-f73f-4284-8482-36ac422b34e6",
+          "ThreadPinning": "811555cd-349b-4f26-b7bc-1f208b848042"
+        }
+      },
+      "julia": "1.13.4",
+      "manifest_sha256": "ae56dc895870afb5c64ea7652d0e032c90f23e7d247b1001924a46d8997c9f6c",
+      "original_export": "472ab3c8917642e3822ad2870ae8c879ab05b1f2",
+      "other_manifest_entries_identical": 191,
+      "profile": "gpi2",
+      "runs": [
+        {
+          "after_stop": {
+            "quiet_window_s": 2.00038045598194,
+            "streams": {
+              "detector": {
+                "buffers_seen": 9,
+                "distinct_header_sequences": 9,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 9
+                },
+                "last_header_sequence": 9,
+                "max_abs_payload": 3852
+              },
+              "tiptilt": {
+                "buffers_seen": 9,
+                "distinct_header_sequences": 9,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 9
+                },
+                "last_header_sequence": 9,
+                "max_abs_payload": 2.753372e-08
+              },
+              "tweeter": {
+                "buffers_seen": 9,
+                "distinct_header_sequences": 9,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 9
+                },
+                "last_header_sequence": 9,
+                "max_abs_payload": 7.351641e-07
+              },
+              "woofer": {
+                "buffers_seen": 9,
+                "distinct_header_sequences": 9,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 9
+                },
+                "last_header_sequence": 9,
+                "max_abs_payload": 5.5483906e-07
+              }
+            }
+          },
+          "flow": {
+            "first_running_observation_counts": {
+              "detector": 2,
+              "tiptilt": 2,
+              "tweeter": 2,
+              "woofer": 2
+            },
+            "matching_detector_and_three_command_acquisitions": [
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 3
+              },
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 4
+              },
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 5
+              }
+            ],
+            "streams": {
+              "detector": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 4245
+              },
+              "tiptilt": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 8.2487475e-09
+              },
+              "tweeter": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 4.4686251e-07
+              },
+              "woofer": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 3.1625376e-07
+              }
+            }
+          },
+          "flow_pass": true,
+          "loaded_asset_sha256": {
+            "optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/aSUN5_YgFoh.so": "cc285f048efcbe508e4c6534cc6ce40acacd538f20ed90f5e57baa9c4fcc0e17"
+          },
+          "native_quit": {
+            "accepted": false,
+            "attempted": true
+          },
+          "quit_error": "AssertionError",
+          "quit_pass": false,
+          "ready_s": 219.911,
+          "simulator_depots": "/var/tmp/rtc-flow-trace.nIscIx4f/installs/gpi2/optical-startup/simulator/depot:/var/tmp/rtc-flow-trace.nIscIx4f/installs/gpi2/optical-startup/simulator/sources/1:",
+          "simulator_libraries": [
+            "/var/tmp/rtc-flow-trace.nIscIx4f/depot/artifacts/77da251765f3124df77322c562e67a7c7742ab1d/lib/libpipewire-ao-0.3.so.0.4008.0",
+            "/var/tmp/rtc-flow-trace.nIscIx4f/installs/gpi2/optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/aSUN5_YgFoh.so"
+          ],
+          "start_reply": "Running",
+          "start_stop_same_processes": true,
+          "start_utc": "2026-11-23T05:40:25.872734+00:00",
+          "stop_reply": "Ready",
+          "unit": "pipewireao-session@f05eba2f28a8.service"
+        },
+        {
+          "after_stop": {
+            "quiet_window_s": 2.0057322859647684,
+            "streams": {
+              "detector": {
+                "buffers_seen": 9,
+                "distinct_header_sequences": 9,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 9
+                },
+                "last_header_sequence": 9,
+                "max_abs_payload": 3852
+              },
+              "tiptilt": {
+                "buffers_seen": 9,
+                "distinct_header_sequences": 9,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 9
+                },
+                "last_header_sequence": 9,
+                "max_abs_payload": 2.753372e-08
+              },
+              "tweeter": {
+                "buffers_seen": 9,
+                "distinct_header_sequences": 9,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 9
+                },
+                "last_header_sequence": 9,
+                "max_abs_payload": 7.351641e-07
+              },
+              "woofer": {
+                "buffers_seen": 9,
+                "distinct_header_sequences": 9,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 9
+                },
+                "last_header_sequence": 9,
+                "max_abs_payload": 5.5483906e-07
+              }
+            }
+          },
+          "flow": {
+            "first_running_observation_counts": {
+              "detector": 2,
+              "tiptilt": 2,
+              "tweeter": 2,
+              "woofer": 2
+            },
+            "matching_detector_and_three_command_acquisitions": [
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 3
+              },
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 4
+              },
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 5
+              }
+            ],
+            "streams": {
+              "detector": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 4245
+              },
+              "tiptilt": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 8.2487475e-09
+              },
+              "tweeter": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 4.4686251e-07
+              },
+              "woofer": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 3.1625376e-07
+              }
+            }
+          },
+          "flow_pass": true,
+          "loaded_asset_sha256": {
+            "optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/aSUN5_YgFoh.so": "cc285f048efcbe508e4c6534cc6ce40acacd538f20ed90f5e57baa9c4fcc0e17"
+          },
+          "native_quit": {
+            "accepted": true,
+            "attempted": true
+          },
+          "original_processes_alive": 0,
+          "quit_pass": true,
+          "ready_s": 61.774,
+          "simulator_depots": "/var/tmp/rtc-flow-trace.nIscIx4f/installs/gpi2/optical-startup/simulator/depot:/var/tmp/rtc-flow-trace.nIscIx4f/installs/gpi2/optical-startup/simulator/sources/1:",
+          "simulator_libraries": [
+            "/var/tmp/rtc-flow-trace.nIscIx4f/depot/artifacts/77da251765f3124df77322c562e67a7c7742ab1d/lib/libpipewire-ao-0.3.so.0.4008.0",
+            "/var/tmp/rtc-flow-trace.nIscIx4f/installs/gpi2/optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/aSUN5_YgFoh.so"
+          ],
+          "start_reply": "Running",
+          "start_stop_same_processes": true,
+          "start_utc": "2026-11-23T06:19:02.970458+00:00",
+          "stop_reply": "Ready",
+          "unit": "pipewireao-session@2b9546b5efe8.service"
+        }
+      ]
+    },
+    "spiders": {
+      "candidate_export": "2e72fbafda8ec89957997200714360f1603454c3",
+      "changed_files": [
+        "Manifest.toml",
+        "Project.toml"
+      ],
+      "deployment_sha256": "8a14a64a3d1d1449681c98b647d41811148391e82d7f8fe5f6e9c50bfeb8c0e1",
+      "files": 666,
+      "hil": {
+        "deps": [
+          "AdaptiveOpticsSim",
+          "Agent",
+          "Clocks",
+          "FITSIO",
+          "Libdl",
+          "PipeWireAO",
+          "PipeWireAO_jll",
+          "SHA",
+          "UUIDs",
+          "YAML"
+        ],
+        "extensions": {
+          "AdaptiveOpticsSimPipeWireHILCUDAExt": "CUDA",
+          "PipeWireAORTCExt": [
+            "PipeWireAORTC",
+            "ThreadPinning"
+          ]
+        },
+        "git-tree-sha1": "910b2882af3212148dc0c3077ca1fe4098eee237",
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
+        "version": "0.5.12",
+        "weakdeps": {
+          "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+          "PipeWireAORTC": "a3e2c7da-f73f-4284-8482-36ac422b34e6",
+          "ThreadPinning": "811555cd-349b-4f26-b7bc-1f208b848042"
+        }
+      },
+      "julia": "1.13.3",
+      "manifest_sha256": "2f38ee6b9610c948cd99a040ea796aed8ff5555b70388f08923e80c6eed26896",
+      "original_export": "af7adaea0385f1d1f4f07c828d5e6f7094556995",
+      "other_manifest_entries_identical": 199,
+      "profile": "spiders",
+      "runs": [
+        {
+          "after_stop": {
+            "quiet_window_s": 2.0034144949750043,
+            "streams": {
+              "applied": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": null,
+                "last_header_sequence": 5,
+                "max_abs_payload": 0.0
+              },
+              "demand": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "b0b4794fd6dfb7bc1642b6ad604cc20d",
+                  "generation": 3,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 0.0
+              }
+            }
+          },
+          "flow": {
+            "first_running_observation_counts": {
+              "applied": 2,
+              "demand": 2
+            },
+            "last_applied_reference_timestamp": {
+              "clock": "METADATA_CLOCK_REALTIME",
+              "timestamp_ns": 1795414632782981060
+            },
+            "streams": {
+              "applied": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": null,
+                "last_header_sequence": 5,
+                "max_abs_payload": 0.0
+              },
+              "demand": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "b0b4794fd6dfb7bc1642b6ad604cc20d",
+                  "generation": 3,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 0.0
+              }
+            }
+          },
+          "flow_pass": true,
+          "loaded_asset_sha256": {
+            "command-receiver/simulator/libhil_command_receiver.so": "3a278decf5f5c099a120dc5f8634004950c2a73abd11ee0e921da1acccb225a7",
+            "optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/lb3KM_T4soq.so": "ed1364bc754f0535851d0fb5edde6aceb8d367249ca83fdc7427c26518233165"
+          },
+          "native_quit": {
+            "accepted": true,
+            "attempted": true
+          },
+          "original_processes_alive": 0,
+          "quit_pass": true,
+          "ready_s": 118.604,
+          "simulator_depots": "/var/tmp/rtc-flow-trace.nIscIx4f/installs/spiders/optical-startup/simulator/depot:/var/tmp/rtc-flow-trace.nIscIx4f/installs/spiders/optical-startup/simulator/sources/1:",
+          "simulator_libraries": [
+            "/var/tmp/rtc-flow-trace.nIscIx4f/depot/artifacts/77da251765f3124df77322c562e67a7c7742ab1d/lib/libpipewire-ao-0.3.so.0.4008.0",
+            "/var/tmp/rtc-flow-trace.nIscIx4f/installs/spiders/command-receiver/simulator/libhil_command_receiver.so",
+            "/var/tmp/rtc-flow-trace.nIscIx4f/installs/spiders/optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/lb3KM_T4soq.so"
+          ],
+          "start_reply": "Running",
+          "start_stop_same_processes": true,
+          "start_utc": "2026-11-23T06:14:22.896880+00:00",
+          "stop_reply": "Ready",
+          "unit": "pipewireao-session@3e5384a5ef0b.service"
+        }
+      ]
+    },
+    "spiders-single": {
+      "candidate_export": "39bd99251b5bd8ec10b6d52a099871ff1c8c49cb",
+      "changed_files": [
+        "Manifest.toml",
+        "Project.toml"
+      ],
+      "deployment_sha256": "af7f8369b00cdfafbc5a31e339cd765784534e2493e2e97cfae7f3caf02bcca2",
+      "files": 663,
+      "hil": {
+        "deps": [
+          "AdaptiveOpticsSim",
+          "Agent",
+          "Clocks",
+          "FITSIO",
+          "Libdl",
+          "PipeWireAO",
+          "PipeWireAO_jll",
+          "SHA",
+          "UUIDs",
+          "YAML"
+        ],
+        "extensions": {
+          "AdaptiveOpticsSimPipeWireHILCUDAExt": "CUDA",
+          "PipeWireAORTCExt": [
+            "PipeWireAORTC",
+            "ThreadPinning"
+          ]
+        },
+        "git-tree-sha1": "910b2882af3212148dc0c3077ca1fe4098eee237",
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
+        "version": "0.5.12",
+        "weakdeps": {
+          "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+          "PipeWireAORTC": "a3e2c7da-f73f-4284-8482-36ac422b34e6",
+          "ThreadPinning": "811555cd-349b-4f26-b7bc-1f208b848042"
+        }
+      },
+      "julia": "1.13.3",
+      "manifest_sha256": "2f38ee6b9610c948cd99a040ea796aed8ff5555b70388f08923e80c6eed26896",
+      "original_export": "38d93a7786e830537f9488172488a6845b7e2ef2",
+      "other_manifest_entries_identical": 199,
+      "profile": "spiders-single",
+      "runs": [
+        {
+          "after_stop": {
+            "quiet_window_s": 2.0059962769737467,
+            "streams": {
+              "demand": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 2,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "024f73b164afbd9c414de666ffc1bc5b",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.0
+              }
+            }
+          },
+          "flow": {
+            "first_running_observation_counts": {
+              "demand": 2
+            },
+            "streams": {
+              "demand": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 2,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "024f73b164afbd9c414de666ffc1bc5b",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.0
+              }
+            }
+          },
+          "flow_pass": true,
+          "loaded_asset_sha256": {
+            "command-receiver/simulator/libhil_command_receiver.so": "3a278decf5f5c099a120dc5f8634004950c2a73abd11ee0e921da1acccb225a7",
+            "optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/ZHRVz_VsmtV.so": "55cf75e956af66ce2a0194e165ab034fbdeff1497e8b2dacab313c8013119e5e"
+          },
+          "native_quit": {
+            "accepted": true,
+            "attempted": true
+          },
+          "original_processes_alive": 0,
+          "quit_pass": true,
+          "ready_s": 35.791,
+          "simulator_depots": "/var/tmp/rtc-flow-trace.nIscIx4f/installs/spiders-single/optical-startup/simulator/depot:/var/tmp/rtc-flow-trace.nIscIx4f/installs/spiders-single/optical-startup/simulator/sources/1:",
+          "simulator_libraries": [
+            "/var/tmp/rtc-flow-trace.nIscIx4f/depot/artifacts/77da251765f3124df77322c562e67a7c7742ab1d/lib/libpipewire-ao-0.3.so.0.4008.0",
+            "/var/tmp/rtc-flow-trace.nIscIx4f/installs/spiders-single/command-receiver/simulator/libhil_command_receiver.so",
+            "/var/tmp/rtc-flow-trace.nIscIx4f/installs/spiders-single/optical-startup/simulator/depot/compiled/v1.13/PipeWireAOOpticalStartup/ZHRVz_VsmtV.so"
+          ],
+          "start_reply": "Running",
+          "start_stop_same_processes": true,
+          "start_utc": "2026-11-23T06:17:26.639640+00:00",
+          "stop_reply": "Ready",
+          "unit": "pipewireao-session@fc538dc91217.service"
+        }
+      ]
+    }
+  },
+  "registered_packages_and_candidate": {
+    "AdaptiveOpticsSimPipeWireHIL": "0.5.12 (private validation registry)",
+    "PipeWireAO": "0.9.6",
+    "PipeWireAORTC": "0.7.28",
+    "PipeWireAO_jll": "4.0.8+0"
+  }
+}

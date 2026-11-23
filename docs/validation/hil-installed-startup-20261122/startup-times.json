@@ -1,0 +1,174 @@
+{
+  "gpi2": [
+    {
+      "unit": "pipewireao-session@f05eba2f28a8.service",
+      "flow": true,
+      "quit": false,
+      "service_to_ready_s": 219.911,
+      "service_to_RTC_exec_s": 74.777,
+      "RTC_exec_to_ready_s": 145.123,
+      "RTC_exec_to_endpoint_seen_by_client_s": 95.752,
+      "service_to_simulator_exec_s": 58.207,
+      "simulator_exec_to_model_prepared_s": 53.557,
+      "model_prepare_s": 29.964,
+      "simulator_exec_to_connected_s": 87.26,
+      "simulator_connected_to_service_ready_s": 74.433,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 23.373,
+      "owner_exec_after_unit_start_s": {
+        "core": 51.097,
+        "julia": 58.197,
+        "parameters": 58.197,
+        "simulator": 58.207
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@f05eba2f28a8.service": 0.0,
+        "Started pipewireao-session@f05eba2f28a8.service": 219.9,
+        "Waiting for RTC control endpoint": 159.069,
+        "Waiting for owner preparation and RTC warmup": 170.53,
+        "RTC warmup completed": 196.527,
+        "SIMULATOR_PREPARING": 81.8,
+        "SIMULATOR_PREPARED": 111.765,
+        "SIMULATOR_CONNECTED": 145.467
+      }
+    },
+    {
+      "unit": "pipewireao-session@2b9546b5efe8.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 61.774,
+      "service_to_RTC_exec_s": 13.829,
+      "RTC_exec_to_ready_s": 47.935,
+      "RTC_exec_to_endpoint_seen_by_client_s": 33.528,
+      "service_to_simulator_exec_s": 6.949,
+      "simulator_exec_to_model_prepared_s": 22.404,
+      "model_prepare_s": 12.069,
+      "simulator_exec_to_connected_s": 35.807,
+      "simulator_connected_to_service_ready_s": 19.008,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 4.43,
+      "owner_exec_after_unit_start_s": {
+        "core": 5.739,
+        "julia": 6.949,
+        "parameters": 6.949,
+        "simulator": 6.949
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@2b9546b5efe8.service": 0.0,
+        "Started pipewireao-session@2b9546b5efe8.service": 61.764,
+        "Waiting for RTC control endpoint": 44.779,
+        "Waiting for owner preparation and RTC warmup": 47.357,
+        "RTC warmup completed": 57.334,
+        "SIMULATOR_PREPARING": 17.284,
+        "SIMULATOR_PREPARED": 29.353,
+        "SIMULATOR_CONNECTED": 42.756
+      }
+    }
+  ],
+  "cal2": [
+    {
+      "unit": "pipewireao-session@f511cc4e6e1a.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 354.298,
+      "service_to_RTC_exec_s": 36.164,
+      "RTC_exec_to_ready_s": 318.12,
+      "RTC_exec_to_endpoint_seen_by_client_s": 37.413,
+      "service_to_simulator_exec_s": 28.274,
+      "simulator_exec_to_model_prepared_s": 10.373,
+      "model_prepare_s": 1.118,
+      "simulator_exec_to_connected_s": null,
+      "simulator_connected_to_service_ready_s": null,
+      "simulator_exec_to_optical_warmup_end_s": 313.166,
+      "optical_warmup_s": 302.792,
+      "RTC_warmup_ack_to_service_ready_s": 2.581,
+      "owner_exec_after_unit_start_s": {
+        "cal2-llowfs": 28.274,
+        "cal2-scc": 28.274,
+        "core": 23.144,
+        "simulator": 28.274
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@f511cc4e6e1a.service": 0.0,
+        "Started pipewireao-session@f511cc4e6e1a.service": 354.284,
+        "Waiting for RTC control endpoint": 68.519,
+        "Waiting for owner preparation and RTC warmup": 73.577,
+        "RTC warmup completed": 351.703,
+        "Preparing optical model": 37.529,
+        "Optical model prepared": 38.647,
+        "Warming up optical execution": 38.648,
+        "Optical execution warmed up": 341.44
+      }
+    }
+  ],
+  "spiders": [
+    {
+      "unit": "pipewireao-session@3e5384a5ef0b.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 118.604,
+      "service_to_RTC_exec_s": 44.418,
+      "RTC_exec_to_ready_s": 74.175,
+      "RTC_exec_to_endpoint_seen_by_client_s": 60.159,
+      "service_to_simulator_exec_s": 18.648,
+      "simulator_exec_to_model_prepared_s": 15.884,
+      "model_prepare_s": 6.315,
+      "simulator_exec_to_connected_s": null,
+      "simulator_connected_to_service_ready_s": null,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 6.752,
+      "owner_exec_after_unit_start_s": {
+        "core": 14.098,
+        "parameters": 18.648,
+        "scc-differential": 18.648,
+        "simulator": 18.648,
+        "spiders-scc": 18.658
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@3e5384a5ef0b.service": 0.0,
+        "Started pipewireao-session@3e5384a5ef0b.service": 118.593,
+        "Waiting for RTC control endpoint": 99.893,
+        "Waiting for owner preparation and RTC warmup": 104.577,
+        "RTC warmup completed": 111.841,
+        "Preparing optical model": 28.217,
+        "Optical model prepared": 34.532
+      }
+    }
+  ],
+  "spiders-single": [
+    {
+      "unit": "pipewireao-session@fc538dc91217.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 35.791,
+      "service_to_RTC_exec_s": 8.748,
+      "RTC_exec_to_ready_s": 27.032,
+      "RTC_exec_to_endpoint_seen_by_client_s": 9.824,
+      "service_to_simulator_exec_s": 6.948,
+      "simulator_exec_to_model_prepared_s": 16.171,
+      "model_prepare_s": 5.832,
+      "simulator_exec_to_connected_s": null,
+      "simulator_connected_to_service_ready_s": null,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 2.358,
+      "owner_exec_after_unit_start_s": {
+        "core": 5.708,
+        "simulator": 6.948,
+        "spiders-scc": 6.948
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@fc538dc91217.service": 0.0,
+        "Started pipewireao-session@fc538dc91217.service": 35.781,
+        "Waiting for RTC control endpoint": 17.474,
+        "Waiting for owner preparation and RTC warmup": 18.573,
+        "RTC warmup completed": 33.423,
+        "Preparing optical model": 17.288,
+        "Optical model prepared": 23.12
+      }
+    }
+  ]
+}
