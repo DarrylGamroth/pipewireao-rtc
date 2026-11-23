@@ -74,17 +74,20 @@ function confirm_ready(reply::Session.Completion)
 end
 confirm_ready(reply) = throw(ArgumentError("fresh direct Status did not confirm Ready"))
 
-function confirm_shutdown(reply::Session.Completion)
-    reply.header.result == 0 &&
-    reply.error === nothing &&
-    reply.lifecycle == Session.Runner.Offline &&
-    reply.result !== nothing &&
-    reply.result.details.shutdown === true ||
+shutdown_completed(reply) = false
+function shutdown_completed(reply::Session.Completion)
+    return reply.header.result == 0 &&
+           reply.error === nothing &&
+           reply.lifecycle == Session.Runner.Offline &&
+           reply.result !== nothing &&
+           reply.result.details.shutdown === true
+end
+
+function confirm_shutdown(reply)
+    shutdown_completed(reply) ||
         throw(ArgumentError("native systemd Quit did not complete Offline"))
     return nothing
 end
-confirm_shutdown(reply) =
-    throw(ArgumentError("native systemd Quit did not complete Offline"))
 
 function render!(spec, session, bindings, records, runtime; links = D.session_links(session))
     return SessionConfiguration.write_session_config(
@@ -363,6 +366,44 @@ function stop!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
     invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
     previous = Clocks.time_nanos(clock)
     deadline = Base.checked_add(previous, Int64(30_000_000_000))
+    trace = Client.Trace(Profile.Profile())
+    result = (outcome = :failed, process_exit_at = nothing)
+    try
+        result = stop_invocation!(args, invocation, previous, deadline, trace, clock)
+    finally
+        try
+            summary = stop_timing(args.unit, invocation, deadline, trace, result)
+            println(stderr, "RTC systemd stop timing ", JSON.json(summary))
+        catch
+            # Journal output must not replace the shutdown result or error.
+        end
+    end
+    return nothing
+end
+
+function stop_timing(unit, invocation, deadline, trace::Client.Trace, result)
+    # Every value uses the overall helper deadline, including a reply received
+    # after the shorter native request deadline.
+    remaining(at) = at === nothing ? nothing : Base.checked_sub(deadline, at)
+    reply = trace.matched_completion
+    return (
+        unit = unit,
+        invocation = invocation,
+        outcome = String(result.outcome),
+        deadline_ns = deadline,
+        capability_remaining_ns = remaining(trace.capability_at),
+        completion_remaining_ns = remaining(trace.completion_at),
+        rejection_remaining_ns = remaining(trace.rejection_at),
+        controller_admission_remaining_ns = remaining(trace.controller_admission_at),
+        connection_ready_remaining_ns = remaining(trace.connection_ready_at),
+        quit_submission_remaining_ns = remaining(trace.submission_at),
+        offline_remaining_ns = reply !== nothing && shutdown_completed(reply.value) ?
+                               remaining(reply.at) : nothing,
+        process_exit_remaining_ns = remaining(result.process_exit_at),
+    )
+end
+
+function stop_invocation!(args, invocation, previous, deadline, trace, clock)
     values = S.properties(
         args.unit; extra = "ControlPID,Type,Restart,KillMode", deadline, clock
     )
@@ -382,7 +423,8 @@ function stop!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
         throw(ArgumentError("native stop is outside this session's cgroup"))
     # A successful public Quit or unexpected process exit can invoke ExecStop
     # after MainPID has already disappeared. Cleanup remains ExecStopPost's job.
-    values["MainPID"] == "0" && return nothing
+    values["MainPID"] == "0" &&
+        return (outcome = :main_already_gone, process_exit_at = Clocks.time_nanos(clock))
     runtime = joinpath(args.runtime_root, invocation)
     ledger = joinpath(runtime, "launch.json")
     record = C.read_json(ledger; maximum = 1024 * 1024)
@@ -407,6 +449,7 @@ function stop!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
         Int64(record["session_control_instance"]);
         deadline,
         clock,
+        trace,
     )
     try
         # Discovery already bound the control node to this PID and instance.
@@ -444,7 +487,8 @@ function stop!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
         current = S.properties(args.unit; deadline, clock)
         S.valid_invocation(current["InvocationID"]) == invocation ||
             throw(ArgumentError("session incarnation changed after native Quit"))
-        current["MainPID"] == "0" && return nothing
+        current["MainPID"] == "0" &&
+            return (outcome = :completed, process_exit_at = Clocks.time_nanos(clock))
         tryparse(Int, current["MainPID"]) == pid ||
             throw(ArgumentError("RTC process changed after native Quit"))
         # /proc may disappear after systemd's query and before this read.

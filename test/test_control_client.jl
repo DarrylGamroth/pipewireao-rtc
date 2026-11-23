@@ -48,14 +48,14 @@ Client.encode_request(::TestProfile, header, ::TestCommand) =
     Envelope.encode_request(header, SPA.Struct())
 
 const IDENTITY = Envelope.ControllerIdentity(UInt32(42), typemax(UInt64), Int64(9))
-function test_capability(profile; state = UInt32(Prepared))
+function test_capability(profile; state = UInt32(Prepared), controller = IDENTITY)
     names = Client.capability_names(profile)
     rows = SPA.Struct(
         Pod(
             SPA.Struct(
-                Pod(SPA.Id(IDENTITY.global_id)),
-                Pod(reinterpret(Int64, IDENTITY.serial)),
-                Pod(IDENTITY.instance),
+                Pod(SPA.Id(controller.global_id)),
+                Pod(reinterpret(Int64, controller.serial)),
+                Pod(controller.instance),
             ),
         ),
     )
@@ -71,6 +71,36 @@ function test_capability(profile; state = UInt32(Prepared))
             ),
         ),
     )
+end
+
+@testset "first required parameter receipts and exact controller admission" begin
+    profile = TestProfile()
+    trace = Client.Trace(profile)
+    trace.controller = IDENTITY
+    observation = Client.Observation(profile, Int64(23), UInt32(getpid()); trace)
+    other = Envelope.ControllerIdentity(IDENTITY.global_id, UInt64(7), IDENTITY.instance)
+    Client.observe!(observation, test_capability(profile; controller = other); at = -10)
+    @test trace.capability_at === Int64(-10)
+    @test trace.controller_admission_at === nothing
+    @test trace.completion_at === trace.rejection_at === nothing
+
+    completion = Envelope.encode_completion(
+        Envelope.ReplyHeader(Int64(23), Int32(0)), SPA.Struct()
+    )
+    rejection = Envelope.encode_rejection(
+        Envelope.ReplyHeader(Int64(23), Int32(-1)), SPA.Struct(Pod("rejection"))
+    )
+    Client.observe!(observation, completion; at = -8)
+    Client.observe!(observation, rejection; at = -6)
+    Client.observe!(observation, test_capability(profile); at = -2)
+    Client.observe!(observation, test_capability(profile); at = 1)
+    Client.observe!(observation, completion; at = 3)
+    Client.observe!(observation, rejection; at = 5)
+    @test observation.failure === nothing
+    @test trace.capability_at === Int64(-10)
+    @test trace.completion_at === Int64(-8)
+    @test trace.rejection_at === Int64(-6)
+    @test trace.controller_admission_at === Int64(-2)
 end
 
 @testset "native owner profile dispatch" begin

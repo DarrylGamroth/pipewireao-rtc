@@ -1,5 +1,68 @@
-using Test, PipeWireAORTC
+using Test, PipeWireAO, PipeWireAORTC, JSON
 using PipeWireAORTC: SessionLaunch, SessionInstall
+
+@testset "managed stop timing retains missing and late receipts" begin
+    Client = PipeWireAORTC.ControlClient
+    Envelope = PipeWireAORTC.ControlCodec
+    Runner = PipeWireAORTC.RunnerCodec
+    CLI = PipeWireAORTC.SessionCLI
+    profile = PipeWireAORTC.SessionProfile.Profile()
+    trace = Client.Trace(profile)
+    observation = Client.Observation(profile, Int64(23), UInt32(getpid()); trace)
+    controller = Envelope.ControllerIdentity(UInt32(42), UInt64(8), Int64(9))
+    other = Envelope.ControllerIdentity(
+        controller.global_id, UInt64(7), controller.instance
+    )
+    operation = Runner.operation_id(Runner.RunnerCommand(:quit))
+    observation.pending = Envelope.RequestHeader(
+        controller, Int64(23), Int64(2), operation, Int64(100)
+    )
+    payload = SPA.Struct(
+        Pod(SPA.Id(UInt32(Runner.Offline))),
+        Pod(SPA.Id(UInt32(Runner.Accepted))),
+        Pod(SPA.Struct(Pod(true))),
+    )
+    completion(identity, token) = Envelope.encode_completion(
+        Envelope.ReplyHeader(identity, Int64(23), token, operation, Int32(0)), payload
+    )
+    deadline = Int64(100)
+    failed = (outcome = :failed, process_exit_at = nothing)
+    summary(result = failed; times = trace) = JSON.parse(
+        JSON.json(CLI.stop_timing("fixture.service", "fixture", deadline, times, result)),
+    )
+
+    first = summary()
+    @test first["deadline_ns"] == deadline
+    @test first["outcome"] == "failed"
+    @test length(filter(key -> endswith(key, "_remaining_ns"), keys(first))) == 8
+    @test all(value === nothing for (key, value) in first if endswith(key, "_remaining_ns"))
+
+    trace.submission_at = Int64(70)
+    Client.observe!(observation, completion(other, Int64(1)); at = 80)
+    @test summary()["offline_remaining_ns"] === nothing
+    Client.observe!(observation, completion(controller, Int64(2)); at = 102)
+    Client.observe!(observation, completion(controller, Int64(2)); at = 106)
+    @test_throws Client.UnknownOutcome Client.matching_reply(
+        observation, deadline; now = 107
+    )
+    late = summary()
+    @test late["quit_submission_remaining_ns"] == 30
+    @test late["offline_remaining_ns"] == -2
+    @test late["process_exit_remaining_ns"] === nothing
+
+    normal = Client.Trace(profile)
+    normal_observation = Client.Observation(
+        profile, Int64(23), UInt32(getpid()); trace = normal
+    )
+    normal_observation.pending = observation.pending
+    Client.observe!(normal_observation, completion(controller, Int64(2)); at = 92)
+    @test Client.matching_reply(normal_observation, deadline; now = 96).lifecycle ==
+        Runner.Offline
+    exited = summary((outcome = :completed, process_exit_at = Int64(98)); times = normal)
+    @test exited["outcome"] == "completed"
+    @test exited["offline_remaining_ns"] == 8
+    @test exited["process_exit_remaining_ns"] == 2
+end
 
 @testset "installed restart requires an explicit valid session" begin
     main = PipeWireAORTC.SessionCLI.main
