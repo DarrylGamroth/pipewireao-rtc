@@ -127,6 +127,23 @@ struct ObservedReply{T}
     bytes::Vector{UInt8}
 end
 
+# Optional diagnostics for a one-shot connection and request. The ThreadLoop
+# lock protects callback and submission samples while the connection is open.
+mutable struct Trace{C}
+    controller::Union{Nothing,Envelope.ControllerIdentity}
+    capability_at::Union{Nothing,Int64}
+    completion_at::Union{Nothing,Int64}
+    rejection_at::Union{Nothing,Int64}
+    controller_admission_at::Union{Nothing,Int64}
+    connection_ready_at::Union{Nothing,Int64}
+    submission_at::Union{Nothing,Int64}
+    matched_completion::Union{Nothing,ObservedReply{C}}
+end
+
+Trace(profile::AbstractProfile) = Trace{completion_type(profile)}(
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing
+)
+
 "Bounded copied callback observations, read and written under the ThreadLoop lock."
 mutable struct Observation{P<:AbstractProfile,L,C,R}
     profile::P
@@ -147,9 +164,12 @@ mutable struct Observation{P<:AbstractProfile,L,C,R}
     pending::Union{Nothing,Envelope.RequestHeader}
     matched_completion::Union{Nothing,ObservedReply{C}}
     matched_rejection::Union{Nothing,ObservedReply{R}}
+    trace::Union{Nothing,Trace{C}}
 end
 
-function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:AbstractProfile}
+function Observation(
+    profile::P, instance::Int64, pid::UInt32; trace::Union{Nothing,Trace} = nothing
+) where {P<:AbstractProfile}
     return Observation{
         P,lifecycle_type(profile),completion_type(profile),rejection_type(profile)
     }(
@@ -171,6 +191,7 @@ function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:Abstrac
         nothing,
         nothing,
         nothing,
+        trace,
     )
 end
 
@@ -268,12 +289,20 @@ function observe!(
         props = SPA.Props(pod)
         isempty(props.values) && throw(ArgumentError("empty owner Props"))
         name = first(props.values).first
+        trace = observation.trace
         if name in names
             cap = capability(pod, observation)
+            trace === nothing || (trace.capability_at = something(trace.capability_at, at))
             # A retained enum response can trail a newer subscription event.
             cap.last_token < observation.max_accepted && return nothing
             observation.capability = cap
             observation.max_accepted = cap.last_token
+            if trace !== nothing &&
+                trace.controller_admission_at === nothing &&
+                trace.controller !== nothing &&
+                trace.controller in cap.controllers
+                trace.controller_admission_at = at
+            end
         elseif name == "pipewireao.rtc.control.completion.header"
             header, payload = Envelope.decode_completion(
                 pod; endpoint = reply_endpoint(observation.profile)
@@ -284,6 +313,8 @@ function observe!(
                 header.result == 0 && isempty(payload.values) ||
                     throw(ArgumentError("invalid initial completion sentinel"))
                 observation.completion_seen = true
+                trace === nothing ||
+                    (trace.completion_at = something(trace.completion_at, at))
                 return nothing
             end
             value = decode_completion(observation.profile, pod)
@@ -298,6 +329,7 @@ function observe!(
                 observation.completion = recorded
             end
             observation.completion_seen = true
+            trace === nothing || (trace.completion_at = something(trace.completion_at, at))
             observation.max_accepted = max(observation.max_accepted, header.token)
             pending = observation.pending
             if pending !== nothing && same_request(header, pending)
@@ -306,9 +338,10 @@ function observe!(
                     matched.bytes == bytes ||
                     throw(ArgumentError("conflicting matching completion"))
                 # Re-publication must retain the first observation time.
-                matched === nothing &&
-                    observation.failure === nothing &&
-                    (observation.matched_completion = recorded)
+                if matched === nothing && observation.failure === nothing
+                    observation.matched_completion = recorded
+                    trace === nothing || (trace.matched_completion = recorded)
+                end
             end
         elseif name == "pipewireao.rtc.control.rejection.header"
             value = decode_rejection(observation.profile, pod)
@@ -328,6 +361,7 @@ function observe!(
             end
             observation.rejection = recorded
             observation.rejection_seen = true
+            trace === nothing || (trace.rejection_at = something(trace.rejection_at, at))
         else
             throw(ArgumentError("unrecognized owner Props"))
         end
@@ -675,6 +709,7 @@ function connect(
     check = NO_CHECK,
     controller_instance::Union{Nothing,Integer} = nothing,
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    trace::Union{Nothing,Trace} = nothing,
 )
     deadline = _deadline_ns(deadline)
     0 < expected_pid <= typemax(UInt32) ||
@@ -695,7 +730,9 @@ function connect(
     instance =
         controller_instance === nothing ? next_instance() : Int64(controller_instance)
     marker_name = "$(CONTROLLER_NODE_PREFIX)julia.$(getpid()).$instance"
-    observation = Observation(profile, Int64(expected_instance), UInt32(expected_pid))
+    observation = Observation(
+        profile, Int64(expected_instance), UInt32(expected_pid); trace
+    )
     client = Client(
         ThreadLoop("deployment.native-control"),
         nothing,
@@ -761,6 +798,7 @@ function connect(
             client.identity = Envelope.ControllerIdentity(
                 marker.id, serial(marker.properties, marker_name), instance
             )
+            trace === nothing || (trace.controller = client.identity)
             client.marker_node = bind(
                 something(client.registry),
                 marker,
@@ -816,6 +854,7 @@ function connect(
                 observation.rejection_seen &&
                 something(client.identity) in cap.controllers
         end
+        trace === nothing || (trace.connection_ready_at = Clocks.time_nanos(clock))
         return client
     catch error
         contextual = UnknownOutcome(
@@ -919,6 +958,8 @@ function request!(client::Client, command; deadline::Union{Int64,Float64}, check
             client.last_token = token
             submitted = true
             set_param!(something(client.node), SPA.PARAM_PROPS, pod)
+            trace = observation.trace
+            trace === nothing || (trace.submission_at = Clocks.time_nanos(client.clock))
         end
         return poll(client, deadline, check; verify_health = false) do current
             reply = matching_reply(client.observation, deadline; now = current)
@@ -960,6 +1001,8 @@ function Base.close(client::Client)
     try
         client.closed = true
         with_thread_loop_lock(client.loop) do _
+            # Freeze the trace even if a native close leaves the loop running.
+            client.observation.trace = nothing
             for resource in (
                 client.timer,
                 client.node,

@@ -39,6 +39,16 @@ The [installed GPI2 comparison](validation/session-agent-idle-20261122/GPI2.md)
 covers two shutdown paths per RTC, live package identity, advancing science
 streams, operator latency distributions, CPU and cleanup.
 
+## Classic CPU managed shutdown on RTC 0.7.28 — 2026-11-22 Pacific
+
+A bridge-free Running session acknowledged one Quit with Offline after 4.212 s.
+The stop helper observed process exit with 21.351 s of its original 30 s
+budget available. Systemd and the RTC owner both confirmed successful cleanup.
+The [receipt](validation/classic-stop-deadline-20261122.json) includes the
+exact export, the stop helper's signed monotonic measurements and an independent
+pidfd observation. Only the stop helper loaded the diagnostic change.
+[RTC issue #12](https://github.com/DarrylGamroth/pipewireao-rtc/issues/12#issuecomment-7093198212)
+
 ## PipeWireAORTC 0.7.28 clean install — 2026-11-22
 
 With an empty project and depot on Julia 1.13.3, adding only

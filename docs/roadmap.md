@@ -44,6 +44,12 @@ and groups requests, and shutdown with a request outstanding. The
 passed Stop → Ready → Quit and Quit directly from Running on both versions.
 The candidate reduced median Groups response time while using more control CPU.
 
+### Classic CPU shutdown — 2026-11-22 Pacific
+
+An instrumented v0.7.28 stop helper recorded every admission and shutdown
+milestone in one bridge-free Classic CPU run. Quit completed Offline and the
+service stopped successfully. [Measurements and cleanup receipt](validation/classic-stop-deadline-20261122.json)
+
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 
 The [clean install of RTC 0.7.28](EVIDENCE_INDEX.md#pipewireaortc-0728-clean-install--2026-11-22)
