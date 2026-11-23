@@ -33,10 +33,12 @@ function stage!(package, owners)
                 for file in ("deployment.conf", "Project.toml", "Manifest.toml")
                     Base.include_dependency(joinpath(root, file); track_content = true)
                 end
-                if ccall(:jl_generating_output, Cint, ()) == 1
+                function qualify()
                     rtc = Base.require(Main, :PipeWireAORTC)
-                    const PrecompileTools = Base.require(Base.PkgId(Base.UUID("aea7be01-6a6a-4083-8856-8a6e6704d82a"), "PrecompileTools"))
                     Base.require(Main, :FilterGraphPipeWire)
+                    return Base.invokelatest(qualify, rtc)
+                end
+                function qualify(rtc)
                     bindings = Dict(
                         "PACKAGE" => root,
                         "RUNTIME" => tempdir(),
@@ -44,7 +46,11 @@ function stage!(package, owners)
                         $(repr(bootstrap_instance_key(role))) => "1",
                     )
                     args = map(arg -> rtc.DeploymentConfiguration.substitute(arg, bindings), $(repr(args)))
-                    @eval PrecompileTools.@compile_workload Base.invokelatest(rtc.GraphOwner.precompile_graph_warmup, args)
+                    return rtc.GraphOwner.precompile_graph_warmup(args)
+                end
+                if ccall(:jl_generating_output, Cint, ()) == 1
+                    const PrecompileTools = Base.require(Base.PkgId(Base.UUID("aea7be01-6a6a-4083-8856-8a6e6704d82a"), "PrecompileTools"))
+                    @eval PrecompileTools.@compile_workload qualify()
                 end
                 end
                 """)
@@ -69,11 +75,19 @@ end
 function precompile!(julia, package, environment, owners)
     for owner in owners
         root = workload_directory(package, owner)
-        root === nothing && continue
+        args = owner_arguments(owner)
+        at_install = args !== nothing && "--qualify-at-install" in args
+        if root === nothing
+            at_install && throw(ArgumentError("missing qualification workload for $(owner["role"])"))
+            continue
+        end
         argv = owner["argv"]
         flags = argv[2:(findfirst(==("-e"), argv) - 1)]
         flags = filter(flag -> startswith(flag, "-O") || startswith(flag, "--threads="), flags)
         code = "pushfirst!(LOAD_PATH, only(ARGS)); using ExportedGraphWarmup"
+        # A precompiled image can be reused, and compile workloads can be disabled.
+        # Test the installed graph and its current calibration in either case.
+        at_install && (code *= "; ExportedGraphWarmup.qualify()")
         command = Cmd([julia, flags..., "--startup-file=no", "--project=" * environment,
                        "-e", code, "--", root])
         depots = join([cache_depot(root); DEPOT_PATH], ':')
@@ -98,7 +112,7 @@ function configure_owner!(argv, package, owner)
         $ENTRY
         """
     # Install owns cache generation. An invalid or missing cache falls back
-    # to the ordinary graph warmup, without an offline workload on launch.
+    # to loading graph code without running the offline workload on launch.
     insert!(argv, findfirst(==("-e"), argv), "--compiled-modules=existing")
     return nothing
 end

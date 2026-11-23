@@ -332,16 +332,21 @@ function warm_graph!(node, graph, options)
 end
 
 function Owner.precompile_graph_warmup(args)
-    _, graph_args, fits, properties, timeout, recovery, supervision, offsets, warmup, local_output =
+    _, graph_args, fits, properties, timeout, recovery, supervision, offsets, qualification, local_output =
         Owner.arguments(args)
     options = Owner.graph_options(
-        FilterGraphPipeWire, graph_args, properties, timeout, recovery, supervision, offsets, warmup,
-        local_output,
+        FilterGraphPipeWire, graph_args, properties, timeout, recovery, supervision, offsets, qualification,
+        local_output; offline = true,
     )
     # Offline construction is limited to complete-frame CPU owners without
     # optional physical offset transport or progressive worker placement.
-    options.capture_backend === nothing && options.execution == "complete-frame" &&
-        options.row_workers == 0 && offsets === nothing || return nothing
+    if !(options.capture_backend === nothing && options.execution == "complete-frame" &&
+         options.row_workers == 0 && offsets === nothing)
+        qualification.at_install && throw(ArgumentError(
+            "install qualification requires a complete-frame CPU graph without row workers or an offset receiver",
+        ))
+        return nothing
+    end
     entries = fits === nothing ? Owner.FITSBinding[] : Owner.bindings(fits)
     declarations = FilterGraphPipeWire.algorithm_declarations(;
         packages = options.packages, algorithms = options.algorithms, builtins = options.builtins,
@@ -381,7 +386,7 @@ function run_prepared(options, runtime, graph)
             runtime.transport.loop,
             () -> PipeWireAO.notify_properties!(node.filter),
         )
-        if isnothing(options.capture_backend)
+        if isnothing(options.capture_backend) && !options.qualify_at_install
             PipeWireAORTC.Common.startup_phase(options.name, "warm up graph") do
                 warm_graph!(node, graph, options)
             end

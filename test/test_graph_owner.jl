@@ -41,7 +41,7 @@ const GraphOwner = PipeWireAORTC.GraphOwner
             "--chopped-warmup",
             path,
         ]
-        @test GraphOwner.arguments(argv)[9] == path
+        @test GraphOwner.arguments(argv)[9] == (; path, at_install = false)
         @test GraphOwner.arguments(argv)[2] == ["--remote", "/tmp/rtc-private"]
         @test_throws ArgumentError GraphOwner.arguments([argv; "--chopped-warmup"; path])
     end
@@ -214,6 +214,21 @@ end
         end
     end
     without_fits = argv[1:(end-2)]
+    qualified = [without_fits; "--qualify-at-install"; "--chopped-warmup"; "/missing-test-data"]
+    @test GraphOwner.arguments(qualified)[9] == (; path = "/missing-test-data", at_install = true)
+    @test_throws ArgumentError GraphOwner.arguments([qualified; "--qualify-at-install"])
+    @test_throws ArgumentError GraphOwner.arguments([without_fits; "--qualify-at-install=true"])
+    @test GraphOwner._main(
+        qualified;
+        with_owner = fake_owner,
+        load_science = () -> GraphOwnerPipeWire,
+        run = (options, _, _) -> begin
+            @test options.qualify_at_install
+            @test options.chopped_warmup === nothing
+            @test "--qualify-at-install" ∉ options.args
+        end,
+    ) == 0
+    empty!(events)
     @test GraphOwner._main(
         without_fits;
         with_owner = fake_owner,

@@ -57,6 +57,7 @@ function arguments(arguments)
     recovery_nodes = String[]
     local_output = nothing
     display_sink = nothing
+    qualify_at_install = false
     forbidden = (
         "--prepared-event",
         "--connect-request",
@@ -72,7 +73,11 @@ function arguments(arguments)
         terms = split(argument, '='; limit = 2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--latest-output", "--unpublished-output", "--latest-output-sink")
+        if key == "--qualify-at-install"
+            length(terms) == 1 && !qualify_at_install ||
+                throw(ArgumentError("$key is a single flag without a value"))
+            qualify_at_install = true
+        elseif key in ("--latest-output", "--unpublished-output", "--latest-output-sink")
             count = key == "--latest-output" ? 3 : key == "--latest-output-sink" ? 2 : 1
             length(terms) == 1 && index + count <= length(arguments) || throw(
                 ArgumentError("$key requires $count separate arguments"),
@@ -198,7 +203,7 @@ function arguments(arguments)
     recovery_nodes,
     supervision,
     get(values, "--physical-offsets", nothing),
-    get(values, "--chopped-warmup", nothing),
+    (; path = get(values, "--chopped-warmup", nothing), at_install = qualify_at_install),
     local_output
 end
 
@@ -317,8 +322,8 @@ extension).
 function read_bindings end
 
 function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
-                       recovery_nodes, supervision_path, offsets_path, warmup_path,
-                       local_output = nothing)
+                       recovery_nodes, supervision_path, offsets_path, qualification,
+                       local_output = nothing; offline = false)
     return merge(
         Base.invokelatest(fgp.parse_arguments, graph_arguments),
         (;
@@ -328,8 +333,9 @@ function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
             physical_offsets = offsets_path,
             supervision = supervision_path === nothing ? () :
                           read_supervision(supervision_path),
-            chopped_warmup = warmup_path === nothing ? nothing :
-                             read_chopped_warmup(warmup_path),
+            qualify_at_install = qualification.at_install,
+            chopped_warmup = qualification.path !== nothing && (offline || !qualification.at_install) ?
+                             read_chopped_warmup(qualification.path) : nothing,
             local_output,
         ),
     )
@@ -341,7 +347,7 @@ function _main(
     load_science = () -> Base.require(Main, :FilterGraphPipeWire),
     run = run_owner,
 )
-    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path, local_output = arguments(
+    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, qualification, local_output = arguments(
         args
     )
     with_owner(binding) do admitted
@@ -353,7 +359,7 @@ function _main(
         admitted.owner_check()
         options = graph_options(
             filter_graph_pipewire, graph_arguments, correction_properties,
-            correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path,
+            correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, qualification,
             local_output,
         )
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
@@ -389,8 +395,10 @@ typed graph outputs. Monitor-only is the default and never changes closure.
 (1–60000 ms, default 5000). Expiry reports Unknown without a control retry.
 `--chopped-warmup PATH` selects bounded version-1 YAML with an image `input`,
 `exposure_duration_ns` and explicit `trigger_high_is_fringed`. Three unpublished
-synthetic F/U/F samples prime either the detector pair or the SCC pixel
-residual before completion. The Graph is then reset. The owner requires explicit identity, exposure timing and optical chopping records.
+synthetic F/U/F samples exercise the chopped detector path and the Graph is reset.
+`--qualify-at-install` runs the synthetic checks on the installed complete-frame
+CPU graph. The live owner starts with fresh scientific state and uses real
+camera frames to establish its history. The owner requires explicit identity, exposure timing and optical chopping records.
 `--latest-output PORT NODE MEDIA` publishes a complete-frame scalar on an
 independent display Node. `--latest-output-sink NODE PORT` declares an optional
 native sink for that publisher. `--unpublished-output PORT` discards the same
