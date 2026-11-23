@@ -1,7 +1,8 @@
 module DeploymentConfiguration
 
 using JSON, TOML
-using Pkg.Versions: VersionSpec, semver_spec
+import Pkg
+using .Pkg.Versions: VersionSpec, semver_spec
 using ..Common
 using ..Placement
 import ..PipeWireAORTC
