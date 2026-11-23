@@ -16,6 +16,20 @@ exact export, the stop helper's signed monotonic measurements and an independent
 pidfd observation. Only the stop helper loaded the diagnostic change.
 [RTC issue #12](https://github.com/DarrylGamroth/pipewireao-rtc/issues/12#issuecomment-7093198212)
 
+## Agent.jl polling in MediaSession — 2026-11-22
+
+Across three paired private-core runs, median public control acknowledgement
+fell from 3.886 to 1.762 ms at 100 scheduled requests/s and from 4.502 to
+2.390 ms in serial bursts. Quiet CPU ranges overlapped and the largest
+observed deadline overshoot occurred in the candidate. All 9,216 timed
+replies correlated. The [trial record](validation/session-agent-idle-20261122/README.md)
+covers task fairness, effect scheduling, process shutdown and the limits
+of this software fixture.
+
+The [installed GPI2 comparison](validation/session-agent-idle-20261122/GPI2.md)
+covers two shutdown paths per RTC, live package identity, advancing science
+streams, operator latency distributions, CPU and cleanup.
+
 ## PipeWireAORTC 0.7.28 clean install — 2026-11-22
 
 With an empty project and depot on Julia 1.13.3, adding only

@@ -256,18 +256,18 @@ end
 
 function start_effect!(session::Session)
     task = session.active_task
-    task !== nothing && !istaskdone(task) && return nothing
+    task !== nothing && !istaskdone(task) && return 0
     ticket = session.machine.effect
-    ticket === nothing && return nothing
+    ticket === nothing && return 0
     session.active_job !== nothing &&
         session.active_job.ticket.serial == ticket.serial &&
-        return nothing
+        return 0
     # Retained terminal replies must leave ingress before the final native fence.
-    ready_for_effect(session, ticket.effect) || return nothing
+    ready_for_effect(session, ticket.effect) || return 0
     job = Job(ticket, false)
     session.active_job = job
     session.active_task = @async execute_effect!(session, job)
-    return nothing
+    return 1
 end
 
 function execute_effect!(session::Session, job::Job)
@@ -327,7 +327,7 @@ function Agent.do_work(session::Session)
         ),
     )
     drain!(session)
-    start_effect!(session)
+    work += start_effect!(session)
     # HeldFault has finished compensation. Emergency Disconnect already logs.
     if !session.done && !session.fault_reported && Hsm.current(session.machine) === :HeldFault
         session.fault_reported = true
@@ -461,7 +461,6 @@ function perform!(session::Session, job, ::Disconnect)
     return nothing
 end
 
-const SESSION_IDLE_SECONDS = 0.001
 Agent.on_start(session::Session) = nothing
 Agent.on_error(::Session, error) = throw(error)
 Agent.on_close(::Session) = nothing
@@ -469,6 +468,7 @@ Agent.on_close(::Session) = nothing
 function serve!(session::Session)
     current_task() === session.owner || error("session belongs to another task")
     invoker = Agent.AgentInvoker(session)
+    idle_strategy = Agent.SleepingMillisIdleStrategy(1)
     terminate = SignalSource(
         session.loop, Base.SIGTERM, (_, _) -> stage!(session.queue, ShutdownRequested())
     )
@@ -476,8 +476,10 @@ function serve!(session::Session)
         Agent.start(invoker)
         while !session.done
             try
-                Base.disable_sigint(() -> Agent.invoke_unchecked(invoker))
-                sleep(SESSION_IDLE_SECONDS)
+                work = Base.disable_sigint(() -> Agent.invoke_unchecked(invoker))
+                Agent.idle(idle_strategy, work)
+                # A productive turn skips the timer. Give same-thread effects a turn.
+                work > 0 && yield()
             catch error
                 error isa InterruptException || rethrow()
                 stage!(session.queue, ShutdownRequested())
