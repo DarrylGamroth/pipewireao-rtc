@@ -20,6 +20,9 @@ PipeWire output. The existing parameter source publishes the accepted values.
 Catalog clients can request the original registered FITS bytes through a
 sealed descriptor. See [bounded local control](operations.md#rtc-dev-022--bounded-local-control)
 and the [verification record](EVIDENCE_INDEX.md#native-ndarray-parameter-interchange--2026-11-23).
+Startup now prepares the public request, forwarding, parameter staging and
+completion paths for the configured NDArray ranks.
+[First-update trace and Classic CPU results](validation/ndarray-first-update-20261123/README.md)
 
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 

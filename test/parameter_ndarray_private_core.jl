@@ -109,12 +109,14 @@ end
                 Parameter.Profile,Parameter.ParameterCommand,Parameter.Lifecycle,
                 Parameter.ParameterPublisher,typeof(clock),
             }
-            retained_completion = transport.endpoint.completion.data
+            retained_completion = copy(transport.endpoint.completion.data)
+            retained_payload = copy(source.bytes)
             Parameter.prepare_parameter_ndarrays!(
                 runtime, live_type, Endpoint.Ticket{Parameter.ParameterCommand}, [source], wake, clock,
             )
             @test transport.endpoint.completion.data == retained_completion
-            @test source.phase == Parameter.IDLE && source.sequence == 0
+            @test source.bytes == retained_payload
+            @test source.phase == Parameter.IDLE && source.sequence == 0 && source.publication === nothing
             rejected = Runner.ParameterStream(output.node, output.node_serial, output.port, output.port_serial + UInt64(1))
             active = (; header = (; token = Int64(1)), deadline = Int64(time_ns()) + 15_000_000_000)
             @test_throws ArgumentError Parameter.receive_parameter!(runtime, endpoint, active, source, origin, rejected)

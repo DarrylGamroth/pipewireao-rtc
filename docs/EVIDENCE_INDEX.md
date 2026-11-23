@@ -16,7 +16,11 @@ session using the paired GUI and RTC. All four replies reported Submitted,
 and all 277 Float32 values matched on readback after every write. From browser
 Status send through the matching reply, the first edit took 1,958 ms and the
 remaining three writes took 107–175 ms. The private owner stopped cleanly.
-This was software validation on one simulated session.
+This was software validation on one simulated session. A later fresh-session
+trace identified Julia first-use compilation in public dispatch, parameter
+forwarding and publication. With these paths prepared at startup, the
+first edit took 334 ms from Status send to reply. The remaining writes
+took 126–213 ms and the private owner stopped cleanly. [Trace and startup warmup verification](validation/ndarray-first-update-20261123/README.md)
 
 ## Published PipeWireAO 4.0.8 SDK and Julia 0.9.6 wrapper — 2026-11-22
 

@@ -812,17 +812,30 @@ end
 
 include("parameter_stream.jl")
 
+function parameter_source(sources, graph, inlet)
+    index = findfirst(source -> source.graph == graph && source.inlet == inlet, sources)
+    index === nothing && throw(ArgumentError("no declared parameter mapping"))
+    return sources[index]
+end
+
+# Caller holds the owner loop lock and has filled the idle source slot.
+function stage_publication!(source::Source, endpoint, ticket)
+    Endpoint.check_ticket(endpoint, ticket)
+    source.sequence < typemax(Int64) || throw(ArgumentError("parameter sequence exhausted"))
+    source.sequence += 1
+    source.initial_pending = false
+    source.publication = Publication(endpoint, ticket)
+    source.revoked = nothing
+    source.phase = PENDING
+    return nothing
+end
+
 function stage_parameter!(runtime, endpoint, active, sources, session_controller)
     selected = nothing
     staged = false
     try
         graph, inlet = parameter_address(active.command)
-        index = findfirst(
-            source -> source.graph == graph && source.inlet == inlet,
-            sources,
-        )
-        index === nothing && throw(ArgumentError("no declared parameter mapping"))
-        selected = sources[index]
+        selected = parameter_source(sources, graph, inlet)
         with_thread_loop_lock(endpoint.loop) do _
             selected.phase == IDLE || throw(
                 ArgumentError("parameter publication already pending")
@@ -830,14 +843,7 @@ function stage_parameter!(runtime, endpoint, active, sources, session_controller
         end
         read_parameter!(runtime, endpoint, active, selected, active.command, session_controller)
         with_thread_loop_lock(endpoint.loop) do _
-            Endpoint.check_ticket(endpoint, active)
-            selected.sequence < typemax(Int64) ||
-                throw(ArgumentError("parameter sequence exhausted"))
-            selected.sequence += 1
-            selected.initial_pending = false
-            selected.publication = Publication(endpoint, active)
-            selected.revoked = nothing
-            selected.phase = PENDING
+            stage_publication!(selected, endpoint, active)
             staged = true
             stream = something(selected.stream)
             # A paused stream has no process callback. Queue an
@@ -892,12 +898,20 @@ function prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, source
         PROFILE, Envelope.ReplyHeader(instance, Int32(-Base.Libc.EINVAL)), Connected,
     )
     transport = runtime.transport
+    bootstrap = transport.endpoint
+    precompile(
+        parameter_controller,
+        (typeof(something(bootstrap.registry)), Envelope.ControllerIdentity),
+    )
+    precompile(getproperty, (typeof(transport), Symbol))
+    precompile(getproperty, (typeof(bootstrap), Symbol))
+    precompile(getproperty, (ticket_type, Symbol))
     # Use the running bootstrap loop only for the Endpoint's local state
     # checks. The scratch endpoint has no registry, does not publish any
     # Props, and has no parameter output stream. Its publisher has the same
     # concrete type as the live endpoint's publisher.
     scratch = endpoint_type(
-        PROFILE, transport.loop, nothing, transport.endpoint.filter, instance, Connected,
+        PROFILE, transport.loop, nothing, bootstrap.filter, instance, Connected,
         ParameterPublisher(wake, false), [controller_proof], nothing, Int64(0), nothing,
         completion, rejection, nothing, false, controller, clock, nothing,
     )
@@ -915,8 +929,25 @@ function prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, source
         end
         active = Endpoint.take!(scratch)
         active !== nothing || error("parameter dispatch preparation did not stage its request")
-        Endpoint.check_ticket(scratch, active)
-        _completion!(scratch, active, (; sequence = Int64(1), phase = SUBMITTED), Int32(0), "")
+        # A Publication stored in a Source erases the endpoint and ticket types.
+        # Exercise the standalone check and its native lock wrapper from a
+        # dynamic call, as the publication boundary does.
+        Base.invokelatest(Endpoint.check_ticket, scratch, active)
+        format = parameter.format
+        # Compile the staging mutation with the same Source type and a single-F32
+        # slot. This source has no bootstrap authority or native output stream.
+        source = Source(
+            "", command.graph, command.inlet, collect(format.shape), something(parameter.schema, ""),
+            format, zeros(UInt8, sizeof(Float32)), false, nothing, StreamBuffer(), Int32(4),
+            IDLE, false, nothing, nothing, nothing, Int64(0), nothing, nothing,
+            (Pod(nothing), Pod(nothing)), wake,
+        )
+        selected = parameter_source([source], parameter_address(active.command)...)
+        with_thread_loop_lock(transport.loop) do _
+            stage_publication!(selected, scratch, active)
+        end
+        source.phase = SUBMITTED
+        _completion!(scratch, active, source, Int32(0), "")
         precompile(read_parameter!, (
             typeof(runtime), endpoint_type, ticket_type, Source,
             typeof(command), Envelope.ControllerIdentity,
@@ -984,6 +1015,12 @@ function run_owner(
         prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, sources, wake, clock)
         precompile(_completion!, (endpoint_type, ticket_type, Source, Int32, String))
         precompile(Endpoint.complete!, (endpoint_type, ticket_type, Pod))
+        for delay in (Float64, Nothing)
+            precompile(
+                Core.kwcall,
+                (NamedTuple{(:delay,),Tuple{delay}}, typeof(update_timer!), typeof(timer)),
+            )
+        end
         precompile(close, (typeof(timer),))
         precompile(close, (endpoint_type,))
         for source in sources

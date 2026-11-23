@@ -302,13 +302,9 @@ end
 # these codecs without opening a command endpoint or publishing a parameter.
 function parameter_ndarray_workload(rank::Int)
     format = NdArrayFormat(NdArray.F32_LE, ntuple(_ -> 1, rank); layout = NdArray.ROW_MAJOR)
-    return (
-        ParameterNdArray(format, nothing, Float32[0]),
-        ParameterNdArray(
-            format, "pipewireao/precompile-parameter/1",
-            ParameterStream(UInt32(3), UInt64(4), UInt32(5), UInt64(6)),
-        ),
-    )
+    stream = ParameterStream(UInt32(3), UInt64(4), UInt32(5), UInt64(6))
+    schemas = (nothing, "pipewireao/precompile-parameter/1")
+    return (ParameterNdArray(format, schema, data) for data in (Float32[0], stream) for schema in schemas)
 end
 
 function _parameter_format(pod::Pod)
