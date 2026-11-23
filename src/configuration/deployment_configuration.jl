@@ -1,6 +1,7 @@
 module DeploymentConfiguration
 
 using JSON, TOML
+using Pkg.Versions: VersionSpec, semver_spec
 using ..Common
 using ..Placement
 import ..PipeWireAORTC
@@ -532,6 +533,32 @@ julia_environment_file(name) =
     name in ("Project.toml", "JuliaProject.toml") ||
     occursin(r"^(?:Julia)?Manifest(?:-v[0-9]+\.[0-9]+)?\.toml$", name)
 
+function validate_application_project(metadata)
+    require(
+        get(metadata, "manifest", "Manifest.toml") == "Manifest.toml",
+        "runtime environment must use Manifest.toml",
+    )
+    require(
+        !haskey(metadata, "workspace"),
+        "deployed application must not declare a development workspace",
+    )
+    require(
+        !haskey(metadata, "sources"),
+        "registered application must not override package sources",
+    )
+    return nothing
+end
+
+function project_compatibility(compat, name)
+    require(compat isa AbstractDict, "application [compat] must be a table")
+    bound = get(compat, name, nothing)
+    bound === nothing && return VersionSpec()
+    require(bound isa String, "invalid compatibility bounds for $name")
+    spec = semver_spec(bound; throw = false)
+    require(spec !== nothing, "invalid compatibility bounds for $name")
+    return spec
+end
+
 """
     application_environment(spec, package)
 
@@ -564,18 +591,12 @@ function application_environment(spec::AbstractDict, package::AbstractString)
     project_path = relative_asset(root, normpath(joinpath(project, "Project.toml")))
     manifest_path = relative_asset(root, normpath(joinpath(project, "Manifest.toml")))
     metadata = TOML.parsefile(project_path)
-    require(
-        !haskey(metadata, "workspace"),
-        "deployed application must not declare a development workspace",
-    )
+    validate_application_project(metadata)
     direct = get(metadata, "deps", Dict())
+    compat = get(metadata, "compat", Dict())
     require(
         get(direct, "PipeWireAORTC", nothing) == "a3e2c7da-f73f-4284-8482-36ac422b34e6",
         "application must depend on PipeWireAORTC",
-    )
-    require(
-        !haskey(metadata, "sources"),
-        "registered application must not override package sources",
     )
     manifest = TOML.parsefile(manifest_path)
     dependencies = get(manifest, "deps", nothing)
@@ -591,7 +612,8 @@ function application_environment(spec::AbstractDict, package::AbstractString)
             uuid = get(entry, "uuid", nothing)
             validate_manifest_uuid(uuid, name)
             stdlib = joinpath(Sys.STDLIB, name, "Project.toml")
-            bundled = isfile(stdlib) && get(TOML.parsefile(stdlib), "uuid", nothing) == uuid
+            stdlib_metadata = isfile(stdlib) ? TOML.parsefile(stdlib) : Dict()
+            bundled = get(stdlib_metadata, "uuid", nothing) == uuid
             tree = get(entry, "git-tree-sha1", nothing)
             require(
                 bundled || valid_manifest_tree(tree),
@@ -602,6 +624,18 @@ function application_environment(spec::AbstractDict, package::AbstractString)
                 bundled || valid_manifest_version(version),
                 "registered dependency $name requires a package version",
             )
+            if get(direct, name, nothing) == uuid
+                allowed = project_compatibility(compat, name)
+                if allowed != VersionSpec()
+                    if version === nothing && bundled
+                        version = get(stdlib_metadata, "version", nothing)
+                    end
+                    require(
+                        valid_manifest_version(version) && VersionNumber(version) in allowed,
+                        "locked version $version does not satisfy compatibility bounds for $name",
+                    )
+                end
+            end
             required = get(entry, "deps", String[])
             names = manifest_dependency_names(required, name)
             require(

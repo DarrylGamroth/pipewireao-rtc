@@ -1,10 +1,100 @@
 using Test, PipeWireAORTC, PipeWireAO, TOML
+using Pkg.Versions: semver_spec
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
 const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
 
 Base.include(@__MODULE__, joinpath(@__DIR__, "composition_documents.jl"))
+
+@testset "composition intersects shared dependency compatibility" begin
+    mktempdir() do directory
+        base = composition_fixture(
+            joinpath(directory, "base"), "base", "simulator", "pupil"
+        )
+        component = composition_fixture(
+            joinpath(directory, "component"), "component", "simulator", "sensor"
+        )
+        base_project, component_project = joinpath.((base, component), "Project.toml")
+        project = TOML.parsefile(base_project)
+        uuid = project["deps"]["PipeWireAORTC"]
+        function compat!(path, bound; dependency = uuid, source = nothing, julia = "1.13")
+            metadata = Dict{String,Any}(
+                "deps" => Dict("PipeWireAORTC" => dependency),
+                "compat" => Dict("PipeWireAORTC" => bound, "julia" => julia),
+            )
+            source === nothing || (metadata["sources"] = Dict("PipeWireAORTC" => source))
+            open(io -> TOML.print(io, metadata), path, "w")
+            E.seal!(dirname(path))
+        end
+        function compose(name)
+            return E.compose(
+                base,
+                component,
+                joinpath(directory, name);
+                namespace = "cal2",
+                roles = Dict("simulator" => "cal2-optics"),
+                links = [],
+                overrides = Dict("graph.conf" => joinpath(base, "graph.conf")),
+                prefix = PREFIX,
+            )
+        end
+
+        compat!(base_project, "=0.7.29")
+        compat!(component_project, "0.7.28")
+        base_original, component_original = read.((base_project, component_project))
+        output = compose("overlap")
+        @test read(joinpath(output, "Project.toml")) == base_original
+        @test read(joinpath(output, "components", "cal2", "Project.toml")) ==
+            component_original
+        @test read.((base_project, component_project)) ==
+            (base_original, component_original)
+
+        compat!(base_project, "0.7.28 - 0.7.29, 2.1")
+        compat!(component_project, "0.7.29 - 0.7.30, 2.3 - 2.4")
+        output = compose("narrowed")
+        metadata = TOML.parsefile(joinpath(output, "Project.toml"))
+        @test metadata["deps"] == project["deps"]
+        @test semver_spec(metadata["compat"]["PipeWireAORTC"]) ==
+            semver_spec("=0.7.29, 2.3 - 2.4")
+
+        compat!(component_project, "=0.7.27")
+        @test_throws r"bounds do not overlap for PipeWireAORTC" compose("disjoint")
+        @test !ispath(joinpath(directory, "disjoint"))
+        compat!(
+            component_project, "0.7.28"; dependency = "c34e8d18-98db-4b56-a62a-32cd46522e1a"
+        )
+        @test_throws r"must supply component dependency PipeWireAORTC" compose("uuid")
+        compat!(component_project, "0.7.28"; source = Dict("path" => "/local/rtc"))
+        @test_throws r"must not override package sources" compose("source")
+        compat!(component_project, "0.7.28"; julia = "1.12 - 1.12")
+        @test_throws r"compatibility bounds do not overlap for julia" compose("julia")
+
+        compat!(base_project, "0.7.28")
+        compat!(component_project, "=0.7.29"; julia = "1.13 - 1.13")
+        function lock!(version)
+            for root in (base, component)
+                write(joinpath(root, "Manifest.toml"), """
+                    manifest_format = "2.0"
+                    [[deps.PipeWireAORTC]]
+                    uuid = "$uuid"
+                    version = "$version"
+                    git-tree-sha1 = "$("a"^40)"
+                    """)
+                E.seal!(root)
+            end
+        end
+        lock!("0.7.28")
+        @test_throws r"locked version 0.7.28 does not satisfy" compose("locked-reject")
+        lock!("0.7.29")
+        output = compose("locked-accept")
+        @test read(joinpath(output, "Manifest.toml")) ==
+            read(joinpath(base, "Manifest.toml"))
+        metadata = TOML.parsefile(joinpath(output, "Project.toml"))
+        @test metadata["compat"] ==
+            Dict("PipeWireAORTC" => "0.7.28", "julia" => "1.13 - 1.13")
+    end
+end
 
 @testset "composition rejects colliding native queue endpoints" begin
     queue(name, capture, playback) = Dict(

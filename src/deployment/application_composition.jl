@@ -54,6 +54,17 @@ function sealed_application(path, prefix)
     return root, spec
 end
 
+function composition_compatibility_range(range)
+    lower, upper = range.lower, range.upper
+    lower_text = join(lower.t[1:lower.n], '.')
+    if upper.n == 0
+        return all(iszero, lower.t) ? "0, >= 1" : ">= $lower_text"
+    end
+    upper_text = join(upper.t[1:upper.n], '.')
+    # Pkg prints singleton ranges as bare versions, which Project compat reads as caret.
+    return "$lower_text - $upper_text"
+end
+
 function composition_environment(base, component, base_root, component_root)
     get(base, "runtime", nothing) == get(component, "runtime", nothing) ||
         throw(ArgumentError("composed applications require the same runtime declaration"))
@@ -65,19 +76,15 @@ function composition_environment(base, component, base_root, component_root)
     project = runtime["project"]
     main = TOML.parsefile(joinpath(base_root, project, "Project.toml"))
     extra = TOML.parsefile(joinpath(component_root, project, "Project.toml"))
-    for (name, uuid) in get(extra, "deps", Dict())
-        get(get(main, "deps", Dict()), name, nothing) == uuid ||
-            throw(ArgumentError("base runtime must supply component dependency $name"))
-        get(get(main, "compat", Dict()), name, nothing) ==
-        get(get(extra, "compat", Dict()), name, nothing) ||
-            throw(ArgumentError("base and component compatibility bounds differ for $name"))
-    end
+    D.validate_application_project(main)
+    D.validate_application_project(extra)
     manifests = [
         joinpath(root, project, "Manifest.toml") for root in (base_root, component_root)
     ]
-    isfile(first(manifests)) == isfile(last(manifests)) ||
+    locked = isfile(first(manifests))
+    locked == isfile(last(manifests)) ||
         throw(ArgumentError("both composition inputs must have a manifest, or neither"))
-    if isfile(first(manifests))
+    if locked
         D.application_environment(base, base_root)
         D.application_environment(component, component_root)
         main_deps, extra_deps = (TOML.parsefile(path)["deps"] for path in manifests)
@@ -86,6 +93,32 @@ function composition_environment(base, component, base_root, component_root)
                 throw(ArgumentError("base runtime dependency closure differs for $name"))
         end
     end
+    direct = get(extra, "deps", Dict())
+    for (name, uuid) in direct
+        get(get(main, "deps", Dict()), name, nothing) == uuid ||
+            throw(ArgumentError("base runtime must supply component dependency $name"))
+    end
+    main_compat = get(main, "compat", Dict{String,Any}())
+    extra_compat = get(extra, "compat", Dict{String,Any}())
+    changed = false
+    for name in Iterators.flatten((keys(direct), ("julia",)))
+        main_spec = D.project_compatibility(main_compat, name)
+        extra_spec = D.project_compatibility(extra_compat, name)
+        overlap = intersect(main_spec, extra_spec)
+        isempty(overlap) && throw(
+            ArgumentError("base and component compatibility bounds do not overlap for $name"),
+        )
+        # Each locked package satisfies both declarations. Julia's own compatibility
+        # is separate from the locked packages and does not affect Pkg's project hash.
+        if (!locked || name == "julia") && overlap != main_spec
+            main_compat[name] = overlap == extra_spec ? extra_compat[name] :
+                join(composition_compatibility_range.(overlap.ranges), ", ")
+            changed = true
+        end
+    end
+    changed || return nothing
+    main["compat"] = main_compat
+    return main
 end
 
 composition_rebase(value::AbstractString, prefix) =
@@ -265,7 +298,7 @@ function compose(
     )
     base_root, main = sealed_application(base, prefix)
     component_root, extra = sealed_application(component, prefix)
-    composition_environment(main, extra, base_root, component_root)
+    project_metadata = composition_environment(main, extra, base_root, component_root)
     isempty(get(extra, "analysis", [])) ||
         throw(ArgumentError("component analysis processes are not supported"))
     Set(keys(roles)) == Set(owner["role"] for owner in extra["owners"]) ||
@@ -314,6 +347,11 @@ function compose(
         )
         spec = deepcopy(main)
         runtime_project = normpath(spec["runtime"]["project"])
+        if project_metadata !== nothing
+            open(joinpath(package, runtime_project, "Project.toml"), "w") do io
+                TOML.print(io, project_metadata; sorted = true)
+            end
+        end
         shared_project =
             runtime_project == "." ? "@PACKAGE@" : "@PACKAGE@/" * runtime_project
         for owner in spec["owners"]
