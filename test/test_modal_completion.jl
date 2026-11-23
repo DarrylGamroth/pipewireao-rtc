@@ -154,7 +154,7 @@ end
     end
     conditioner = FGA.prepare_algorithm(
         FGA.PdmCommandF32,
-        FGA.PdmCommandF32Configuration(
+        FGA.PdmCommandF32Configuration(;
             actuator_count = 2304,
             command_limits = (-limit, limit),
             slew_limit = nothing,
