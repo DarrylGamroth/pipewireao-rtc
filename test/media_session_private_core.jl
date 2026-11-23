@@ -67,11 +67,28 @@ include("control_private_core.jl")
             S.drain!(session)
             S.observe_controllers!(session)
             @test isempty(S.Ingress.take_actions!(session.ingress))
-            S.stage!(session.queue, S.ShutdownRequested())
-            for _ in 1:1000
-                Agent.do_work(session)
-                session.done && break
-                sleep(0.001)
+            # Keep native work ready while a same-thread task requests shutdown.
+            started = Base.Event()
+            dispatches = Ref(0)
+            budget = 32
+            source = EventSource(session.loop, (source, _) -> begin
+                dispatches[] += 1
+                dispatches[] == 1 && notify(started)
+                dispatches[] < budget && signal!(source)
+                return nothing
+            end)
+            try
+                shutdown = @async begin
+                    wait(started)
+                    count = dispatches[]
+                    S.stage!(session.queue, S.ShutdownRequested())
+                    return count
+                end
+                signal!(source)
+                @test S.serve!(session) == 0
+                @test 1 <= fetch(shutdown) < budget
+            finally
+                close(source)
             end
             @test session.done
             @test session.exitcode == 0

@@ -33,6 +33,17 @@ Installer checks retain the exact byte format of explicitly sealed launchers
 with the same executable, project and export commit. The [startup experiments](validation/hil-installed-startup-20261122/startup-performance.md)
 also isolate repeated CAL2 fixed-pupil optical propagation during simulator warmup.
 
+### MediaSession control polling — 2026-11-22
+
+The [Agent.jl polling trial](validation/session-agent-idle-20261122/README.md)
+keeps `AgentInvoker` on the task that creates the PipeWire loop. The owner
+sleeps on empty turns and yields after work, including a newly scheduled
+effect. The trial covers quiet startup expiry, idle CPU, correlated status
+and groups requests, and shutdown with a request outstanding. The
+[installed GPI2 qualification](validation/session-agent-idle-20261122/GPI2.md)
+passed Stop → Ready → Quit and Quit directly from Running on both versions.
+The candidate reduced median Groups response time while using more control CPU.
+
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 
 The [clean install of RTC 0.7.28](EVIDENCE_INDEX.md#pipewireaortc-0728-clean-install--2026-11-22)
