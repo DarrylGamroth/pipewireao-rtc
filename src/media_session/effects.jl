@@ -414,14 +414,19 @@ end
 _graph_states!(runtime, group::AbstractString, running::Bool) =
     (runtime.groups[group].running = running; nothing)
 
-function _run_graphs!(runtime, job, running::Bool, group)
+function _set_graph_running!(runtime, job, name, running)
+    handle = runtime.graphs[name]
     pids = get(runtime.configuration, "node.pids", nothing)
+    pid = pids === nothing ? nothing : get(pids, name, nothing)
+    quit_target!(runtime, job, :graph, name, handle; pid)
+    node_operation!(runtime, job, handle, :run, running)
+    quit_acknowledge!(runtime, job)
+    return nothing
+end
+
+function _run_graphs!(runtime, job, running::Bool, group)
     for name in graph_order(runtime, running, group)
-        handle = runtime.graphs[name]
-        pid = pids === nothing ? nothing : get(pids, name, nothing)
-        quit_target!(runtime, job, :graph, name, handle; pid)
-        node_operation!(runtime, job, handle, :run, running)
-        quit_acknowledge!(runtime, job)
+        _set_graph_running!(runtime, job, name, running)
     end
     _graph_states!(runtime, group, running)
     return nothing
@@ -446,7 +451,7 @@ function _hold_graphs!(runtime, job, ::FaultOrigin)
     failure = nothing
     for name in graph_order(runtime, false)
         try
-            node_operation!(runtime, job, runtime.graphs[name], :run, false)
+            _set_graph_running!(runtime, job, name, false)
         catch error
             failure === nothing && (failure = error)
         end

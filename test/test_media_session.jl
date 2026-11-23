@@ -708,3 +708,35 @@ end
     @test m.fault_unknown
 end
 end
+@testset "Quit from HeldFault reports the first graph that failed to hold" begin
+    m = running()
+    S.required_lost!(m, "required graph Link removed")
+    sequence!(m, (S.HoldSources, S.HoldGraphs, S.WithdrawLinks))
+    @test Hsm.current(m) === :HeldFault
+    S.submit!(m, S.Request(S.Quit(); token = 69, controller = LAUNCHER))
+    sequence!(m, (S.HoldSources,))
+    ticket = m.effect
+    @test ticket.effect isa S.HoldGraphs
+
+    # Both owners are gone. Best-effort graph Hold still attempts both names.
+    graphs = Dict("left" => UInt64(41), "right" => UInt64(42))
+    runtime = (;
+        machine = m, graphs, declared_links = (), objects = Dict{UInt32,S.Object}(),
+        configuration = Dict("node.pids" => Dict("left" => 151, "right" => 152)),
+        captured = Dict(UInt32(41) => (; serial = UInt64(101)), UInt32(42) => (; serial = UInt64(102))),
+    )
+    err = try
+        S.perform!(runtime, S.Job(ticket, false), ticket.effect)
+        nothing
+    catch failure
+        failure
+    end
+    @test err == ArgumentError("required object is absent")
+    S.fail!(m, ticket, sprint(showerror, err))
+    attempts = m.quit_failure.targets
+    @test [attempt.target.name for attempt in attempts] == ["left", "right"]
+    @test [attempt.target.serial for attempt in attempts] == [101, 102]
+    @test all(attempt -> !attempt.submitted && !attempt.acknowledged, attempts)
+    @test occursin("for graph left (id=41, serial=101, pid=151", S.quit_failure_message(m.quit_failure))
+    @test m.failure == "required graph Link removed"
+end
