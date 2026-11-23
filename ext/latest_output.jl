@@ -85,19 +85,21 @@ mutable struct ScalarStream{F,P}
     const buffer::PipeWireAO.StreamBuffer
     streaming::Bool
     pending::Bool
+    route_ready::Bool
 end
 
 function ScalarStream(latest, format, schema)
     params = (
         PipeWireAO.Pod(PipeWireAO.buffers_param(;
-            buffers = 2, blocks = 1, size = sizeof(Float32),
+            buffers = PipeWireAO.SPA.Choice(PipeWireAO.SPA.CHOICE_RANGE, Int32[2, 2, 64]),
+            blocks = 1, size = sizeof(Float32),
             metadata_types = Int32(1 << PipeWireAO.SPA.META_HEADER),
         )),
         PipeWireAO.Pod(PipeWireAO.header_metadata_param()),
         map(r -> PipeWireAO.Pod(PipeWireAO.metadata_param(r)),
             PipeWireAORTC.Common.TELEMETRY_METADATA)...,
     )
-    return ScalarStream(latest, format, schema, params, PipeWireAO.StreamBuffer(), false, false)
+    return ScalarStream(latest, format, schema, params, PipeWireAO.StreamBuffer(), false, false, true)
 end
 
 function write_scalar!(buffer, sample)
@@ -139,7 +141,7 @@ end
 
 function publish_scalar!(state::ScalarStream, stream)
     advance_latest!(state.latest) && (state.pending = true)
-    state.streaming && state.pending || return nothing
+    state.streaming && state.pending && state.route_ready || return nothing
     sample = latest_sample(state.latest)
     sample === nothing && return nothing
     PipeWireAO.dequeue_buffer!(state.buffer, stream) || return nothing
@@ -163,19 +165,28 @@ end
 
 mutable struct ScalarOutputLink
     proxy::Union{Nothing,PipeWireAO.Link}
+    endpoints::Union{Nothing,NTuple{4,PipeWireAO.Global}}
     removed::Bool
     const state::Base.RefValue{Int}
-    ScalarOutputLink() = new(nothing, false, Ref(Int(PipeWireAO.LINK_STATE_INIT)))
+    ScalarOutputLink() = new(nothing, nothing, false, Ref(Int(PipeWireAO.LINK_STATE_INIT)))
 end
 
-function reconcile_scalar_link!(connection::ScalarOutputLink, core, registry, stream, endpoint)
-    if connection.removed || connection.state[] == Int(PipeWireAO.LINK_STATE_ERROR)
+function reconcile_scalar_link!(connection::ScalarOutputLink, core, registry, stream, endpoint, publisher)
+    endpoints = connection.endpoints
+    stale = endpoints !== nothing &&
+        !all(item -> analysis_incarnation_present(registry, item), endpoints)
+    if stale || connection.removed || connection.state[] == Int(PipeWireAO.LINK_STATE_ERROR)
+        publisher.route_ready = false
         connection.proxy === nothing || close(connection.proxy)
         connection.proxy = nothing
+        connection.endpoints = nothing
         connection.removed = false
         connection.state[] = Int(PipeWireAO.LINK_STATE_INIT)
     end
-    connection.proxy === nothing || return nothing
+    if connection.proxy !== nothing
+        publisher.route_ready = connection.state[] >= Int(PipeWireAO.LINK_STATE_PAUSED)
+        return nothing
+    end
     source_id = PipeWireAO.node_id(stream)
     source_id === nothing && return nothing
     source = PipeWireAO.find_global(registry, source_id)
@@ -187,7 +198,9 @@ function reconcile_scalar_link!(connection::ScalarOutputLink, core, registry, st
     all(item -> haskey(item.properties, "object.serial"), output) || return nothing
     input = analysis_endpoint(registry, endpoint, "in")
     input === nothing && return nothing
-    all(item -> analysis_incarnation_present(registry, item), (output..., input...)) || return nothing
+    endpoints = (output..., input...)
+    all(item -> analysis_incarnation_present(registry, item), endpoints) || return nothing
+    removed(_) = (connection.removed = true; publisher.route_ready = false; nothing)
     connection.proxy = PipeWireAO.create_object(core, "link-factory", PipeWireAO.Link;
         properties = Dict(
             "link.output.node" => string(source_id), "link.output.port" => string(output[2].id),
@@ -195,17 +208,19 @@ function reconcile_scalar_link!(connection::ScalarOutputLink, core, registry, st
             "object.linger" => "false",
         ),
         on_info = analysis_link_observer(connection.state, output, input),
-        on_removed = _ -> (connection.removed = true; nothing),
-        on_error = (_, _, _) -> (connection.removed = true; nothing),
+        on_removed = removed,
+        on_error = (proxy, _, _) -> removed(proxy),
     )
+    connection.endpoints = endpoints
     return nothing
 end
 
-function scalar_link_timer(loop, connection, core, registry, stream, endpoint)
+function scalar_link_timer(loop, connection, core, registry, stream, endpoint, publisher)
     function tick(_, _)
         try
-            reconcile_scalar_link!(connection, core, registry, stream, endpoint)
+            reconcile_scalar_link!(connection, core, registry, stream, endpoint, publisher)
         catch
+            publisher.route_ready = false
             # The target is optional. Retry discovery on the next timer tick.
         end
         return nothing
@@ -227,6 +242,7 @@ end
 function open_scalar_publisher(display, remote)
     Base.ENDIAN_BOM == 0x04030201 || error("the scalar publisher requires little-endian storage")
     state = ScalarStream(display.latest, display.format, display.schema)
+    state.route_ready = display.sink === nothing
     loop = PipeWireAO.ThreadLoop("rtc-display")
     context = core = stream = timer = registry = connection = link_timer = nothing
     try
@@ -262,7 +278,7 @@ function open_scalar_publisher(display, remote)
             if display.sink !== nothing
                 registry = PipeWireAO.Registry(core)
                 connection = ScalarOutputLink()
-                link_timer = scalar_link_timer(loop, connection, core, registry, stream, display.sink)
+                link_timer = scalar_link_timer(loop, connection, core, registry, stream, display.sink, state)
             end
         end
         PipeWireAO.start!(loop)
@@ -277,7 +293,7 @@ function scalar_timer(loop, stream, state)
     # A chart needs the latest available sample, so bound graph triggers to 200 Hz.
     function tick(_, _)
         advance_latest!(state.latest) && (state.pending = true)
-        if state.streaming && state.pending && latest_sample(state.latest) !== nothing &&
+        if state.streaming && state.pending && state.route_ready && latest_sample(state.latest) !== nothing &&
            PipeWireAO.is_driving(stream)
             try
                 PipeWireAO.trigger_process!(stream)
@@ -291,14 +307,33 @@ function scalar_timer(loop, stream, state)
 end
 
 function close_scalar_publisher(loop, timer, stream, core, context, registry, connection, link_timer)
-    PipeWireAO.isrunning(loop) && PipeWireAO.stop!(loop)
-    PipeWireAO.with_thread_loop_lock(loop) do _
-        link = connection === nothing ? nothing : connection.proxy
-        for resource in (link_timer, timer, link, stream, registry, core, context)
-            resource === nothing || close(resource)
-        end
+    errors = Any[]
+    try
+        PipeWireAO.isrunning(loop) && PipeWireAO.stop!(loop)
+    catch error
+        push!(errors, error)
     end
-    close(loop)
+    try
+        PipeWireAO.with_thread_loop_lock(loop) do _
+            link = connection === nothing ? nothing : connection.proxy
+            for resource in (link_timer, timer, link, stream, registry, core, context)
+                resource === nothing && continue
+                try
+                    close(resource)
+                catch error
+                    push!(errors, error)
+                end
+            end
+        end
+    catch error
+        push!(errors, error)
+    end
+    try
+        close(loop)
+    catch error
+        push!(errors, error)
+    end
+    isempty(errors) || throw(CompositeException(errors))
     return nothing
 end
 

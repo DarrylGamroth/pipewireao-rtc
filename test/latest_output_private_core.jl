@@ -142,6 +142,9 @@ function check_intensity_publisher(socket; queue = false)
             )
         end
         start!(sink_loop)
+        if queue
+            wait_proof(() -> optional_link(publisher, registry) !== nothing, 10, "optional queue Link")
+        end
         for sequence in 1:10
             GraphExt.replace_latest!(latest, intensity_sample(sequence))
         end
@@ -228,20 +231,36 @@ end
 
 @testset "A native GUI queue keeps its identity and recreates its optional Link" begin
     queue_module = PipeWireAORTC.SessionLaunch.PipeWireAOQueue_jll.libpipewire_module_queue
+    metadata = join(("{ type = $(r.type) size = $(r.size) required = false }"
+        for r in PipeWireAORTC.Common.TELEMETRY_METADATA), ' ')
     queue = """
+    { name = libpipewire-module-spa-node-factory }
     { name = libpipewire-module-queue args = {
         node.name = test.intensity-queue
         queue.max-buffers = 1
         queue.storage = copy
         queue.overflow = drop-oldest
         queue.media = application/ndarray
-        capture.props = { node.name = test.intensity-input node.loop.name = telemetry-loop }
+        metadata = [ $metadata ]
+        capture.props = { node.name = test.intensity-input node.loop.name = telemetry-loop
+            node.group = pipewireao-telemetry }
         playback.props = { node.name = test.intensity-output node.loop.name = telemetry-loop
-            media.class = Data/Source media.name = mean-pupil-intensity }
+            media.class = Data/Source media.name = mean-pupil-intensity
+            node.group = pipewireao-telemetry device.api = pipewireao.queue }
+    } }
+    """
+    driver = """
+    { factory = spa-node-factory args = {
+        node.loop.name = telemetry-loop
+        node.name = test.telemetry-driver
+        factory.name = support.node.driver
+        node.sync-group = sync.pipewireao-telemetry
+        priority.driver = 100
+        node.group = pipewireao-telemetry
     } }
     """
     with_control_private_core(; telemetry_loop = true, module_dirs = (dirname(queue_module),),
-        modules = queue) do socket, _, _
+        modules = queue, objects = driver) do socket, _, _
         check_intensity_publisher(socket; queue = true)
     end
 end

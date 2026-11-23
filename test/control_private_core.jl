@@ -35,6 +35,7 @@ function with_control_private_core(
     telemetry_loop = false,
     modules = "",
     module_dirs = (),
+    objects = "",
     spa_libraries = "",
     prefix = get(
         ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
@@ -73,6 +74,7 @@ context.modules = [
     { name = libpipewire-module-access }
     $modules
 ]
+context.objects = [ $objects ]
 """,
         )
         write(
