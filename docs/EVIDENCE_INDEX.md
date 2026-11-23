@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
+
+The [qualification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)
+covers the two exported profiles, the native copy queue, reattachment,
+science commands and the source's response to required woofer Link loss.
+
 ## Classic CPU managed shutdown on RTC 0.7.28 — 2026-11-22 Pacific
 
 A bridge-free Running session acknowledged one Quit with Offline after 4.212 s.

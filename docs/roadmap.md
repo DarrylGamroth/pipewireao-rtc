@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
+
+The candidate exporter derives the live display from the operator view.
+Omitting that view removes the publisher and queue. Both modes remove one
+managed Link and preserve the required decisions for the three correctors.
+The [verification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)
+records bit-identical science commands across both profiles and the release.
+Required woofer Link loss delivered Hold to the installed simulator. Its
+stopped acknowledgement remains an open acceptance gate.
+
 ### Classic CPU shutdown — 2026-11-22 Pacific
 
 An instrumented v0.7.28 stop helper recorded every admission and shutdown
