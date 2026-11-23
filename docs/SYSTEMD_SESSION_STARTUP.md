@@ -24,6 +24,31 @@ definition and actual active PID, invocation, start time and cgroup. Then render
 application configuration from those retained identities. Native warmup,
 placement inspection and MediaSession admission precede release.
 
+## Timing a Julia controller startup
+
+Set `PIPEWIREAORTC_GRAPH_STARTUP_TIMING=1` in the session service environment
+for the activation being measured. The launcher passes it to each Julia
+graph owner. Read that owner's systemd journal for the invocation. Each record
+names the graph, so controllers on the same instrument can be timed separately.
+
+| Journal phase | Work measured |
+| --- | --- |
+| `load FilterGraphPipeWire` | Load the package that runs the scientific graph and connects it to PipeWire. |
+| `prepare graph` | Build the declared algorithms, bind their calibrated parameters and prepare the execution graph. |
+| `enter prepared graph` | Enter the Julia method specialized for that graph and its runtime options. First-use compilation before its first statement is inside this interval. |
+| `configure graph node` | Determine the public ports, metadata, clocks and any correction, supervision or display observers from the declaration. |
+| `construct graph node` | Construct the disconnected PipeWire filter, its buffers and callback state for this controller process. |
+| `attach graph observers` | Check the correction observer and attach its timers to the owner's control loop, when configured. |
+| `warm up graph` | Run the configured scientific check and verify the required outputs. The owner logs the reason for skipping this step when the graph was qualified at installation or uses captured execution. |
+
+Use wall time to locate a delay. The detailed phases also report CPU time
+consumed by all threads in the graph process, Julia's compilation counter
+and, on Linux, time the calling thread spent runnable while waiting for a CPU.
+These counters overlap. A thread change makes the run-queue interval unavailable.
+The graph owner's Prepared message precedes connecting the node and admitting
+the session. Measure systemd Ready, the first live detector frame and the first
+applied correction separately. The timing hooks run during owner startup.
+
 ## Cleanup
 
 An explicit service stop first runs the installed `ExecStop` one-shot client.
