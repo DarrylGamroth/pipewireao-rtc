@@ -101,3 +101,10 @@ The cleanup preserved the named branches. Before removal each checkout was
 checked for local changes, ignored files, active processes and references from
 installed applications and systemd units. The older stop-deadline checkout
 at `ccaa1d5` still had three local changes.
+
+After local main reached `3512247`, three more clean, merged checkouts were
+removed. They held the fault review (`e3113f5`), native NDArray series
+(`fadea7a`) and verified integration (`3512247`). Their named branches
+remain. The paused Quit task retains its original checkout at `9f07b92`
+with its five local edits. The thirteen pre-existing local changes on main
+retained their original file digests. [Integration and instrument verification](../../validation/rtc-ndarray-integration-20261123/README.md)
