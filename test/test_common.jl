@@ -1,7 +1,57 @@
 using Test
+using Logging
+using PipeWireAORTC
 using PipeWireAORTC.Common
 using PipeWireAORTC.Common: finite_json
 using YAML
+
+@testset "Startup phase timing" begin
+    logger = Test.TestLogger()
+    with_logger(logger) do
+        @test Common.startup_phase(() -> :result, "test owner", "ordinary phase") === :result
+        Common.startup_phase_start!(nothing, "disabled phase")
+        Common.startup_phase_end!(nothing)
+        Common.startup_phase_skipped(nothing, "disabled phase", "disabled probe")
+    end
+    @test getproperty.(logger.logs, :message) ==
+        ["Startup phase started", "Startup phase completed"]
+    @test !haskey(last(logger.logs).kwargs, :process_cpu_seconds)
+    @test !haskey(last(logger.logs).kwargs, :thread_runqueue_seconds)
+
+    timing = Common.StartupTiming("test owner")
+    empty!(logger.logs)
+    with_logger(logger) do
+        @test Common.startup_phase(() -> :result, timing, "measured phase") === :result
+        @test_throws ArgumentError Common.startup_phase(timing, "interrupted phase") do
+            throw(ArgumentError("test interruption"))
+        end
+        Common.startup_phase_end!(timing; interrupted = true)
+        Common.startup_phase_skipped(timing, "skipped phase", "test skip")
+    end
+    @test getproperty.(logger.logs, :message) == [
+        "Startup phase started", "Startup phase completed",
+        "Startup phase started", "Startup phase interrupted", "Startup phase skipped",
+    ]
+    @test timing.started === nothing
+    for log in logger.logs[[2, 4]]
+        fields = log.kwargs
+        @test fields[:owner] == "test owner"
+        @test fields[:wall_seconds] >= 0
+        @test fields[:compile_seconds] >= 0
+        @test haskey(fields, :process_cpu_seconds)
+        @test haskey(fields, :thread_id)
+        @test haskey(fields, :thread_end_id)
+        @test haskey(fields, :thread_runqueue_seconds)
+        wait = fields[:thread_runqueue_seconds]
+        @test wait === nothing || (wait >= 0 && fields[:thread_id] == fields[:thread_end_id])
+        if Sys.islinux()
+            @test fields[:process_cpu_seconds] >= 0
+            @test fields[:thread_id] > 0
+        end
+    end
+    @test last(logger.logs).kwargs[:reason] == "test skip"
+end
+
 @testset "generated numeric YAML sequences" begin
     mktempdir() do directory
         path = joinpath(directory, "coordinates.yaml")

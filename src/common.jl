@@ -22,6 +22,108 @@ function startup_phase(f, owner, phase)
     end
 end
 
+struct StartupCounters
+    wall_ns::UInt64
+    compile_ns::UInt64
+    process_cpu_ns::Union{Nothing,Int64}
+    thread_id::Union{Nothing,Cint}
+    thread_runqueue_ns::Union{Nothing,Int64}
+end
+
+mutable struct StartupTiming
+    owner::String
+    phase::String
+    started::Union{Nothing,StartupCounters}
+end
+StartupTiming(owner) = StartupTiming(owner, "", nothing)
+
+function startup_process_cpu_ns()
+    Sys.islinux() || return nothing
+    clock_process_cputime_id = Cint(2)
+    time = Ref{NTuple{2,Clong}}()
+    ccall(:clock_gettime, Cint, (Cint, Ref{NTuple{2,Clong}}),
+        clock_process_cputime_id, time) == 0 || return nothing
+    seconds, nanoseconds = time[]
+    return Int64(seconds) * 1_000_000_000 + nanoseconds
+end
+
+function startup_thread_runqueue_ns(thread_id)
+    thread_id === nothing && return nothing
+    # The explicit OS thread path keeps the sample on this thread even if reading yields.
+    fields = try
+        split(read("/proc/self/task/$thread_id/schedstat", String))
+    catch error
+        error isa Union{SystemError,Base.IOError} || rethrow()
+        return nothing
+    end
+    length(fields) == 3 || return nothing
+    return tryparse(Int64, fields[2])
+end
+
+function startup_counters()
+    wall_ns = time_ns()
+    compile_ns, _ = Base.cumulative_compile_time_ns()
+    process_cpu_ns = startup_process_cpu_ns()
+    thread_id = Sys.islinux() ? ccall(:gettid, Cint, ()) : nothing
+    thread_runqueue_ns = startup_thread_runqueue_ns(thread_id)
+    return StartupCounters(wall_ns, compile_ns, process_cpu_ns, thread_id, thread_runqueue_ns)
+end
+
+startup_phase_start!(::Nothing, phase) = nothing
+function startup_phase_start!(timing::StartupTiming, phase)
+    owner = timing.owner
+    @info "Startup phase started" owner phase
+    timing.phase = phase
+    timing.started = startup_counters()
+    Base.cumulative_compile_timing(true)
+    return nothing
+end
+
+startup_seconds(start, stop) =
+    start === nothing || stop === nothing || stop < start ? nothing : (stop - start) / 1e9
+
+startup_phase_end!(::Nothing; interrupted = false) = nothing
+function startup_phase_end!(timing::StartupTiming; interrupted = false)
+    start = timing.started
+    start === nothing && return nothing
+    timing.started = nothing
+    stop = try
+        startup_counters()
+    finally
+        Base.cumulative_compile_timing(false)
+    end
+    owner = timing.owner
+    phase = timing.phase
+    wall_seconds = startup_seconds(start.wall_ns, stop.wall_ns)
+    compile_seconds = startup_seconds(start.compile_ns, stop.compile_ns)
+    process_cpu_seconds = startup_seconds(start.process_cpu_ns, stop.process_cpu_ns)
+    thread_id = start.thread_id
+    thread_end_id = stop.thread_id
+    thread_runqueue_seconds = thread_id == thread_end_id ?
+        startup_seconds(start.thread_runqueue_ns, stop.thread_runqueue_ns) : nothing
+    message = interrupted ? "Startup phase interrupted" : "Startup phase completed"
+    @info message owner phase wall_seconds compile_seconds process_cpu_seconds thread_runqueue_seconds thread_id thread_end_id
+    return nothing
+end
+
+startup_phase_skipped(::Nothing, phase, reason) = nothing
+function startup_phase_skipped(timing::StartupTiming, phase, reason)
+    @info "Startup phase skipped" owner=timing.owner phase reason
+    return nothing
+end
+
+function startup_phase(f, timing::StartupTiming, phase)
+    startup_phase_start!(timing, phase)
+    completed = false
+    try
+        value = f()
+        completed = true
+        return value
+    finally
+        startup_phase_end!(timing; interrupted = !completed)
+    end
+end
+
 """
     remaining_ns(deadline, now)
 

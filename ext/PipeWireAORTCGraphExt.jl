@@ -10,6 +10,7 @@ import Clocks
 
 const Owner = PipeWireAORTC.GraphOwner
 const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
+const Common = PipeWireAORTC.Common
 
 include("analysis.jl")
 include("correction_supervision.jl")
@@ -205,7 +206,9 @@ function Owner.run_owner(options, runtime, entries)
         formats -> Owner.prepare_bindings(
             entries, formats; check = () -> Bootstrap.preparation_check!(runtime)
         )
-    graph = PipeWireAORTC.Common.startup_phase(options.name, "prepare graph") do
+    timing = get(ENV, "PIPEWIREAORTC_GRAPH_STARTUP_TIMING", "") == "1" ?
+             Common.StartupTiming(options.name) : nothing
+    graph = Common.startup_phase(something(timing, options.name), "prepare graph") do
         FilterGraphPipeWire.prepare_service_graph(
             options.graph;
             algorithms = declarations,
@@ -221,9 +224,14 @@ function Owner.run_owner(options, runtime, entries)
     end
     try
         # Optional provider methods loaded by declarations must be visible here.
-        Base.invokelatest(run_prepared, options, runtime, graph)
+        Common.startup_phase_start!(timing, "enter prepared graph")
+        Base.invokelatest(run_prepared, options, runtime, graph, timing)
     finally
-        FilterGraphPipeWire.close_execution(graph)
+        try
+            Common.startup_phase_end!(timing; interrupted = true)
+        finally
+            FilterGraphPipeWire.close_execution(graph)
+        end
     end
     return nothing
 end
@@ -234,7 +242,10 @@ function validate_owner_feedback(::FilterGraphs.PreparedComposition, feedback)
     return nothing
 end
 
-function graph_node(options, graph, instance)
+# Use the same scientific specializations with or without startup timing.
+Base.@nospecializeinfer function graph_node(
+    options, graph, instance, @nospecialize(timing::Union{Nothing,Common.StartupTiming}) = nothing
+)
     validate_owner_feedback(graph, options.feedback)
     local_output, display = prepare_latest_output(options, graph)
     correction_properties = options.correction_properties
@@ -307,6 +318,8 @@ function graph_node(options, graph, instance)
         run_control = options.session_run_control,
         channel_units = options.channel_units,
     )
+    Common.startup_phase_end!(timing)
+    Common.startup_phase_start!(timing, "construct graph node")
     node =
         isnothing(options.capture_backend) ?
         FilterGraphPipeWire.PipeWireNode(
@@ -367,21 +380,37 @@ function Owner.precompile_graph_warmup(args)
     return nothing
 end
 
-function run_prepared(options, runtime, graph)
+Base.@nospecializeinfer function run_prepared(
+    options, runtime, graph, @nospecialize(timing::Union{Nothing,Common.StartupTiming})
+)
+    # Stop the entry phase after dispatch and first-use compilation of this method.
+    Common.startup_phase_end!(timing)
     Bootstrap.preparation_check!(runtime)
+    Common.startup_phase_start!(timing, "configure graph node")
     (; node, observer, offset_receiver, offset_clock, display) =
-        graph_node(options, graph, runtime.transport.endpoint.instance)
+        graph_node(options, graph, runtime.transport.endpoint.instance, timing)
     offsets_path = get(options, :physical_offsets, nothing)
     publisher = nothing
     try
-        isnothing(observer) || PipeWireAORTC.CorrectionLoops.check_ready(observer)
-        isnothing(observer) || PipeWireAORTC.CorrectionLoops.attach_timers!(
-            observer,
-            runtime.transport.loop,
-            () -> PipeWireAO.notify_properties!(node.filter),
-        )
-        if isnothing(options.capture_backend) && !options.qualify_at_install
-            PipeWireAORTC.Common.startup_phase(options.name, "warm up graph") do
+        Common.startup_phase_end!(timing)
+        if isnothing(observer)
+            Common.startup_phase_skipped(timing, "attach graph observers", "no correction observer")
+        else
+            Common.startup_phase_start!(timing, "attach graph observers")
+            PipeWireAORTC.CorrectionLoops.check_ready(observer)
+            PipeWireAORTC.CorrectionLoops.attach_timers!(
+                observer,
+                runtime.transport.loop,
+                () -> PipeWireAO.notify_properties!(node.filter),
+            )
+            Common.startup_phase_end!(timing)
+        end
+        if !isnothing(options.capture_backend)
+            Common.startup_phase_skipped(timing, "warm up graph", "captured graph")
+        elseif options.qualify_at_install
+            Common.startup_phase_skipped(timing, "warm up graph", "install-time qualification")
+        else
+            Common.startup_phase(something(timing, options.name), "warm up graph") do
                 warm_graph!(node, graph, options)
             end
         end
@@ -420,6 +449,7 @@ function run_prepared(options, runtime, graph)
             end
         end
     catch error
+        Common.startup_phase_end!(timing; interrupted = true)
         owner_cancelled(error, runtime) && return nothing
         Bootstrap.fault!(runtime, error)
         rethrow()
