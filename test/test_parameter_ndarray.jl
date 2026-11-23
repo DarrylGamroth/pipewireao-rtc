@@ -103,6 +103,16 @@ const FIXTURE_DIRECTORY = joinpath(@__DIR__, "data", "native-parameter-ndarray")
     @test header.token == reply.header.token
     @test reply.result.outcome == Runner.Submitted
     @test !reply.result.details.active_adoption_observed
+    rendered = PipeWireAORTC.RunnerCommands.render(reply)
+    @test rendered["ok"]
+    @test rendered["id"] == string(header.token)
+    @test rendered["result"] == Dict(
+        "outcome" => "submitted",
+        "graph" => "graph",
+        "parameter" => "reference",
+        "active_adoption_observed" => false,
+        "parameter_generations" => nothing,
+    )
 end
 
 mutable struct ExpiringParameterCompletion

@@ -206,7 +206,7 @@ function _legacy(result::RunnerResult{O}, lifecycle::Lifecycle) where {O}
                 Dict("node" => g.node, "requested" => g.requested, "active" => g.active) for g in d.generations
             ],
         )
-    elseif O === :parameter
+    elseif O in (:parameter, :parameter_ndarray)
         generation =
             d.generation === nothing ? nothing :
             Dict("requested" => d.generation[1], "active" => d.generation[2])
