@@ -15,6 +15,43 @@ is distinct from the unchanged five-second native effect bound.
 See the [shutdown qualification](../../docs/validation/classic-shutdown-20261021/README.md)
 for the native memory regression, deployment and fault recovery evidence.
 
+## Sealed simulation data flow
+
+Run the probe alongside the lifecycle driver of a newly installed, non-actuating
+systemd cohort. Use the installed sealed project, the matching PipeWireAO
+native client environment, the absolute socket recorded in the private
+`launch.json` and a fresh empty handshake directory.
+
+```sh
+julia --startup-file=no --threads=2,1 --project="$application" \
+  test/integration/sealed_application_flow.jl \
+  "$profile" "$application" "$private_socket" "$handshake_directory"
+```
+
+Select `gpi2`, `cal2`, `spiders` or `spiders-single`. The probe creates
+`ready` after its links negotiate. The lifecycle driver creates `running`
+after the Start acknowledgement, waits for `observed`, issues Stop and creates
+`stopped` after acknowledgement. The probe writes `complete` after measuring
+two seconds of unchanged observer sequences and releasing its clients. The
+driver retains ownership of Status and Quit. Set `RTC_FLOW_TIMEOUT` in seconds
+to cover probe negotiation, acquisition and the Stop handshake. The default
+is 300 seconds and the calibrated CAL2 CPU run uses 1400 seconds.
+
+The probe attaches to the declared capacity-one copy/drop-oldest queues.
+GPI2 requires advancing UInt16 detector delivery and finite woofer, tweeter
+and tip/tilt commands. Two acquisition identities must appear in the detector
+and all three command streams after the first Running observation. CAL2 adds
+one temporary source on its unconnected external pupil input, stages 30
+deterministic 2 ms pupil packets and waits for each LLOWFS exposure before
+staging its successor. It checks both SCC optical and electrical classifications
+against the declared chopper windows and verifies finite SCC and LLOWFS offsets.
+SPIDERS checks fitted DM demand in both profiles and advancing simulator-applied
+DM sequences with a reference timestamp in the dual profile.
+
+The JSON receipts retain observed sequences, the inferred gaps between received
+labels and the two-second Stop observation window. Their validation scope is
+functional sample delivery and identity consistency at the lossy queue boundary.
+
 ## Managed Classic CPU closed-loop replay
 
 This replay used the former RTC simulator launcher. The

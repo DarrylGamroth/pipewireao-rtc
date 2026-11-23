@@ -6,11 +6,20 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-22 UTC. This section is the current delivery summary. Later sections
+Updated 2026-11-23 UTC. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Instrument simulation and controller timing — 2026-11-22 Pacific
+
+The four sealed RTC 0.7.28 CPU profiles passed native Start, flow, Stop and
+Quit on private PipeWire cores. The separate GPI2 captured CUDA replay
+delivered all 240,000 measured command sets. Four exceeded 500 µs in the
+second 60-second trial. Workstation tail latency and the GPI2 startup cache
+dependency remain relevant to deployment. The [verification record](validation/rtc-0728-running/README.md)
+covers the passing profiles, both initial startup failures and the timing boundary.
 
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 

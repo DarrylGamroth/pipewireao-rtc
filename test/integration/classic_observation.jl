@@ -221,7 +221,7 @@ function _classic_buffer_parameters(capture::ClassicObservationCapture{T}) where
     )
 end
 
-function (capture::ClassicObservationCapture{T})(stream) where {T}
+function (capture::ClassicObservationCapture{T})(stream; on_metadata = nothing) where {T}
     capture.error === nothing || return nothing
     dequeue_buffer!(capture.buffer, stream) || return nothing
     try
@@ -269,6 +269,8 @@ function (capture::ClassicObservationCapture{T})(stream) where {T}
         capture.header = header
         capture.identity = identity
         capture.count += 1
+        # The metadata view is borrowed until queue_buffer! below.
+        on_metadata === nothing || on_metadata(capture, metadata)
     catch err
         capture.error = err
     finally

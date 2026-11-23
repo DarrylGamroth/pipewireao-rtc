@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## RTC 0.7.28 managed simulation and GPI2 replay — 2026-11-22
+
+GPI2, CAL2 and both fitted SPIDERS CPU profiles delivered their declared
+frame or command observations through native Start and Stop, then acknowledged
+Quit. In two separate 120,000-slot GPI2 CUDA controller replays at 2 kHz,
+all offers completed and four missed the 500 µs deadline. Per-trial p99.9
+was 396.732 and 430.600 µs. The [verification record](validation/rtc-0728-running/README.md)
+includes the sealed application and command receipts, preparation failures,
+cache and receiver build requirements, and raw timing evidence.
+
 ## PipeWireAORTC 0.7.28 clean install — 2026-11-22
 
 With an empty project and depot on Julia 1.13.3, adding only
