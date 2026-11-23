@@ -25,10 +25,11 @@ const Profile = PipeWireAORTC.SessionProfile
 const SessionClient = PipeWireAORTC.SessionClient
 const Commands = PipeWireAORTC.RunnerCommands
 
-node_owners(spec) = node_owner_mapping(get(spec, "node-owners", nothing))
-node_owner_mapping(mapping::AbstractDict) = Dict{String,String}(mapping)
-node_owner_mapping(mapping) =
-    throw(ArgumentError("one-shot session requires exact node-owners in deployment.conf"))
+function require_node_owners(spec)
+    haskey(spec, "node-owners") ||
+        throw(ArgumentError("one-shot session requires exact node-owners in deployment.conf"))
+    return nothing
+end
 
 function prepared_identity(name::String, source_role, record)
     occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name) &&
@@ -90,18 +91,10 @@ function confirm_shutdown(reply)
 end
 
 function render!(spec, session, bindings, records, runtime; links = D.session_links(session))
+    node_owners = Dict{String,String}(spec["node-owners"])
     return SessionConfiguration.write_session_config(
-        spec, session, bindings, records, runtime; node_owners = node_owners(spec), links
+        spec, session, bindings, records, runtime; node_owners, links
     )
-end
-
-function _preflight(argv)
-    args = C.cli_arguments(
-        argv; required = ["package", "prefix", "unit", "launcher", "runtime-root"]
-    )
-    spec = D.profile(joinpath(args.package, "deployment.conf"), args.prefix)
-    node_owners(spec)
-    return nothing
 end
 
 function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
@@ -629,8 +622,7 @@ function main(argv = ARGS)
     if command == "install"
         SessionInstall.main(rest)
     elseif command == "prepare"
-        _preflight(rest)
-        SessionLaunch.main(argv; render!)
+        SessionLaunch.main(argv; render!, validate_profile = require_node_owners)
     elseif command == "publish"
         args = C.cli_arguments(
             rest; required = ["package", "prefix", "unit", "runtime-root"]

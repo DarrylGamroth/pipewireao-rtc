@@ -6,6 +6,50 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
 
 Base.include(@__MODULE__, joinpath(@__DIR__, "composition_documents.jl"))
 
+@testset "installed prepare requires exact node owners before launch" begin
+    CLI = PipeWireAORTC.SessionCLI
+    Launch = PipeWireAORTC.SessionLaunch
+    mktempdir() do directory
+        package = composition_fixture(
+            joinpath(directory, "application"), "prepare-test", "simulator", "pupil"
+        )
+        write(joinpath(package, "Manifest.toml"), """
+            [[deps.PipeWireAORTC]]
+            uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+            version = "0.1.0"
+            git-tree-sha1 = "$("a"^40)"
+            """)
+        path = joinpath(package, "deployment.conf")
+        spec = C.read_json(path)
+        # The launch-specific CPU latency check stops this valid profile before
+        # systemd. The installed node-owner check must take precedence.
+        spec["cpu-latency-us"] = 1
+        runtime = mkdir(joinpath(directory, "runtime"); mode = 0o700)
+        args = [
+            "prepare",
+            "--package", package,
+            "--prefix", String(PREFIX),
+            "--unit", "pipewireao-session@prepare-test.service",
+            "--launcher", joinpath(package, "launcher"),
+            "--runtime-root", runtime,
+        ]
+        function prepare()
+            C.write_json(path, spec)
+            E.seal!(package)
+            return CLI.main(args)
+        end
+
+        @test_throws r"CPU DMA latency" prepare()
+        spec["node-owners"] = Dict("pupil" => "unknown")
+        @test_throws D.DeploymentError prepare()
+        delete!(spec, "node-owners")
+        @test_throws r"one-shot session requires exact node-owners" prepare()
+        renderer(args...; kwargs...) = error("unexpected rendering")
+        @test_throws r"CPU DMA latency" Launch.main(args; render! = renderer)
+        @test isempty(readdir(runtime))
+    end
+end
+
 @testset "composition rejects colliding native queue endpoints" begin
     queue(name, capture, playback) = Dict(
         "name" => "libpipewire-module-queue",

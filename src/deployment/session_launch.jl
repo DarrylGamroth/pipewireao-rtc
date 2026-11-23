@@ -514,18 +514,22 @@ function atomic_environment(path, values)
 end
 
 """
-    prepare!(request; render!)
+    prepare!(request; render!, validate_profile=Returns(nothing))
 
-Prepare a fresh invocation in ExecStartPre. The callback writes standard
-RTC SPA-JSON and returns its absolute path. It receives the validated
-deployment spec, decoded rendered session, resolved bindings, exact owner
-records, and invocation runtime.
+Prepare a fresh invocation in ExecStartPre. Run `validate_profile` on the
+validated deployment spec before contacting systemd or changing the runtime
+directory. The `render!` callback writes standard RTC SPA-JSON and returns
+its absolute path. It receives the same deployment spec, decoded rendered
+session, resolved bindings, exact owner records, and invocation runtime.
 It must not release the source or realize links.
 """
-function prepare!(request::Request; render!::Function)
+function prepare!(
+    request::Request; render!::Function, validate_profile::Function = Returns(nothing)
+)
     package = realpath(request.package)
     prefix = realpath(request.prefix)
     spec = D.profile(joinpath(package, "deployment.conf"), prefix)
+    validate_profile(spec)
     spec["cpu-latency-us"] === nothing || fail(
         "RTC session does not yet retain a CPU DMA latency lease; cpu-latency-us must be null",
     )
@@ -1047,12 +1051,12 @@ function cleanup_record!(
 end
 
 """
-    main(argv=ARGS; render!=nothing)
+    main(argv=ARGS; render!=nothing, validate_profile=Returns(nothing))
 
-Thin CLI adapter for an installed launcher entrypoint. The entrypoint
-provides the session renderer; this module supplies no fallback policy.
+Run the installed launcher command. The entrypoint supplies the session
+renderer and any additional deployment profile validation.
 """
-function main(argv = ARGS; render! = nothing)
+function main(argv = ARGS; render! = nothing, validate_profile = Returns(nothing))
     isempty(argv) && fail("expected prepare or cleanup")
     command = first(argv)
     if command == "prepare"
@@ -1064,7 +1068,7 @@ function main(argv = ARGS; render! = nothing)
         request = Request(
             args.package, args.prefix, args.unit, args.launcher, args.runtime_root
         )
-        prepare!(request; render! = render!)
+        prepare!(request; render!, validate_profile)
     elseif command == "cleanup"
         args = C.cli_arguments(
             argv[2:end]; required = ["invocation", "runtime-root", "source-role"]
