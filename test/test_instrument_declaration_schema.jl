@@ -432,6 +432,29 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         @test_throws ArgumentError IC.load_rtc(documents.paths.rtc)
     end
 
+    @testset "mirror unit identifiers retain the published command units" begin
+        mktempdir() do directory
+            docs = declaration_documents(directory)
+            mirror = docs.physical["deformable_mirrors"]["primary"]
+            control = docs.controls["deformable_mirrors"]["primary"]
+            for (id, label) in (("opd_m", "m OPD"), ("native", "native command"))
+                for basis in control["shape_control"]["bases"]
+                    basis["units"] = label
+                end
+                mirror["units"] = label
+                write_documents(docs)
+                published = IC.publication(docs.paths.rtc)
+                mirror["units"] = id
+                write_documents(docs)
+                rtc = IC.load_rtc(docs.paths.rtc)
+                @test rtc.controls["deformable_mirrors"]["primary"]["units"] == label
+                @test IC.publication(docs.paths.rtc) == published
+                physical = C.read_yaml(docs.paths.physical)
+                @test physical["deformable_mirrors"]["primary"]["units"] == id
+            end
+        end
+    end
+
     @testset "physical loading and RTC publication are independent of simulation" begin
         mktempdir() do directory
             documents = declaration_documents(directory)

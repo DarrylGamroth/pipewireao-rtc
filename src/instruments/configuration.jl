@@ -162,6 +162,10 @@ function bounded_yaml(path)
     return document
 end
 
+# Published metadata, FITS units and calibration identities use these labels.
+const MIRROR_UNIT_LABELS = Dict("opd_m" => "m OPD", "native" => "native command")
+mirror_unit_label(units) = get(MIRROR_UNIT_LABELS, units, units)
+
 """
     load(path)
 
@@ -173,6 +177,9 @@ function load(path::AbstractString)
     document = bounded_yaml(path)
     declaration = (; path = abspath(path), directory = dirname(abspath(path)), document)
     validate_declaration(document, declaration.directory)
+    for mirror in values(document["deformable_mirrors"])
+        mirror["units"] = mirror_unit_label(mirror["units"])
+    end
     return declaration
 end
 
@@ -649,10 +656,9 @@ function load_rtc(path::AbstractString)
         length(bases) <= 16 ||
             throw(ArgumentError("shape_control requires at most 16 bases"))
         shape["bases"] = [resolve_basis_definition(basis) for basis in bases]
+        control["units"] = instrument.document["deformable_mirrors"][name]["units"]
         _validate_shape_control(
-            control["shape_control"],
-            instrument.document["deformable_mirrors"][name]["units"],
-            instrument.directory,
+            control["shape_control"], control["units"], instrument.directory
         )
     end
     calibration = if haskey(document, "calibration")

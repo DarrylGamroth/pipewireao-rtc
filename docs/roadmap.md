@@ -12,6 +12,17 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### DM command units in graph templates — 2026-11-23
+
+The GPI2 and SPIDERS limiters name the physical mirror. Export derives the
+command schema, actuator count and stroke limits from its declaration and RTC
+controls. The GPI2 integrator, HEART controller and CAL2 receiver reproduced
+the previous commands and delayed feedback for all 64 replayed frames. Four
+SPIDERS SCC profiles reproduced nine arrivals apiece. The dual controller
+reproduced all 13 interleaved arrivals, including feedback to both branches. The
+[shared instrument definition](architecture.md#shared-instrument-definition)
+describes the authored units and their published labels.
+
 ### GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
 
 The published RTC 0.7.29 exporter derives the live display from the operator view.

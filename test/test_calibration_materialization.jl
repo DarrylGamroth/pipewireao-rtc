@@ -539,6 +539,22 @@ end
         C.write_yaml(joinpath(built, "instrument.yaml"), localized)
         @test E.calibration_physical_instrument(source) ==
             E.calibration_physical_instrument(built)
+        mirror = instrument["deformable_mirrors"]["dm"]
+        local_mirror = localized["deformable_mirrors"]["dm"]
+        for (units, published) in (("native", "native command"), ("opd_m", "m OPD"))
+            mirror["units"] = units
+            local_mirror["units"] = published
+            C.write_yaml(joinpath(source, "instrument.yaml"), instrument)
+            C.write_yaml(joinpath(built, "instrument.yaml"), localized)
+            @test E.calibration_physical_instrument(source) ==
+                E.calibration_physical_instrument(built)
+        end
+        local_mirror["units"] = "native"
+        C.write_yaml(joinpath(built, "instrument.yaml"), localized)
+        @test E.calibration_physical_instrument(source) !=
+            E.calibration_physical_instrument(built)
+        local_mirror["units"] = "m OPD"
+        C.write_yaml(joinpath(built, "instrument.yaml"), localized)
         write(joinpath(built, "mirrors", "dm.yaml"), "model: changed\n")
         @test E.calibration_physical_instrument(source) !=
             E.calibration_physical_instrument(built)
