@@ -89,26 +89,17 @@ const OPD_COMMAND = "pipewireao/dm-command-opd-um-f32/1"
             directory, spec, declarations, "instrument.json", PREFIX
         )
         @test read(path) == before
-        # The existing generic conditioner uses the same numerical kernel with explicit units.
-        node["label"] = "vector-conditioning-f32"
-        delete!(config, "actuator_count")
-        merge!(
-            config,
-            Dict(
-                "count" => 2,
-                "requested_schema" => "pipewireao/requested-pdm-command-f32/1",
-                "demanded_schema" => NATIVE_COMMAND,
-                "feedback_schema" => "pipewireao/pdm-constraint-feedback-f32/1",
-            ),
-        )
-        PipeWireAORTC.ScienceExport.write_spa_config(graphpath, graph)
-        port["schema"] = NATIVE_COMMAND
-        C.write_json(path, session)
-        E.prepare_session_configuration!(
-            directory, spec, declarations, "instrument.json", PREFIX
-        )
-        @test E.graph_port_contracts(graphpath)["outputs"]["demanded"]["schema"] ==
-            NATIVE_COMMAND
+        if pkgversion(FilterGraphAlgorithms) >= v"0.13"
+            config["demanded_schema"] = NATIVE_COMMAND
+            PipeWireAORTC.ScienceExport.write_spa_config(graphpath, graph)
+            port["schema"] = NATIVE_COMMAND
+            C.write_json(path, session)
+            E.prepare_session_configuration!(
+                directory, spec, declarations, "instrument.json", PREFIX
+            )
+            @test E.graph_port_contracts(graphpath)["outputs"]["demanded"]["schema"] ==
+                NATIVE_COMMAND
+        end
         for (field, value) in (("shape", [3]), ("element-type", "U16_LE"))
             bad = deepcopy(session)
             only(only(bad["graphs"])["ports"])[field] = value
@@ -122,44 +113,42 @@ const OPD_COMMAND = "pipewireao/dm-command-opd-um-f32/1"
     end
 end
 
-@testset "native conditioner retains the physical limiter numerics" begin
-    common = (;
-        command_limits = (-0.5f0, 0.5f0),
-        slew_limit = nothing,
-        initial_current = nothing,
-        quantization_origin = nothing,
-        quantization_step = nothing,
-        dither_seed = nothing,
-    )
-    legacy = prepare_algorithm(
-        PdmCommandF32, PdmCommandF32Configuration(; actuator_count = 2, common...)
-    )
-    native = prepare_algorithm(
-        VectorConditioningF32,
-        VectorConditioningF32Configuration(;
-            count = 2,
-            requested_schema = REQUESTED_PDM_COMMAND_V1,
-            demanded_schema = NATIVE_COMMAND,
-            feedback_schema = PDM_CONSTRAINT_FEEDBACK_V1,
-            common...,
-        ),
-    )
-    @test typeof(native.plan) === typeof(legacy.plan)
-    @test typeof(native.workspace) === typeof(legacy.workspace)
-    demanded = zeros(Float32, 2)
-    feedback = similar(demanded)
-    expected = similar(demanded)
-    expected_feedback = similar(demanded)
-    for requested in (Float32[0.1, 0.2], Float32[0.8, -0.9], Float32[0, 0])
-        @test FilterGraphAlgorithms.process!(demanded, feedback, native, requested) ===
-            nothing
-        @test FilterGraphAlgorithms.process!(
-            expected, expected_feedback, legacy, requested
-        ) === nothing
-        @test demanded == expected == clamp.(requested, -0.5f0, 0.5f0)
-        @test feedback == expected_feedback == requested - demanded
-        FilterGraphAlgorithms.commit!(native.workspace)
-        FilterGraphAlgorithms.commit!(legacy.workspace)
+if pkgversion(FilterGraphAlgorithms) >= v"0.13"
+    @testset "native command schema preserves the physical limiter numerics" begin
+        common = (;
+            command_limits = (-0.5f0, 0.5f0),
+            slew_limit = nothing,
+            initial_current = nothing,
+            quantization_origin = nothing,
+            quantization_step = nothing,
+            dither_seed = nothing,
+        )
+        physical = prepare_algorithm(
+            PdmCommandF32, PdmCommandF32Configuration(; actuator_count = 2, common...)
+        )
+        native = prepare_algorithm(
+            PdmCommandF32,
+            PdmCommandF32Configuration(;
+                actuator_count = 2, demanded_schema = NATIVE_COMMAND, common...
+            ),
+        )
+        @test typeof(native.plan) === typeof(physical.plan)
+        @test typeof(native.workspace) === typeof(physical.workspace)
+        demanded = zeros(Float32, 2)
+        feedback = similar(demanded)
+        expected = similar(demanded)
+        expected_feedback = similar(demanded)
+        for requested in (Float32[0.1, 0.2], Float32[0.8, -0.9], Float32[0, 0])
+            @test FilterGraphAlgorithms.process!(demanded, feedback, native, requested) ===
+                nothing
+            @test FilterGraphAlgorithms.process!(
+                expected, expected_feedback, physical, requested
+            ) === nothing
+            @test demanded == expected == clamp.(requested, -0.5f0, 0.5f0)
+            @test feedback == expected_feedback == requested - demanded
+            FilterGraphAlgorithms.commit!(native.workspace)
+            FilterGraphAlgorithms.commit!(physical.workspace)
+        end
     end
 end
 

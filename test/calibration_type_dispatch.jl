@@ -86,18 +86,30 @@ function independent_cameras(directory)
             "right_scale" => right,
         ),
     )
+    command_map(name, input_schema, output_schema) = node(
+        name,
+        "dense-vector-reconstructor-f32",
+        Dict(
+            "input_count" => 6,
+            "output_count" => 6,
+            "initial_reconstructor" => [Float32(row == column) for row in 1:6 for column in 1:6],
+            "input_schema" => input_schema,
+            "output_schema" => output_schema,
+            "reconstructor_schema" => "test/coordinate-map/1",
+        ),
+    )
     shared = Dict(
         "filter.graph" => Dict(
             "nodes" => [
                 combination("sum", FGA.CONTROLLER_COMMAND_V1, 1, 1),
+                command_map(
+                    "to-pdm", FGA.CONTROLLER_COMMAND_V1, FGA.REQUESTED_PDM_COMMAND_V1
+                ),
                 node(
                     "conditioner",
-                    "vector-conditioning-f32",
+                    "pdm-command-f32",
                     Dict(
-                        "count" => 6,
-                        "requested_schema" => FGA.CONTROLLER_COMMAND_V1,
-                        "demanded_schema" => FGA.CONTROLLER_COMMAND_V1,
-                        "feedback_schema" => FGA.CONTROLLER_CONSTRAINT_FEEDBACK_V1,
+                        "actuator_count" => 6,
                         "command_limits" => [-1, 1],
                         "slew_limit" => nothing,
                         "initial_current" => nothing,
@@ -106,13 +118,20 @@ function independent_cameras(directory)
                         "dither_seed" => nothing,
                     ),
                 ),
+                command_map(
+                    "to-controller",
+                    FGA.PDM_CONSTRAINT_FEEDBACK_V1,
+                    FGA.CONTROLLER_CONSTRAINT_FEEDBACK_V1,
+                ),
                 combination("left-return", FGA.CONTROLLER_CONSTRAINT_FEEDBACK_V1, 0.5, 0),
                 combination("right-return", FGA.CONTROLLER_CONSTRAINT_FEEDBACK_V1, 0.5, 0),
             ],
             "links" => [
-                link("sum:output", "conditioner:requested"),
+                link("sum:output", "to-pdm:ordered-input"),
+                link("to-pdm:output", "conditioner:requested"),
+                link("conditioner:constraint-feedback", "to-controller:ordered-input"),
                 (
-                    link("conditioner:constraint-feedback", name * ":" * side) for
+                    link("to-controller:output", name * ":" * side) for
                     name in ("left-return", "right-return") for
                     side in ("left", "right")
                 )...,

@@ -24,12 +24,9 @@ function command_graph()
                 Dict(
                     "name" => "command",
                     "type" => "ndarray",
-                    "label" => "vector-conditioning-f32",
+                    "label" => "pdm-command-f32",
                     "config" => Dict(
-                        "count" => 4,
-                        "requested_schema" => S["requested_pdm_command"]["id"],
-                        "demanded_schema" => "pipewireao/demanded-pdm-command-f32/1",
-                        "feedback_schema" => S["pdm_constraint_feedback"]["id"],
+                        "actuator_count" => 4,
                         "command_limits" => [-0.5, 0.5],
                         "slew_limit" => nothing,
                         "initial_current" => nothing,

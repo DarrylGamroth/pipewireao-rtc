@@ -251,12 +251,9 @@ end
             Dict(
                 "type" => "ndarray",
                 "name" => string(name),
-                "label" => "vector-conditioning-f32",
+                "label" => "pdm-command-f32",
                 "config" => Dict(
-                    "count" => counts[name],
-                    "requested_schema" => "test.$name/1",
-                    "demanded_schema" => "test.$name/1",
-                    "feedback_schema" => "test.$name.feedback/1",
+                    "actuator_count" => counts[name],
                     "command_limits" => [-1, 1],
                     "slew_limit" => nothing,
                     "initial_current" => nothing,
