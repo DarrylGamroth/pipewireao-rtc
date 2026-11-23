@@ -232,8 +232,14 @@ function request_owner!(runtime, job, owner::Owner, command)
                     observation, deadline; now = now(runtime)
                 )
                 reply === nothing && return nothing
-                reply.header.result == 0 || throw(
-                    ArgumentError("owner rejected operation ($(reply.header.result))")
+                result = reply.header.result
+                # Only the ndarray publisher reports a definitive refusal after forwarding.
+                result == 0 || (
+                    command isa ParameterSource.NdArrayParameter &&
+                    reply isa ParameterSource.Completion &&
+                    result == -Base.Libc.EINVAL && !reply.submitted
+                ) || throw(
+                    ArgumentError("owner rejected operation ($result)")
                 )
                 return reply
             end

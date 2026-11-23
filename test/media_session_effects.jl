@@ -563,11 +563,26 @@ end
     ]
 end
 
+function S.publish_parameter_source!(runtime::Runtime, _job, _handle, properties)
+    push!(runtime.trace, (
+        :parameter_source_id, parse(UInt64, properties["pipewireao.rtc-control.parameter-source.id"]),
+    ))
+    push!(runtime.trace, (
+        :parameter_source_serial, parse(UInt64, properties["pipewireao.rtc-control.parameter-source.serial"]),
+    ))
+    return nothing
+end
+
 @testset "Publisher and source capture are bounded and do not duplicate bootstrap shutdown" begin
     runtime = Runtime()
     S.perform!(runtime, job(), S.CaptureOwners())
     S.perform!(runtime, job(), S.CaptureParameters())
     @test runtime.parameters.handle == 31
+    @test runtime.trace[end-1:end] == [
+        (:parameter_source_id, UInt64(31)),
+        (:parameter_source_serial, runtime.objects[UInt32(31)].serial),
+    ]
+    empty!(runtime.trace)
     capture_sources!(runtime)
     @test handle.(runtime.sources) == UInt64[22, 42]
     S.perform!(runtime, job(), S.PrepareSources())

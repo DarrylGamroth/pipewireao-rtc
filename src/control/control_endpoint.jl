@@ -580,6 +580,8 @@ function _now!(endpoint::Endpoint)
     return at
 end
 
+requested_event(header, command, bytes, received) = (; header, command, bytes, received)
+
 function stage!(endpoint::Endpoint{P,C}, pod::Pod) where {P,C}
     received = _now!(endpoint)
     operational(endpoint)
@@ -594,7 +596,7 @@ function stage!(endpoint::Endpoint{P,C}, pod::Pod) where {P,C}
         return rejection!(endpoint, header, Int32(-Base.Libc.EINVAL))
     end
     command, bytes = decoded
-    Hsm.dispatch!(endpoint, :Requested, (; header, command, bytes, received))
+    Hsm.dispatch!(endpoint, :Requested, requested_event(header, command, bytes, received))
     return nothing
 end
 

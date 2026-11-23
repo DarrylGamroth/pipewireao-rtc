@@ -12,6 +12,19 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Native parameter NDArray transfer — 2026-11-23 UTC
+
+Session operation 17 accepts declared runtime parameters as a native NDArray
+Format and either an inline SPA Float array or a reference to a transient
+PipeWire output. The existing parameter source publishes the accepted values.
+Catalog clients can request the original registered FITS bytes through a
+sealed descriptor. See [bounded local control](operations.md#rtc-dev-022--bounded-local-control)
+and the [verification record](EVIDENCE_INDEX.md#native-ndarray-parameter-interchange--2026-11-23).
+Julia package precompilation now covers the operator-command path for vectors
+and matrices. Startup checks the configured ranks, including those outside the
+package workload. [First-update trace](validation/ndarray-first-update-20261123/README.md)
+and [package-image measurements](validation/ndarray-first-update-20261123/package-image.md)
+
 ### RTC startup and outstanding branches — 2026-11-23
 
 The [startup review](reviews/20261123-rtc-startup-worktrees/REVIEW.md) traces the

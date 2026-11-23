@@ -1,5 +1,5 @@
 module MediaSessionTests
-using Test, PipeWireAORTC
+using Test, PipeWireAORTC, PipeWireAO
 import Hsm, Clocks
 const S = PipeWireAORTC.MediaSession
 const LAUNCHER = S.Identity(11, 12, 13, 14)
@@ -321,6 +321,64 @@ end
     @test only(S.take_replies!(m)).outcome === :Failed
 end
 
+@testset "Ndarray parameter effects keep original admission and deadline" begin
+    controller = S.Identity(21, 22, 23, 24)
+    format = NdArrayFormat(NdArray.F32_LE, (2,); layout = NdArray.ROW_MAJOR)
+    data = R.ParameterNdArray(format, nothing, Float32[-0.0, 2.0])
+    request = S.Request(S.SetParameterNdArray();
+        token = 7, deadline = 2 * SECOND, payload = ("science", "reference", data), controller,
+    )
+    m = ready()
+    S.submit!(m, request)
+    ticket = m.effect
+    @test ticket.deadline == 2 * SECOND
+    @test ticket.operation == 17
+    forwarded = ticket.effect.payload
+    @test forwarded.controller.global_id == controller.global_id
+    @test forwarded.controller.serial == controller.serial
+    @test forwarded.controller.instance == controller.instance
+    @test forwarded.parameter.data === data.data
+    acknowledge!(m, :submission)
+    @test Hsm.current(m) === :Ready
+    @test only(S.take_replies!(m)).token == 7
+    S.complete!(m, ticket)
+    @test isempty(S.take_replies!(m))
+end
+
+@testset "Only a timely ndarray refusal preserves an admitted session" begin
+    controller = S.Identity(21, 22, 23, 24)
+    format = NdArrayFormat(NdArray.F32_LE, (2,); layout = NdArray.ROW_MAJOR)
+    parameter = R.ParameterNdArray(format, nothing, Float32[1, 2])
+    request = S.Request(
+        S.SetParameterNdArray(); token = 7, deadline = SECOND,
+        payload = ("science", "reference", parameter), controller,
+    )
+    refusal = S.ParameterRefusal("parameter transfer rejected")
+    for (admit, state) in ((ready, :Ready), (running, :Running))
+        m = admit()
+        S.submit!(m, request)
+        acknowledge!(m, refusal)
+        reply = only(S.take_replies!(m))
+        @test reply.outcome === :Failed && reply.error == refusal.reason && !reply.unknown
+        @test Hsm.current(m) === state && m.effect === nothing && !m.mutated
+    end
+
+    for failure in (:late_refusal, :unknown_submission)
+        m = running()
+        S.submit!(m, request)
+        ticket = m.effect
+        S.submitted!(m, ticket)
+        if failure === :late_refusal
+            S.complete!(m, ticket, refusal; at = ticket.deadline)
+        else
+            S.fail!(m, ticket, "parameter transfer outcome unknown"; submitted = false)
+        end
+        @test m.lifecycle === R.Fault
+        sequence!(m, (S.HoldSources, S.HoldGraphs, S.WithdrawLinks))
+        @test only(S.take_replies!(m)).unknown
+    end
+end
+
 @testset "First fault, source-first compensation and explicit Quit recovery" begin
     m = running()
     S.submit!(m, S.Request(S.SetProperties(); token = 8, payload = "science"))
@@ -374,7 +432,7 @@ end
     @test length(m.replies) == 2
     @test_throws ArgumentError S.submit!(m, S.Request(S.SetParameter()))
     @test m.effect === ticket && length(m.replies) == 2
-    @test_throws ArgumentError S.Request(17)
+    @test_throws ArgumentError S.Request(18)
     @test_throws ArgumentError S.Machine(0)
 end
 

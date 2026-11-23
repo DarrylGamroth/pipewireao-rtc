@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
+#include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -28,6 +29,7 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (json_object, json_object_put)
 #define CONFIGURATION "pipewireao.configuration/1"
 #define SIMULATOR "pipewireao.simulator-settings/1"
 #define REQUEST_LIMIT (64 * 1024)
+#define ARTIFACT_LIMIT (512 * 1024 * 1024)
 #define RECEIPT_LIMIT (16 * 1024 * 1024 + 4096)
 #define CONNECTION_LIMIT 16
 #define RECEIPT_CAPACITY 256
@@ -422,10 +424,34 @@ read_line (Management *m, int fd, size_t limit, gint64 deadline, gboolean socket
   return NULL;
 }
 static gboolean
-send_response (Management *m, int fd, json_object *response)
+send_response (Management *m, int fd, json_object *response, int artifact_fd)
 {
   const char *text = json_object_to_json_string_ext (response, JSON_FORMAT);
   gint64 deadline = deadline_seconds (10);
+  if (artifact_fd >= 0)
+    {
+      _Alignas (struct cmsghdr) char control[CMSG_SPACE (sizeof (int))] = { 0 };
+      struct iovec iov = { (char *)text, 1 };
+      struct msghdr msg = { .msg_iov = &iov, .msg_iovlen = 1,
+                            .msg_control = control, .msg_controllen = sizeof control };
+      struct cmsghdr *header = CMSG_FIRSTHDR (&msg);
+      header->cmsg_level = SOL_SOCKET;
+      header->cmsg_type = SCM_RIGHTS;
+      header->cmsg_len = CMSG_LEN (sizeof (int));
+      memcpy (CMSG_DATA (header), &artifact_fd, sizeof artifact_fd);
+      while (TRUE)
+        {
+          if (!ready (m, fd, POLLOUT, deadline))
+            return FALSE;
+          ssize_t count = sendmsg (fd, &msg, MSG_NOSIGNAL);
+          if (count < 0 && (errno == EINTR || errno == EAGAIN))
+            continue;
+          if (count != 1)
+            return FALSE;
+          text++;
+          break;
+        }
+    }
   return write_bytes (m, fd, text, strlen (text), deadline)
          && write_bytes (m, fd, "\n", 1, deadline);
 }
@@ -707,7 +733,7 @@ execute (Management *m, const char *id, const char *domain, const char *op, json
                          TRUE);
 }
 static json_object *
-dispatch (Management *m, const char *line, int fd, gboolean *admitted)
+dispatch (Management *m, const char *line, int fd, gboolean *admitted, int *artifact_fd)
 {
   g_autoptr (json_object) envelope = parse_json (line);
   json_object *request = member (envelope, "request"), *args = member (request, "arguments");
@@ -721,12 +747,13 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
   gboolean configuration = !strcmp (domain, CONFIGURATION), simulator = !strcmp (domain, SIMULATOR),
            receipt = !strcmp (domain, PROTOCOL) && !strcmp (op, "receipt");
   gboolean registration = configuration && !strcmp (op, "register");
+  gboolean read_artifact = configuration && !strcmp (op, "read-artifact");
   gboolean mutation = registration || (configuration && !strcmp (op, "get"))
                       || (simulator && !strcmp (op, "start_rebuild"));
   if (!receipt
       && !(configuration
            && (!strcmp (op, "list") || !strcmp (op, "get")
-               || registration))
+               || registration || read_artifact))
       && !(simulator
            && (!strcmp (op, "describe") || !strcmp (op, "start_rebuild") || !strcmp (op, "job"))))
     return error_response (id, "unsupported management operation", FALSE);
@@ -737,6 +764,7 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
     return error_response (id, "Busy", FALSE);
   *admitted = TRUE;
   json_object *response = NULL;
+  int artifact = -1;
   if (receipt)
     {
       const char *original = string_member (args, "id");
@@ -760,7 +788,8 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
     json_object_object_foreach (args, key, value)
       {
         if (!strcmp (key, "root") || !strcmp (key, "state_root")
-            || !strcmp (key, "configuration_root") || (registration && !strcmp (key, "path")))
+            || !strcmp (key, "configuration_root")
+            || ((registration || read_artifact) && !strcmp (key, "path")))
           {
             response = error_response (
                 id, "client paths, roots or duplicate arguments are forbidden", FALSE);
@@ -772,7 +801,7 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
       {
         struct stat st;
         if (fstat (fd, &st) < 0 || !S_ISREG (st.st_mode) || st.st_size < 0
-            || st.st_size > 512 * 1024 * 1024 || (fcntl (fd, F_GETFL) & O_ACCMODE) == O_WRONLY
+            || st.st_size > ARTIFACT_LIMIT || (fcntl (fd, F_GETFL) & O_ACCMODE) == O_WRONLY
             || (fcntl (fd, F_GETFL) & O_PATH))
           {
             response = error_response (
@@ -780,6 +809,22 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
             goto out;
           }
         g_autofree char *path = g_strdup_printf ("/proc/%ld/fd/%d", (long)getpid (), fd);
+        json_object_object_add (worker_args, "path", json_object_new_string (path));
+      }
+    if (read_artifact)
+      {
+        if (!keys (args, "|id|") || !string_member (args, "id"))
+          {
+            response = error_response (id, "read-artifact requires an artifact identity", FALSE);
+            goto out;
+          }
+        artifact = memfd_create ("pipewireao-artifact", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+        if (artifact < 0)
+          {
+            response = error_response (id, "cannot allocate artifact descriptor", TRUE);
+            goto out;
+          }
+        g_autofree char *path = g_strdup_printf ("/proc/%ld/fd/%d", (long)getpid (), artifact);
         json_object_object_add (worker_args, "path", json_object_new_string (path));
       }
     g_autoptr (json_object) worker_request = json_object_new_object ();
@@ -818,6 +863,26 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
       }
     response = execute (m, id, domain, op, worker_request,
                         configuration ? 16 * 1024 * 1024 : 1024 * 1024);
+    if (read_artifact)
+      {
+        gboolean ok = FALSE;
+        if (boolean_member (response, "ok", &ok) && ok)
+          {
+            struct stat st;
+            if (fstat (artifact, &st) < 0 || st.st_size <= 0 || st.st_size > ARTIFACT_LIMIT
+                || fcntl (artifact, F_ADD_SEALS,
+                          F_SEAL_WRITE | F_SEAL_GROW | F_SEAL_SHRINK | F_SEAL_SEAL) < 0)
+              {
+                json_object_put (response);
+                response = error_response (id, "invalid or unsealable artifact result", TRUE);
+              }
+            else
+              {
+                *artifact_fd = artifact;
+                artifact = -1;
+              }
+          }
+      }
     if (mutation)
       {
         gboolean unavailable = FALSE;
@@ -832,6 +897,8 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
       }
   }
 out:
+  if (artifact >= 0)
+    close (artifact);
   return response;
 }
 
@@ -854,10 +921,13 @@ handle_connection (gpointer data)
       g_autofree char *line
           = read_line (m, socket_fd, REQUEST_LIMIT, deadline_seconds (10), TRUE, &input_fd);
       gboolean admitted = FALSE;
+      int artifact_fd = -1;
       g_autoptr (json_object) response
-          = line ? dispatch (m, line, input_fd, &admitted)
+          = line ? dispatch (m, line, input_fd, &admitted, &artifact_fd)
                  : preadmission_error ("invalid, oversized or timed out request");
-      send_response (m, socket_fd, response);
+      send_response (m, socket_fd, response, artifact_fd);
+      if (artifact_fd >= 0)
+        close (artifact_fd);
       if (admitted)
         g_mutex_unlock (&m->operation);
     }

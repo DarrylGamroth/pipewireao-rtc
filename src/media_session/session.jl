@@ -125,6 +125,16 @@ request_payload(
 ) = only(command.args)
 request_payload(::Union{SessionCodec.WarmupCommand,SessionCodec.AdmitCommand}) = nothing
 
+function Request(ticket::Ingress.Ticket, token::UInt64)
+    return Request(
+        ticket.header.operation;
+        token,
+        deadline = ticket.deadline,
+        payload = request_payload(ticket.command),
+        controller = ticket.controller,
+    )
+end
+
 function apply!(session::Session, action::Ingress.DispatchRequest)
     ticket = action.ticket
     operation = ticket.header.operation
@@ -154,16 +164,7 @@ function apply!(session::Session, action::Ingress.DispatchRequest)
     session.next_request = Base.Checked.checked_add(session.next_request, UInt64(1))
     token = session.next_request
     session.requests[token] = ticket
-    submit!(
-        session,
-        Request(
-            operation;
-            token,
-            deadline = ticket.deadline,
-            payload = request_payload(ticket.command),
-            controller = ticket.controller,
-        ),
-    )
+    submit!(session, Request(ticket, token))
     return nothing
 end
 function apply!(session::Session, action::Ingress.PublishRecords)
@@ -561,6 +562,13 @@ function serve!(session::Session)
     return session.exitcode
 end
 
+function publish_parameter_source!(session::Session, job, handle, properties)
+    PipeWireAO.update_properties!(session.endpoint, properties)
+    synchronize!(session, job)
+    assert_identity!(session, handle)
+    return nothing
+end
+
 function endpoint_properties(profile, instance, name)
     properties = Dict{String,String}(
         "node.name" => name,
@@ -571,6 +579,9 @@ function endpoint_properties(profile, instance, name)
         "pipewireao.rtc-control.instance" => string(instance),
         "pipewireao.rtc-control.owner-pid" => string(getpid()),
     )
+    if profile == SessionCodec.PROFILE
+        properties["pipewireao.rtc-control.parameter-ndarray"] = "true"
+    end
     return properties
 end
 
@@ -613,7 +624,85 @@ An unpublished machine with a private cached clock exercises cleanup events.
 RTC requests and backend methods compile without executing, so no native
 mutation or readiness observation is produced.
 """
-prepare_dispatch!(session::Session) = prepare_dispatch!(typeof(session))
+function prepare_dispatch!(session::Session)
+    prepare_dispatch!(typeof(session))
+    sources = get(session.configuration["session"], "sources", [])
+    ranks = Set{Int}()
+    for source in sources
+        get(source, "factory", nothing) == "pipewireao.runtime-parameter" || continue
+        push!(ranks, length(only(source["ports"])["shape"]))
+    end
+    for rank in sort!(collect(ranks))
+        prepare_parameter_ndarray!(typeof(session), rank)
+    end
+    return nothing
+end
+
+function prepare_parameter_ndarray!(::Type{T}, rank) where {T<:Session}
+    identity = Identity(3, 4, 5, 6)
+    controller = ControlCodec.ControllerIdentity(
+        identity.global_id, identity.serial, Int64(identity.instance),
+    )
+    # Exercise admission and the correlated Submitted reply on an unpublished gate.
+    # The live effect and forwarding paths are compiled without sending a request.
+    gate = Ingress.Gate(1; clock = Clocks.CachedNanoClock(Int64(0)), owner_pid = 2)
+    Ingress.controllers!(gate, [Ingress.Controller(identity, "ndarray preparation")])
+    Ingress.state!(gate, RunnerCodec.Running)
+    Ingress.take_actions!(gate)
+    graph, inlet = "graph", "parameter"
+    details = policy_struct(Pod(graph), Pod(inlet), Pod(nothing), Pod(false))
+    # The retained control owner and decoded configuration expose these values
+    # through abstract fields during forwarding.
+    Base.precompile(getproperty, (ParameterSource.Completion, Symbol))
+    Base.precompile(getproperty, (ControlCodec.ReplyHeader, Symbol))
+    Base.precompile(==, (NTuple{rank,Int32}, NTuple{rank,Int}))
+    for (token, parameter) in enumerate(RunnerCodec.parameter_ndarray_workload(rank))
+        header = ControlCodec.RequestHeader(
+            controller, gate.instance, Int64(token), PARAMETER_NDARRAY_OPERATION,
+            SESSION_EFFECT_TIMEOUT_NS,
+        )
+        command = RunnerCodec.RunnerCommand(:parameter_ndarray, graph, inlet, parameter)
+        Ingress.receive!(gate, SessionCodec.encode_request(header, command), Int64(0))
+        ticket = something(gate.pending)
+        request = Request(ticket, UInt64(token))
+        forwarded = typeof(parameter_request(request))
+        effect = SubmitParameter{forwarded}
+        Base.precompile(apply!, (T, Ingress.DispatchRequest{typeof(ticket)}))
+        Base.precompile(submit!, (T, typeof(request)))
+        machine = fieldtype(T, :machine)
+        Base.precompile(submit!, (machine, typeof(request)))
+        Base.precompile(_reply!, (machine, typeof(request), Symbol, typeof(details)))
+        for origin in (ReadyOrigin, RunningOrigin)
+            Base.precompile(EffectTicket, (UInt64, UInt64, UInt64, UInt32, origin, Int64, effect, Nothing))
+            job = Job{EffectTicket{effect,origin}}
+            Base.precompile(perform!, (T, job, effect))
+            Base.precompile(execute_effect!, (T, job))
+            prepare_parameter_forward!(T, job, forwarded)
+        end
+        reply = Reply(
+            request.token, header.operation, RunnerCodec.Running, :Updated, details, nothing, false,
+        )
+        Ingress.complete!(
+            gate, ticket, reply_pod(ticket, reply); unknown = reply.unknown, terminal = false,
+        )
+        Ingress.take_actions!(gate)
+    end
+    return nothing
+end
+
+# The retained parameter source has an abstract owner field in Session. Compile
+# its concrete forwarding method before an admitted operator request reaches it.
+function prepare_parameter_forward!(session_type, job, command)
+    parameter_owner = Owner{
+        ParameterSource.Profile,
+        ControlClient.Observation{
+            ParameterSource.Profile,ParameterSource.Lifecycle,
+            ParameterSource.Completion,ParameterSource.Rejection
+        }
+    }
+    Base.precompile(request_owner!, (session_type, job, parameter_owner, command))
+    return nothing
+end
 
 function prepare_dispatch!(::Type{T}) where {T<:Session}
     Base.precompile(update!, (T, EffectCompleted{Nothing}))
@@ -663,18 +752,11 @@ function prepare_dispatch!(::Type{T}) where {T<:Session}
             Base.precompile(execute_effect!, (T, job))
         end
     end
-    parameter_owner = Owner{
-        ParameterSource.Profile,
-        ControlClient.Observation{
-            ParameterSource.Profile,ParameterSource.Lifecycle,
-            ParameterSource.Completion,ParameterSource.Rejection
-        }
-    }
     parameter_command = RunnerCodec.RunnerCommand{:parameter,ParameterSource.Arguments}
     parameter_effect = SubmitParameter{ParameterSource.Arguments}
     for origin in (ReadyOrigin, RunningOrigin)
         job = Job{EffectTicket{parameter_effect,origin}}
-        Base.precompile(request_owner!, (T, job, parameter_owner, parameter_command))
+        prepare_parameter_forward!(T, job, parameter_command)
     end
     bootstrap = OwnerBootstrapCodec.PROFILE
     bootstrap_owner = Owner{
@@ -1023,6 +1105,11 @@ end
     controller = Core.Compiler.return_type(session_controller, Tuple{core,Dict{String,String}})
     types = (core, registry, endpoint, controller)
     if all(isconcretetype, types)
-        prepare_dispatch!(Session{types...,clock})
+        session_type = Session{types...,clock}
+        Base.precompile(prepare_dispatch!, (session_type,))
+        prepare_dispatch!(session_type)
+        for rank in RunnerCodec.PARAMETER_NDARRAY_PRECOMPILE_RANKS
+            prepare_parameter_ndarray!(session_type, rank)
+        end
     end
 end

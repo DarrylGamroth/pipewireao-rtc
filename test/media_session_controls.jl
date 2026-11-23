@@ -14,7 +14,7 @@ import PipeWireAORTC:
     SourceControl,
     ParameterSource,
     DeploymentConfiguration
-import PipeWireAORTC.MediaSession: AbstractOrigin, ReadyOrigin, RunningOrigin
+import PipeWireAORTC.MediaSession: AbstractOrigin, ReadyOrigin, RunningOrigin, ParameterRefusal
 include(joinpath(@__DIR__, "..", "src", "media_session", "controls.jl"))
 include(joinpath(@__DIR__, "..", "src", "media_session", "correction.jl"))
 const SPA = PipeWireAO.SPA
@@ -991,6 +991,9 @@ end
                 Dict(
                     "factory" => "pipewireao.runtime-parameter",
                     "node.name" => "publisher",
+                    "ports" => [Dict(
+                        "element-type" => "F32_LE", "shape" => [2, 2], "schema" => "schema",
+                    )],
                 ),
             ],
             "links" =>
@@ -1030,6 +1033,78 @@ end
     runtime = Runtime([Pod[]]; configuration = config)
     @test_throws ArgumentError submit_parameter!(runtime, job(runtime), command)
     @test isempty(runtime.submitted)
+
+    original = CC.ControllerIdentity(UInt32(23), UInt64(29), Int64(31))
+    format = NdArrayFormat(NdArray.F32_LE, (2, 2); layout = NdArray.ROW_MAJOR)
+    ndarray = ParameterSource.NdArrayParameter(
+        "graph", "matrix", RunnerCodec.ParameterNdArray(format, "schema", Float32[1, 2, 3, 4]), original,
+    )
+    completion = ControlClient.encode_completion(
+        profile,
+        CC.ReplyHeader(IDENTITY, Int64(17), Int64(1), UInt32(17), Int32(0)),
+        "graph", "matrix", Int64(5), true, false, "",
+    )
+    ndarray_owner = Owner(
+        profile, ControlClient.Observation(profile, Int64(17), UInt32(19)),
+        UInt64(1), UInt32(19), Int64(17), false,
+    )
+    runtime = Runtime(
+        [Pod[], [capability(profile)], [capability(profile), completion]];
+        configuration = config, parameters = ndarray_owner, properties = metadata,
+    )
+    result = submit_parameter!(runtime, job(runtime), ndarray)
+    @test !policy_bool(result.values[4])
+    header, forwarded = ControlClient.decode_request(profile, only(runtime.submitted))
+    @test header.controller == IDENTITY
+    @test forwarded.controller == original
+    @test forwarded.parameter.data == Float32[1, 2, 3, 4]
+
+    owner = Owner(
+        profile, ControlClient.Observation(profile, Int64(17), UInt32(19)),
+        UInt64(1), UInt32(19), Int64(17), false,
+    )
+    runtime = Runtime(
+        [Pod[], [capability(profile)], [capability(profile), completion]];
+        configuration = config, parameters = owner, properties = metadata,
+    )
+    wrong_layout = NdArrayFormat(NdArray.F32_LE, (2, 2); layout = NdArray.COLUMN_MAJOR)
+    mismatched = ParameterSource.NdArrayParameter(
+        "graph", "matrix",
+        RunnerCodec.ParameterNdArray(wrong_layout, "schema", Float32[1, 2, 3, 4]),
+        original,
+    )
+    @test_throws ArgumentError submit_parameter!(runtime, job(runtime), mismatched)
+    @test isempty(runtime.submitted)
+
+    for (operation, result, submitted, graph, refused) in (
+        (17, -Base.Libc.EINVAL, false, "graph", true),
+        (17, -Base.Libc.EINVAL, false, "other-graph", false),
+        (17, -Base.Libc.EINVAL, true, "graph", false),
+        (17, -Base.Libc.ETIMEDOUT, false, "graph", false),
+        (14, -Base.Libc.EINVAL, false, "graph", false),
+    )
+        rejected = ControlClient.encode_completion(
+            profile,
+            CC.ReplyHeader(IDENTITY, Int64(17), Int64(1), UInt32(operation), Int32(result)),
+            graph, "matrix", Int64(submitted), submitted, false, "parameter rejected",
+        )
+        owner = Owner(
+            profile, ControlClient.Observation(profile, Int64(17), UInt32(19)),
+            UInt64(1), UInt32(19), Int64(17), false,
+        )
+        runtime = Runtime(
+            [Pod[], [capability(profile)], [capability(profile), rejected]];
+            configuration = config, parameters = owner, properties = metadata,
+        )
+        request = operation == 17 ? ndarray : command
+        if refused
+            refusal = submit_parameter!(runtime, job(runtime), request)
+            @test refusal isa ParameterRefusal && refusal.reason == "parameter rejected"
+        else
+            @test_throws ArgumentError submit_parameter!(runtime, job(runtime), request)
+        end
+        @test length(runtime.submitted) == 1
+    end
 end
 @testset "shared codecs and unsupported owner discovery" begin
     runtime = Runtime(Vector{Pod}[])

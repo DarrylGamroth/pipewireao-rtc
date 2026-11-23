@@ -15,7 +15,7 @@ function request_result(request::AbstractDict)
     get(request, "protocol", nothing) == ConfigurationStore.PROTOCOL ||
         throw(ArgumentError("unsupported protocol"))
     operation = get(request, "op", nothing)
-    operation in ("register", "list", "get") ||
+    operation in ("register", "list", "get", "read-artifact") ||
         throw(ArgumentError("unknown management operation"))
     arguments = get(request, "arguments", Dict{String,Any}())
     return request_result(request, operation, arguments)
@@ -26,28 +26,7 @@ function request_result(request, operation, arguments::AbstractDict)
     root = get(request, "root", ConfigurationStore.default_root())
     store = configuration_store(root)
     if operation == "register"
-        allowed = (
-            "path", "type", "shape", "hdu", "axes", "label", "scope", "metadata", "schema"
-        )
-        all(k -> k in allowed, keys(arguments)) ||
-            throw(ArgumentError("unknown register argument"))
-        type = get(TYPES, get(arguments, "type", nothing), nothing)
-        type === nothing && throw(ArgumentError("unsupported target type"))
-        source = Artifacts.FITSArtifact(
-            arguments["path"];
-            hdu = get(arguments, "hdu", 1),
-            axes = get(arguments, "axes", nothing),
-        )
-        return ConfigurationStore.register!(
-            store,
-            source,
-            type,
-            arguments["shape"];
-            label = arguments["label"],
-            scope = arguments["scope"],
-            metadata = get(arguments, "metadata", Dict{String,Any}()),
-            schema = get(arguments, "schema", ""),
-        )
+        return register(store, arguments)
     elseif operation == "list"
         all(k -> k in ("limit", "after_sequence"), keys(arguments)) ||
             throw(ArgumentError("unknown list argument"))
@@ -62,7 +41,46 @@ function request_result(request, operation, arguments::AbstractDict)
         return ConfigurationStore.materialize!(
             store, arguments["id"]; storage_order = get(arguments, "layout", "row-major")
         )
+    elseif operation == "read-artifact"
+        Set(keys(arguments)) == Set(("id", "path")) ||
+            throw(ArgumentError("read-artifact requires an artifact identity and owner descriptor"))
+        path = arguments["path"]
+        parent = ccall(:getppid, Cint, ())
+        path isa AbstractString && occursin(Regex("^/proc/$parent/fd/[0-9]+\$"), path) ||
+            throw(ArgumentError("read-artifact requires an owner descriptor"))
+        record, original = ConfigurationStore.verified_artifact(store, arguments["id"])
+        open(path, "w") do output
+            write(output, original) == length(original) ||
+                throw(ArgumentError("incomplete artifact descriptor write"))
+        end
+        return record
     end
+end
+
+function register(store, arguments; original = nothing)
+    allowed = (
+        "path", "type", "shape", "hdu", "axes", "label", "scope", "metadata", "schema"
+    )
+    all(k -> k in allowed, keys(arguments)) ||
+        throw(ArgumentError("unknown register argument"))
+    type = get(TYPES, get(arguments, "type", nothing), nothing)
+    type === nothing && throw(ArgumentError("unsupported target type"))
+    source = Artifacts.FITSArtifact(
+        arguments["path"];
+        hdu = get(arguments, "hdu", 1),
+        axes = get(arguments, "axes", nothing),
+    )
+    options = (
+        label = arguments["label"], scope = arguments["scope"],
+        metadata = get(arguments, "metadata", Dict{String,Any}()),
+        schema = get(arguments, "schema", ""),
+    )
+    original === nothing && return ConfigurationStore.register!(
+        store, source, type, arguments["shape"]; options...
+    )
+    return ConfigurationStore.register_snapshot!(
+        store, source, type, arguments["shape"], original; options...
+    )
 end
 
 configuration_store(root::AbstractString) = ConfigurationStore.Store(root)

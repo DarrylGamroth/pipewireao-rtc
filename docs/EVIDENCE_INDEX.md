@@ -1,5 +1,32 @@
 # Delivery evidence catalog
 
+## Native NDArray parameter interchange — 2026-11-23
+
+The RTC and GUI development builds extend v0.7.28 with session operation 17.
+The Julia codec and Rust client share a signed-zero Float32 fixture for a
+column-major matrix and a correlated Submitted reply. An opt-in private-core
+test transfers a 32 KiB packed array and checks stale port identity and Link
+withdrawal. On SDK 4.0.8 the Rust sender also delivered 32,768 bytes to the Julia
+receiver on the same private core. The two SHA-256 digests matched. The catalog
+IPC test verifies the original FITS bytes and manifest returned by the
+management companion. [Rust sender interoperability fixture](../test/parameter_ndarray_interop.jl) · [Golden records](../test/data/native-parameter-ndarray/README.md) · [Private PipeWire transfer](../test/parameter_ndarray_private_core.jl) · [Catalog IPC](../test/management_endpoint.jl)
+
+Chromium completed two edit/restore cycles against a fresh private Classic CPU
+session using the paired GUI and RTC. All four replies reported Submitted,
+and all 277 Float32 values matched on readback after every write. From browser
+Status send through the matching reply, the first edit took 1,958 ms and the
+remaining three writes took 107–175 ms. The private owner stopped cleanly.
+This was software validation on one simulated session. A later fresh-session
+trace identified Julia first-use compilation in public dispatch, parameter
+forwarding and publication. With these paths prepared at startup, the
+first edit took 334 ms from Status send to reply. The remaining writes
+took 126–213 ms and the private owner stopped cleanly. [Trace and startup warmup verification](validation/ndarray-first-update-20261123/README.md)
+
+On a matched pair of fresh sessions, moving vector and matrix command handling
+into Julia package precompilation reduced the startup step from 65.162 s to
+0.086 s. The previous build spent 44.212 s waiting for CPU during that
+step. [Package-image comparison](validation/ndarray-first-update-20261123/package-image.md)
+
 ## CAL2 live open-loop priming — 2026-11-23 Pacific
 
 The [installed restart comparison](validation/cal2-live-prime-20261123/README.md)
