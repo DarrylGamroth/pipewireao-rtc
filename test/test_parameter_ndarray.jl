@@ -1,4 +1,5 @@
 using Test, PipeWireAO, PipeWireAORTC
+import Clocks
 
 const Runner = PipeWireAORTC.RunnerCodec
 const Codec = PipeWireAORTC.ControlCodec
@@ -133,4 +134,70 @@ end
     @test reply.header.result == -Base.Libc.ETIMEDOUT
     @test reply.header.operation == header.operation && reply.header.token == header.token
     @test reply.sequence == 6 && reply.submitted && !reply.active_adoption_observed
+end
+
+@testset "Native parameter requests fit the authenticated forward" begin
+    media = PipeWireAORTC.MediaSession
+    ingress = media.Ingress
+    identity = media.Identity(3, 4, 5, 6)
+    controller = Codec.ControllerIdentity(identity.global_id, identity.serial, Int64(identity.instance))
+    session_header = Codec.RequestHeader(controller, Int64(1), Int64(1), UInt32(17), Int64(5_000_000_000))
+    owner_header = Codec.RequestHeader(controller, Int64(2), Int64(1), UInt32(17), Int64(5_000_000_000))
+    function native_gate()
+        gate = ingress.Gate(1; clock = Clocks.CachedNanoClock(Int64(0)), owner_pid = 2)
+        ingress.controllers!(gate, [ingress.Controller(identity, "test parameter controller")])
+        ingress.state!(gate, Runner.Running)
+        ingress.take_actions!(gate)
+        return gate
+    end
+
+    vector = NdArrayFormat(NdArray.F32_LE, (3966,); layout = NdArray.ROW_MAJOR)
+    matrix = NdArrayFormat(NdArray.F32_LE, (64, 64); layout = NdArray.ROW_MAJOR)
+    near_limit = Runner.ParameterNdArray(vector, nothing, zeros(Float32, 3966))
+    stream = Runner.ParameterNdArray(
+        matrix, nothing, Runner.ParameterStream(UInt32(30), UInt64(31), UInt32(32), UInt64(33)),
+    )
+    for parameter in (near_limit, stream)
+        command = Runner.RunnerCommand(:parameter_ndarray, "g", "p", parameter)
+        wire = Session.encode_request(session_header, command)
+        _, decoded = Runner.decode_request(wire)
+        @test decoded.args[3].data == parameter.data
+        gate = native_gate()
+        ingress.receive!(gate, wire, Int64(0))
+        dispatch = only(filter(action -> action isa ingress.DispatchRequest, ingress.take_actions!(gate)))
+        @test dispatch.ticket === gate.pending
+        @test dispatch.ticket.command.args[3].data == parameter.data
+        forward = Parameter.NdArrayParameter(decoded.args..., controller)
+        owner_wire = Parameter.Client.encode_request(Parameter.PROFILE, owner_header, forward)
+        _, received = Parameter.Client.decode_request(Parameter.PROFILE, owner_wire)
+        @test received.parameter.data == parameter.data
+        @test received.controller == controller
+        @test sizeof(owner_wire) <= 16 * 1024
+        if parameter === near_limit
+            @test sizeof(owner_wire) == 16 * 1024
+        end
+    end
+
+    oversized = Runner.ParameterNdArray(
+        NdArrayFormat(NdArray.F32_LE, (3967,); layout = NdArray.ROW_MAJOR),
+        nothing, zeros(Float32, 3967),
+    )
+    command = Runner.RunnerCommand(:parameter_ndarray, "g", "p", oversized)
+    @test_throws ArgumentError Session.encode_request(session_header, command)
+    @test_throws ArgumentError Parameter.Client.encode_request(
+        Parameter.PROFILE, owner_header, Parameter.NdArrayParameter(command.args..., controller),
+    )
+
+    # The common envelope can be written directly by a native client.
+    native = Codec.encode_request(session_header, Runner._request_fields(command, command.args))
+    @test sizeof(native) == 16_336
+    @test_throws ArgumentError Runner.decode_request(native)
+    gate = native_gate()
+    ingress.receive!(gate, native, Int64(0))
+    @test gate.pending === nothing
+    @test gate.last_token == 0
+    @test !any(action -> action isa ingress.DispatchRequest, ingress.take_actions!(gate))
+    rejection, _ = Codec.decode_rejection(gate.rejection; endpoint = :lifecycle)
+    @test rejection.result == -Base.Libc.EINVAL
+    @test rejection.controller === nothing
 end

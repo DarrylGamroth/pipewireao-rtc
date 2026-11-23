@@ -26,6 +26,9 @@ const Pod = PipeWireAO.Pod
 const MAX_PROPERTIES = 42
 const MAX_PARAMETER_BYTES = 512 * 1024 * 1024
 const PARAMETER_NDARRAY_OPERATION = Envelope.PARAMETER_NDARRAY_OPERATION
+# The parameter owner forward appends one SPA Struct with the original
+# controller's Id and two Long Pods, each padded to 16 bytes.
+const MAX_PARAMETER_NDARRAY_REQUEST_BYTES = Envelope._MAX_REQUEST - (8 + 3 * 16)
 const MAX_ROWS = (64 * 1024) ÷ 40
 const OPERATIONS = (
     :quit,
@@ -411,18 +414,19 @@ function _preflight_request(command::RunnerCommand{O}, base::Int) where {O}
         _arity(args, 3)
         graph, inlet, parameter = args
         parameter isa ParameterNdArray || throw(ArgumentError("expected a parameter ndarray"))
-        total = _checked_add(total, _string_size(graph), 16 * 1024)
-        total = _checked_add(total, _string_size(inlet), 16 * 1024)
+        limit = MAX_PARAMETER_NDARRAY_REQUEST_BYTES
+        total = _checked_add(total, _string_size(graph), limit)
+        total = _checked_add(total, _string_size(inlet), limit)
         if parameter.data isa Vector{Float32}
-            length(parameter.data) <= (16 * 1024) ÷ sizeof(Float32) ||
-                throw(ArgumentError("inline parameter exceeds 16 KiB"))
+            length(parameter.data) <= limit ÷ sizeof(Float32) ||
+                throw(ArgumentError("inline parameter exceeds its request byte limit"))
             _validate_parameter_data(parameter.format, parameter.data)
-            total = _checked_add(total, _pod_size(8 + sizeof(parameter.data)), 16 * 1024)
+            total = _checked_add(total, _pod_size(8 + sizeof(parameter.data)), limit)
         else
-            total = _checked_add(total, _pod_size(64), 16 * 1024)
+            total = _checked_add(total, _pod_size(64), limit)
         end
         format = ndarray_format(parameter.format; id = SPA.PARAM_FORMAT, schema = parameter.schema)
-        total = _checked_add(total, (sizeof(format) + 7) & -8, 16 * 1024)
+        total = _checked_add(total, (sizeof(format) + 7) & -8, limit)
     elseif O === :parameter
         _arity(args, 6)
         graph, parameter, element_type, shape, schema, path = args
