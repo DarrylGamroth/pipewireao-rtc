@@ -102,7 +102,8 @@ and the upstream shutdown diagnostics.
 The following intervals partition the first row, using monotonic systemd
 and journal timestamps. Launching the service includes the installed
 preparation and publication helpers. Graph owners and the coordinator can
-work concurrently within an interval.
+work concurrently within an interval. Follow-up measurements separate CPU
+execution from time waiting to be scheduled. [Startup comparison with HEART](startup.md)
 
 | Interval | First RTC | Replacement RTC |
 | --- | ---: | ---: |

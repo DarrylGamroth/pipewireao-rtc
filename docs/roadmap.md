@@ -33,6 +33,11 @@ replacement in 58.3 s. Both delivered fresh physical offsets. The final
 observation after the second shutdown timed out on pupil 43. Managed
 acquisition uses its declared hold and release controls.
 
+On the shared host, two further ordinary RTC starts against one live CAL2
+source took 190.9 and 37.8 s. Scheduler counters account for about 150 s of
+the 153 s spread in the preparation and RTC leaders. Both used about 10 s
+of RTC leader CPU through Ready. [Startup attribution and HEART reference](validation/independent-source-20261123/startup.md)
+
 The fixed-pupil CAL2 candidate reached service Ready in 89.7 s, compared
 with 419.8 s for the paired ordinary activation. The [optical verification
 and phase breakdown](validation/cal2-fixed-pupil-20261122/README.md) separate
