@@ -10,6 +10,19 @@ exact export, the stop helper's signed monotonic measurements and an independent
 pidfd observation. Only the stop helper loaded the diagnostic change.
 [RTC issue #12](https://github.com/DarrylGamroth/pipewireao-rtc/issues/12#issuecomment-7093198212)
 
+## PipeWireAORTC 0.7.28 clean install — 2026-11-22
+
+With an empty project and depot on Julia 1.13.3, adding only
+`PipeWireAORTC` by name from General and DarrylGamrothRegistry selected
+RTC 0.7.28, PipeWireAO.jl 0.9.6 and PipeWireAO_jll 4.0.8+0. Importing
+RTC loaded libpipewire-ao 4.0.8 from the verified AVX2 artifact
+`77da251765f3124df77322c562e67a7c7742ab1d` in that depot. The RTC
+package tree `8a8135781b18d60b4156576122eff93d55692ea0` matches the
+release tag at `6416ed8`. The release changes the project version and its
+workspace manifest entry relative to the [tested revision](https://github.com/DarrylGamroth/pipewireao-rtc/commit/8cb53530ec1c4718421bc0ef92c8b613c337f691).
+[RTC release](https://github.com/DarrylGamroth/pipewireao-rtc/releases/tag/v0.7.28)
+· [Registry entry](https://github.com/DarrylGamroth/PackageRegistry/commit/273f7f80911077f4835eed956e90b8c79c0183b2)
+
 ## Published PipeWireAO 4.0.8 SDK and Julia 0.9.6 wrapper — 2026-11-22
 
 A fresh depot resolved the registered wrapper and JLL and verified the
