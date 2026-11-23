@@ -1,0 +1,4 @@
+hold_on_complete=false receipts_at_decision=(0x0000000000000001, 0x0000000000000001, 0x0000000000000001) exchange_result=1 exposure=1 active_command=1 command=(woofer = Float32[22.0, 24.0], tweeter = Float32[63.0, 66.0, 69.0], tiptilt = Float32[124.0])
+hold_on_complete=true receipts_at_decision=(0x0000000000000001, 0x0000000000000001, 0x0000000000000001) exchange_result=nothing exposure=1 active_command=0 command=(woofer = Float32[10.0, 10.0], tweeter = Float32[20.0, 20.0, 20.0], tiptilt = Float32[30.0])
+Test Summary:                              | Pass  Total   Time
+healthy complete response at Hold decision |   13     13  23.1s

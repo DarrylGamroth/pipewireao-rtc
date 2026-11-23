@@ -1,0 +1,5 @@
+prior_fault=true injected_effect=PipeWireAORTC.MediaSession.ShutdownOwners injected_reason="injected bootstrap timeout" next_effect=PipeWireAORTC.MediaSession.Disconnect retained_failure="Required Link removed" retained_cleanup="ArgumentError: object is not captured"
+prior_fault=true injected_effect=PipeWireAORTC.MediaSession.RemoveControls injected_reason="injected final inventory failure" next_effect=PipeWireAORTC.MediaSession.Disconnect retained_failure="Required Link removed" retained_cleanup="ArgumentError: object is not captured"
+prior_fault=false injected_effect=PipeWireAORTC.MediaSession.ShutdownOwners injected_reason="injected bootstrap timeout" next_effect=PipeWireAORTC.MediaSession.Disconnect retained_failure="injected bootstrap timeout" retained_cleanup="ArgumentError: object is not captured"
+Test Summary:                                             | Pass  Total  Time
+first failed Quit effect and post-retirement compensation |   81     81  8.0s
