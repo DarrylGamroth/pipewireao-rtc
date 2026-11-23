@@ -1,6 +1,6 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.7.28"
+version = "0.7.29"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [apps]
@@ -57,7 +57,7 @@ Clocks = "0.4.0"
 DBInterface = "2.7.0"
 FITSIO = "0.17"
 FilterGraphAlgorithms = "0.12.5"
-FilterGraphPipeWire = "0.5.6"
+FilterGraphPipeWire = "0.5.11"
 FilterGraphs = "0.10.3"
 Hsm = "0.3.3"
 JSON = "1.12"
