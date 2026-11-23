@@ -603,6 +603,81 @@ end
     @test isempty(runtime.sources) && isempty(runtime.trace)
 end
 
+function external_stream_runtime()
+    runtime = Runtime()
+    configuration = runtime.configuration
+    configuration["source"] = Dict("role" => "plant", "pid" => 2002,
+        "control-protocol" => "external-stream")
+    configuration["auxiliary-sources"] = []
+    filter!(owner -> owner["role"] != "plant", configuration["owners"])
+    configuration["node.pids"] = Dict("pupil" => 2002)
+    configuration["session"] = Dict("sources" => [
+        Dict("node.name" => "pupil", "ownership" => "external",
+            "ports" => [Dict("name" => "out", "direction" => "output")]),
+    ])
+    empty!(runtime.declared_links)
+    push!(runtime.declared_links, DeploymentConfiguration.link_declaration(
+        Dict("output" => "pupil:out", "input" => "upstream:in"),
+    ))
+    return runtime
+end
+
+struct ExternalLinkRuntime{D,L}
+    configuration::D
+    links::Vector{L}
+    captured::Set{UInt64}
+end
+function S.assert_identity!(runtime::ExternalLinkRuntime, id::UInt64)
+    id in runtime.captured || throw(ArgumentError("required object is absent"))
+    return nothing
+end
+
+@testset "External stream validation and lifecycle scope" begin
+    runtime = external_stream_runtime()
+    configuration = runtime.configuration
+    @test S.validate_external_stream(configuration, runtime.declared_links) === nothing
+    push!(configuration["owners"], configuration["source"])
+    @test S.validate_external_stream(configuration, runtime.declared_links) === nothing
+    for effect in (S.CaptureSources(), S.PrepareSources(), S.HoldSources(), S.RunSources(),
+            S.ResetSources(), S.ShutdownSources())
+        @test S.perform!(runtime, job(), effect) === nothing
+    end
+    @test isempty(runtime.sources) && isempty(runtime.trace)
+    @test_throws ArgumentError S.perform!(runtime, job(), S.QuerySourceEnd())
+    @test_throws ArgumentError S.perform!(runtime, job(), S.QueryStatus())
+
+    output = (node = 10, port = 11, parent = 12)
+    input = (node = 20, port = 21, parent = 22)
+    linked = ExternalLinkRuntime(configuration, [(; output, input, failure = nothing)],
+        Set{UInt64}((10, 11, 12, 20, 21, 22)))
+    for (origin, state) in ((S.ReadyOrigin(), R.Ready), (S.RunningOrigin(), R.Running))
+        details = S.perform!(linked, job(origin), S.QueryStatus())
+        status = decode_details(S.STATUS_OPERATION, details; state)
+        @test status.details.running == (state == R.Running)
+        @test status.details.owned_links == 1
+    end
+    delete!(linked.captured, 11)
+    @test_throws ArgumentError S.perform!(linked, job(), S.QueryStatus())
+
+    links = runtime.declared_links
+    @test_throws ArgumentError S.validate_external_stream(configuration, empty(links))
+    for change! in (
+        cfg -> cfg["source"]["pid"] = true,
+        cfg -> cfg["source"]["control-instance"] = "99",
+        cfg -> cfg["owners"][2]["pid"] = 2002,
+        cfg -> cfg["owners"][end]["bootstrap-node"] = "plant-bootstrap",
+        cfg -> cfg["core.owner"]["pid"] = 2002,
+        cfg -> cfg["node.pids"]["pupil"] = 1000,
+        cfg -> cfg["session"]["sources"][1]["ownership"] = "runner",
+        cfg -> cfg["session"]["sources"][1]["ports"][1]["direction"] = "input",
+        cfg -> push!(cfg["auxiliary-sources"], cfg["source"]),
+    )
+        invalid = deepcopy(configuration)
+        change!(invalid)
+        @test_throws ArgumentError S.validate_external_stream(invalid, links)
+    end
+end
+
 @testset "Source chronology requires held and reset proofs" begin
     runtime = capture_sources!(Runtime())
     S.perform!(runtime, job(S.ConfiguringOrigin()), S.HoldSources())

@@ -687,6 +687,8 @@ function Session(
     declared_links = DeploymentConfiguration.validate_session_links(spec)
     isempty(declared_links) && throw(ArgumentError("session requires a declared connection"))
     DeploymentConfiguration.validate_execution_groups(spec, declared_links)
+    validate_external_stream(configuration, declared_links)
+    source_end_supported = !external_stream(configuration)
     modules = [entry["name"] for entry in config["context.modules"]]
     modules == ["libpipewire-module-protocol-native", "libpipewire-module-client-node"] ||
         throw(ArgumentError("session configuration has unsupported context modules"))
@@ -739,6 +741,7 @@ function Session(
         machine = Machine(
             instance;
             clock = cached,
+            source_end_supported,
             startup_timeout_ns = Base.Checked.checked_mul(
                 Int64(configuration["startup.timeout-ms"]), Int64(1_000_000)
             ),
@@ -795,7 +798,8 @@ function Session(
         # public Filter has connected yet, so no caller's receipt is deferred.
         Clocks.update!(cached, Clocks.time_nanos(clock))
         machine = Machine(
-            instance; clock = cached, startup_timeout_ns = machine.startup_timeout_ns
+            instance; clock = cached, source_end_supported,
+            startup_timeout_ns = machine.startup_timeout_ns,
         )
         session.machine = machine
         observe!(

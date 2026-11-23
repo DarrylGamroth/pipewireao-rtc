@@ -43,8 +43,8 @@ const SHUTDOWN = (
     S.RemoveControls,
     S.PublishQuit,
 )
-function ready(; clock = zero_clock())
-    m = S.Machine(101; clock)
+function ready(; clock = zero_clock(), source_end_supported = true)
+    m = S.Machine(101; clock, source_end_supported)
     sequence!(m, PREPARATION)
     S.submit!(m, S.Request(S.InspectWarmup(); controller = LAUNCHER))
     S.take_replies!(m)
@@ -138,6 +138,18 @@ end
     acknowledge!(m, S.SourceEnd(false, false); submitted = false)
     @test m.lifecycle == R.Fault && m.effect.effect === S.HoldSources()
     @test m.failure == "Source end is not confirmed"
+end
+
+@testset "External stream End leaves the admitted session available" begin
+    for machine in (ready, running)
+        m = machine(; source_end_supported = false)
+        lifecycle = m.lifecycle
+        S.submit!(m, S.Request(S.SourceEnded(); token = 2))
+        result = only(S.take_replies!(m))
+        @test result.outcome === :Failed && !result.unknown
+        @test result.lifecycle === lifecycle
+        @test m.failure === nothing && m.effect === nothing
+    end
 end
 
 @testset "All public command effects and state-dependent admission" begin

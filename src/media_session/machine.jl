@@ -360,6 +360,7 @@ addition is checked; an unrepresentable deadline raises `OverflowError`.
     session::UInt64
     clock::C
     startup_timeout_ns::Int64
+    source_end_supported::Bool
     admission_controller::Union{Nothing,Identity}
     lifecycle::RunnerCodec.Lifecycle
     lifecycle_origin::AbstractOrigin
@@ -1189,6 +1190,10 @@ end
 end
 
 @on_event function (m::Machine, ::Admitted, ::SourceEndedRequested, r)
+    if !m.source_end_supported
+        _reply!(m, r, :Failed; error = "External stream has no source end protocol")
+        return Hsm.EventHandled
+    end
     _begin!(m, r, m.lifecycle_origin)
     _issue!(m, QuerySourceEnd())
     return Hsm.transition!(m, :CheckingSourceEnd)
@@ -1252,6 +1257,7 @@ function Machine(
     session::Integer;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     startup_timeout_ns::Int64 = DEFAULT_STARTUP_TIMEOUT_NS,
+    source_end_supported::Bool = true,
     admission_controller::Union{Nothing,Identity} = nothing,
 )
     0 < session <= typemax(Int64) || throw(ArgumentError("invalid session incarnation"))
@@ -1261,6 +1267,7 @@ function Machine(
         UInt64(session),
         clock,
         startup_timeout_ns,
+        source_end_supported,
         admission_controller,
         RunnerCodec.Offline,
         OfflineOrigin(),

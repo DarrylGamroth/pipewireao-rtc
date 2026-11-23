@@ -2,6 +2,7 @@ import ..DeploymentConfiguration
 
 const MAX_PARAMETER_PUBLISHERS = 1
 const SOURCE_CONTROL_PROFILE = "pipewireao.source-control/1"
+const EXTERNAL_STREAM = "external-stream"
 const PARAMETER_SOURCE_PROFILE = ControlClient.profile_name(ParameterSource.PROFILE)
 
 """
@@ -113,9 +114,63 @@ function perform!(runtime, job, ::CaptureParameters)
     return nothing
 end
 
+function external_stream(configuration)
+    source = get(configuration, "source", nothing)
+    return source isa AbstractDict && get(source, "control-protocol", nothing) == EXTERNAL_STREAM
+end
+
+function validate_external_stream(configuration, links)
+    external_stream(configuration) || return nothing
+    source = configuration["source"]
+    role, pid = get(source, "role", nothing), get(source, "pid", nothing)
+    Set(keys(source)) == Set(("role", "pid", "control-protocol")) &&
+        role isa String && !isempty(role) && !occursin('\0', role) &&
+        pid isa Integer && !(pid isa Bool) && 0 < pid <= typemax(UInt32) ||
+        throw(ArgumentError("invalid external stream source declaration"))
+    auxiliary = get(configuration, "auxiliary-sources", [])
+    auxiliary isa AbstractVector && isempty(auxiliary) ||
+        throw(ArgumentError("an external stream cannot have auxiliary source controls"))
+    pid != configuration["core.owner"]["pid"] ||
+        throw(ArgumentError("external stream must have a separate client process"))
+    declared_owner = false
+    for owner in configuration["owners"]
+        if get(owner, "role", nothing) == role
+            !declared_owner && owner == source ||
+                throw(ArgumentError("external stream owner cannot declare controls"))
+            declared_owner = true
+        elseif get(owner, "pid", nothing) == pid
+            throw(ArgumentError("external stream process cannot own another declared role"))
+        end
+    end
+    spec, pids = configuration["session"], configuration["node.pids"]
+    for graph in get(spec, "graphs", [])
+        if get(pids, graph["node.name"], nothing) == pid && _session_controlled(graph, "graphs")
+            throw(ArgumentError("external stream process cannot own a session-controlled graph"))
+        end
+    end
+    outputs = Set{DeploymentConfiguration.PortAddress}()
+    for node in get(spec, "sources", [])
+        name = node["node.name"]
+        node_pid = get(pids, name, nothing)
+        node_pid == pid || continue
+        node_pid isa Integer && get(node, "ownership", nothing) == "external" ||
+            throw(ArgumentError("external stream process requires an external source Node"))
+        for port in get(node, "ports", [])
+            port["direction"] == "output" || continue
+            push!(outputs, DeploymentConfiguration.PortAddress(name, port["name"]))
+        end
+    end
+    any(link -> link.output in outputs, links) ||
+        throw(ArgumentError("external stream requires a declared output Link"))
+    return nothing
+end
+
 function perform!(runtime, job, ::CaptureSources)
     isempty(runtime.sources) ||
         throw(ArgumentError("acquisition sources are already captured"))
+    # ConnectLinks captures the required external Node, Port and client
+    # directly from the declared data Link. There is no control binding.
+    external_stream(runtime.configuration) && return nothing
     primary = runtime.configuration["source"]
     auxiliary = get(runtime.configuration, "auxiliary-sources", [])
     length(auxiliary) < DeploymentConfiguration.MAX_EXTERNAL_OWNERS ||
@@ -414,6 +469,16 @@ function status_details(runtime; running::Bool)::PolicySPA.Struct
     )
 end
 function perform!(runtime, job, ::QueryStatus)
+    if external_stream(runtime.configuration)
+        isempty(runtime.links) && throw(ArgumentError("external stream Links are absent"))
+        for link in runtime.links
+            link.failure === nothing || throw(ArgumentError(link.failure))
+            for endpoint in (link.output, link.input), id in (endpoint.node, endpoint.port, endpoint.parent)
+                assert_identity!(runtime, UInt64(id))
+            end
+        end
+        return status_details(runtime; running = _status_running(job.ticket.origin))
+    end
     isempty(runtime.sources) &&
         throw(ArgumentError("primary acquisition source is not captured"))
     primary_running = false
