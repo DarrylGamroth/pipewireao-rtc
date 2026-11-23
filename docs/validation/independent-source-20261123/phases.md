@@ -82,6 +82,50 @@ an earlier CAL2 experiment that step took 382.7 s with ordinary propagation
 and 45.0 s with fixed-pupil reuse. It finished before time zero in the
 RTC-only trace above. [Simulator timing and optical comparison](../cal2-fixed-pupil-20261122/README.md#full-sealed-service-on-rtc-devel)
 
+## What primes the controller on sky?
+
+The synthetic frames above exercise software and are then discarded. SCC
+still needs a valid fringed and unfringed exposure from the current camera
+stream before it can estimate the residual. The test sequence supplies no
+history to that first real pair. In particular, the time to the first usable
+pair depends on the camera and its chop sequence.
+
+HEART's executor sends `RUN` to the configured blocks on `READY`. The
+READY contract allows pixel calibration, slope calculation and mode
+reconstruction while it keeps integrators inactive and sends no mirror
+commands. It allows cameras to start streaming later. A subsequent `LOOP`
+command can send `CORRECT` to the selected paths. See `include/hrtApi_READY_gen.h`
+and `source/rtcExec/src/hrtApiExec_LOOP.c` in HEART revision `1e50da7fd`. SPIDERS has a
+similar distinction in its integrator. On a data event both `Paused` and
+`Playing` project the live measurement into modes. Only `Playing` adds
+the measured error to the integral. A paused integrator can still publish
+its held command. CACAO likewise allows a process to listen to an existing
+image stream and react to each update.
+[HEART launch and state evidence](startup.md#heart-reference)
+· [SPIDERS integrator](https://github.com/New-Earth-Lab/integratorservice/blob/b1cf30b4b4eefd265524ff375c9c8f652e792106/src/state-machine.jl#L229-L256)
+· [CACAO processes and streams](https://cacao-org.github.io/cacao/)
+
+For CAL2, a proposed observing sequence uses the existing distinction between
+session execution and loop closure. The RTC loads the calibration, connects
+the expected live ports and reports Ready with execution held. An explicit
+Start then admits real frames with correction open. SCC can assemble its first
+valid pair and expose the resulting measurement to the operator while the
+correction integrator stays held. An explicit close can enable correction
+after fresh valid data from this launch. A missing partner or a camera
+restart invalidates an incomplete pair. This is a design proposal for the
+non-actuating development RTC. The historical launch did not test this
+sequence or measure its first-frame latency.
+
+The synthetic test is useful at build or instrument qualification time. Its
+place on a normal service restart can be tested by comparing the first live
+measurement and first enabled correction with and without that test. Record
+first-frame latency as well as service Ready. Retain runtime initialization
+of any process-local resource whose first use would miss the instrument's
+deadline. The 2.112 ms and 0.733 ms calls themselves cannot explain the
+present service startup delay.
+[Current admission contract](../../operations.md#rtc-dev-021--admission-and-coherent-lifecycle)
+· [Correction loop state](../../../src/correction/loops.jl)
+
 ## Time executing and time waiting for a CPU
 
 The 58.287 s run has event timestamps. Two separate launches also recorded
@@ -97,6 +141,7 @@ Preparation precedes the RTC process. Together those two threads account for
 about 150.3 s of the 153.1 s difference in wall time. The publication helper
 runs alongside the RTC, so its wait overlaps. These counters do not break the
 original 58.287 s run down by function. [Measurements and raw counters](startup.md#installed-rtc-launches-and-cpu-scheduling)
+· [Sampled flamegraph of the deployment check](startup.md#where-the-deployment-check-spends-its-first-call)
 
 The [figure generator](startup-figure-source.tar.gz) reads the two evidence
 archives in this directory. To regenerate both PNGs and the event trace, run

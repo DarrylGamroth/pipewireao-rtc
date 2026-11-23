@@ -18,6 +18,8 @@ after the second RTC exited. The [startup study](validation/independent-source-2
 compares scheduler wait and process CPU across two more ordinary launches
 and bounds READY acknowledgement in a native HEART fixture. The [CAL2 timeline](validation/independent-source-20261123/phases.md)
 defines each phase and the controller checks performed before live input.
+A separate [deployment check flamegraph](validation/independent-source-20261123/startup.md#where-the-deployment-check-spends-its-first-call)
+covers a fresh process checking the installed CAL2 configuration.
 
 Two sealed CAL2 activations reached Ready in 419.839 s and 89.696 s. See
 the [optical comparison](validation/cal2-fixed-pupil-20261122/README.md) and

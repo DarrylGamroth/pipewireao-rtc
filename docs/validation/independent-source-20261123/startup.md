@@ -44,6 +44,35 @@ The cold and repeat measurements explain why a faster one-shot check can
 still be slower for a helper that spends time polling or handling native
 callbacks. Only a full launch can establish the effect on service Ready.
 
+### Where the deployment check spends its first call
+
+In a separate fresh process, the installed CAL2 application's deployment
+check took 1.203 s. The call reads the deployment profile, validates the
+application and identifies its node owners. Julia recorded 1.156 s of
+compilation within that call. Package import took another 0.593 s. The
+sampled process used Julia 1.13.3, the installation's populated depots,
+the normal helper's `-O0` setting and CPU 3.
+
+Open the [deployment check flamegraph](cal2-preflight-flamegraph.svg) to
+inspect the 183 awake stack samples inside that first call. Read from
+caller at the top to callee below. Width is the number of samples sharing
+that stack. Click a frame to zoom. Of the 183 samples, 113 contained
+code-generation frames and 65 contained type-inference frames. Almost all
+of the sampled activity in this configuration check involved compiling
+code. The picture caps depth at 28 called functions and combines entries
+that differ only in source location. The archive retains the full stacks.
+
+The original 58.287 s service run has event timestamps only. An attempt
+to sample a later live coordinator ended when the external signal script
+failed before it collected a stack. This flamegraph comes from a successful
+standalone deployment check. It covers neither the rest of the preparation
+command nor the coordinator or final Ready check. Sampler overhead was
+unmeasured and two symbolizer warnings left some native frames unresolved.
+The [sample archive](preflight-stack-samples.tar.gz) contains the raw
+records, configuration hashes, collector and renderer. To regenerate the
+SVG, pass the path to [FlameGraph's flamegraph.pl](https://github.com/brendangregg/FlameGraph/blob/41fee1f99f9276008b7cd112fca19dc3ea84ac32/flamegraph.pl)
+and the destination SVG to `python3 prepare-preflight/render.py` after extracting.
+
 ## Installed RTC launches and CPU scheduling
 
 The same installed application ran three times on one independently
