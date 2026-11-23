@@ -620,15 +620,13 @@ function _fault_reply!(m::Machine)
     return nothing
 end
 
-function first_unacknowledged(failure::QuitFailure)
-    index = findfirst(attempt -> !attempt.acknowledged, failure.targets)
-    return index === nothing ? nothing : failure.targets[index]
-end
+first_unacknowledged_index(failure::QuitFailure) =
+    findfirst(attempt -> !attempt.acknowledged, failure.targets)
 
 function quit_failure_message(failure::QuitFailure)
     ticket = failure.ticket
-    attempt = first_unacknowledged(failure)
-    target = attempt === nothing ? nothing : attempt.target
+    index = first_unacknowledged_index(failure)
+    target = index === nothing ? nothing : failure.targets[index].target
     location = if target === nothing
         ""
     else

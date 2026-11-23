@@ -355,7 +355,8 @@ function report_quit_failure!(session)
     ticket = failure.ticket
     ticket.serial == session.reported_quit_failure && return nothing
     session.reported_quit_failure = ticket.serial
-    attempt = first_unacknowledged(failure)
+    principal = first_unacknowledged_index(failure)
+    attempt = principal === nothing ? nothing : failure.targets[principal]
     target = attempt === nothing ? nothing : attempt.target
     @error(
         "Session Quit effect failed",

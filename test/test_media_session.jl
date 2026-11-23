@@ -708,6 +708,11 @@ end
     @test m.fault_unknown
 end
 
+mutable struct QuitReportSession{M}
+    machine::M
+    reported_quit_failure::UInt64
+end
+
 @testset "Quit from HeldFault reports the first graph that failed to hold" begin
     m = running()
     S.required_lost!(m, "required graph Link removed")
@@ -743,5 +748,8 @@ end
         "for graph left (id=41, serial=101, pid=151", S.quit_failure_message(m.quit_failure)
     )
     @test m.failure == "required graph Link removed"
+    session = QuitReportSession(m, UInt64(0))
+    @test_logs (:error, "Session Quit effect failed") (:error, "Session Quit effect target") S.report_quit_failure!(session)
+    @test_logs S.report_quit_failure!(session)
 end
 end
