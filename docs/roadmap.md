@@ -30,8 +30,11 @@ and [package-image measurements](validation/ndarray-first-update-20261123/packag
 The [startup review](reviews/20261123-rtc-startup-worktrees/REVIEW.md) traces the
 Classic CPU launch and the independently publishing CAL2 case. Its
 [branch and worktree inventory](reviews/20261123-rtc-startup-worktrees/worktrees.md)
-identifies the native NDArray integration, the fault review, and the existing
-checkouts that already match main.
+records the branch dependencies and retired checkouts. Both installed GPI2
+faulted shutdown paths passed before integration of the complete NDArray
+branch. The [integrated instrument results](validation/rtc-ndarray-integration-20261123/README.md)
+trace the Classic graph constructor, verify CAL2 correction after live priming
+and record the remaining Classic image-loader problem.
 
 ### CAL2 first measurement and loop closure — 2026-11-23
 
@@ -51,12 +54,11 @@ managed Link and preserve the required decisions for the three correctors.
 The [verification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)
 records bit-identical science commands across both profiles and the release.
 The released simulator received Hold after required woofer Link loss but failed
-to acknowledge within fault cleanup. The shared candidate acknowledged in an
-installed run. A healthy three-port counterexample blocks promotion until
-ordinary Pause preserves outstanding adoption and finite completion reports the
-last adopted sequence. The
-[fault lifecycle review](reviews/20261123-lockstep-faults/REVIEW.md) also
-records the separate Quit failures and the owner-retirement checks needed.
+to acknowledge within fault cleanup. The [fault lifecycle review](reviews/20261123-lockstep-faults/REVIEW.md)
+records the three-port Pause and finite-completion failures. The repaired HIL
+source preserves pending adoption on Pause and reports its last adopted
+sequence on Revoke. Both installed GPI2 shutdown paths passed with that HIL
+source and the shared RTC repair. [Installed shutdown receipts](validation/rtc-ndarray-integration-20261123/gpi2-quit.json)
 
 ### Simulator lifetime and CAL2 startup — 2026-11-23
 

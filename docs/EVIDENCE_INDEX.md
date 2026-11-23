@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Integrated Quit, native parameter and instrument checks — 2026-11-23
+
+The [instrument verification](validation/rtc-ndarray-integration-20261123/README.md)
+records both installed GPI2 shutdown paths after required-Link loss, the
+first native DM edits, CAL2's first signed correction for both controllers
+and a trace of the Classic CPU graph constructor. It distinguishes the tested
+Classic fallback from the failed restore of its newly built Julia image.
+
 ## Native NDArray parameter interchange — 2026-11-23
 
 The RTC and GUI development builds extend v0.7.28 with session operation 17.

@@ -1,0 +1,288 @@
+{
+  "cases": [
+    {
+      "before_fault": {
+        "run_ack": {
+          "actual-state": "running",
+          "completed-token": 11,
+          "result": 0,
+          "version": 1
+        },
+        "snapshot": {
+          "completed": false,
+          "completed-token": 13,
+          "generation": 1,
+          "instance": 8013677757098517928,
+          "kind": 3,
+          "report-generation": 1,
+          "report-sequence": 0,
+          "result": 0,
+          "running": true,
+          "sequence": 3,
+          "version": 1
+        }
+      },
+      "cleanup": {
+        "discovery_removed": true,
+        "ledger_cleanup_complete": true,
+        "ledger_unit_files_removed": true,
+        "owned_paths_removed": true,
+        "private_socket_removed": true,
+        "remaining_original_processes": []
+      },
+      "command_transport": "version 3 lockstep exchange, native PipeWire Stream",
+      "direct_quit": {
+        "duration_s": 4.325743593,
+        "process_exited_before_external_stop": true,
+        "shutdown": true,
+        "state": "Offline"
+      },
+      "evidence_sha256": {
+        "control/revoke-ack.json": "4d54bef0dbdf531203e818ec389b42889cb81a50e12a379cf52a93ab75c4c383",
+        "control/revoke-recheck.json": "4d54bef0dbdf531203e818ec389b42889cb81a50e12a379cf52a93ab75c4c383",
+        "control/running.json": "ea7138ffb4dc3c689f393b74bb671a4f681930d2b91d24154ed3401abce5e8c9",
+        "control/woofer-revoke.json": "74d8dc184a7d464fb935e48690468b3b4e69f257747823b910307cd0c9ae7f68",
+        "final-launch.json": "69472b99fee41508f2188514cd672f37ed3512684d023c2bb86f8d2ab9093db4",
+        "journal-session.jsonl.gz": "c5b94eaced0eff63e3945c51e0e07ee14e1b4fd384762de52bafae4263ff9265",
+        "outcome.json": "48083cf5ea623b0c9807412a840026526b01f9331187afe63c573250307573a6",
+        "prepared.json": "0bd682a230fa4e3b36eb0f2eba1525942966c55d0d8c297d2a78d88ba5168cac"
+      },
+      "final_state": {
+        "active": "inactive",
+        "exit_status": "0",
+        "result": "success"
+      },
+      "healthy_pause_resume": null,
+      "installed_manifest_sha256": "9cf1048831a54e2198e2aaac99a509e35c277216cae14fab0450234c95c3278f",
+      "jit_images": {
+        "built_command_receiver": [
+          "7f32f061de760391d5f042b97bddb60aece88d038f5356a18525a80034bce189"
+        ],
+        "native_command_receiver": [],
+        "optical_image": [
+          "d792c9eb2ec000691009790380c92e696a92243183d6330b2a621a6c0e620638"
+        ],
+        "source_package_images": [
+          "045bde6b29009d8799ffb8709661f4de43da634dd1f2d9f37b34cd2eb948b050",
+          "374c42c8787daa4461e3c001100862e724c341ead40ca770d548f794f116c251",
+          "8406b8678476574d70ed68df6a1d7add0b44a641f2db12f25b7ef521f49f0055"
+        ]
+      },
+      "mode": "fault-direct-quit",
+      "required_woofer_link": {
+        "admitted_links_after": 0,
+        "fault": "Fault",
+        "groups": {
+          "controller": "stopped"
+        },
+        "journal": "\u250c Error: Session fault handling settled\n\u2502   session_instance = 0x000142c9b1d2d5da\n\u2502   lifecycle = Fault::Lifecycle = 0x00000005\n\u2502   failure = \"Required Link removed\"\n\u2502   cleanup = nothing\n\u2502   outcome_unknown = false",
+        "originally_admitted_links": 31
+      },
+      "source_revoke": {
+        "ack": {
+          "acquired-sequence": 18,
+          "adopted-sequence": 17,
+          "completed-token": 15,
+          "generation": 1,
+          "instance": 8013677757098517928,
+          "version": 1
+        },
+        "link_removed_to_observed_ack_ms": 1616.550588,
+        "recheck_after_ms": 2763.766558,
+        "snapshot": {
+          "completed": false,
+          "completed-token": 15,
+          "generation": 1,
+          "instance": 8013677757098517928,
+          "kind": 5,
+          "report-generation": 1,
+          "report-sequence": 17,
+          "result": 0,
+          "running": false,
+          "sequence": 17,
+          "version": 1
+        },
+        "stable": true
+      },
+      "sources": {
+        "AdaptiveOpticsSim": {
+          "revision": "018b56baefa73f3436b379597e928656b85caf0a",
+          "tree": "c4cd68356e060ac716d281ab4bae9b091c6e0f4e"
+        },
+        "AdaptiveOpticsSimPipeWireHIL": {
+          "revision": "6137427eb1e0475a3b2556afbe2ea53b8aa814dd",
+          "tree": "26d005e606534a8bab050d4da48af6bc9bcde0b7"
+        },
+        "PipeWireAORTC": {
+          "revision": "fba98e26a1123d06f9a0a99fd076e9e3af1cc7a4",
+          "tree": "c863d54f2f089f3280831210864b45e87aa14646"
+        }
+      },
+      "stop_timing": [
+        {
+          "offline_remaining_ns": null,
+          "outcome": "main_already_gone"
+        }
+      ],
+      "supervisor_quit": null
+    },
+    {
+      "before_fault": {
+        "run_ack": {
+          "actual-state": "running",
+          "completed-token": 29,
+          "result": 0,
+          "version": 1
+        },
+        "snapshot": {
+          "completed": false,
+          "completed-token": 31,
+          "generation": 1,
+          "instance": 2807643887225560758,
+          "kind": 3,
+          "report-generation": 1,
+          "report-sequence": 0,
+          "result": 0,
+          "running": true,
+          "sequence": 34,
+          "version": 1
+        }
+      },
+      "cleanup": {
+        "discovery_removed": true,
+        "ledger_cleanup_complete": true,
+        "ledger_unit_files_removed": true,
+        "owned_paths_removed": true,
+        "private_socket_removed": true,
+        "remaining_original_processes": []
+      },
+      "command_transport": "version 3 lockstep exchange, native PipeWire Stream",
+      "direct_quit": null,
+      "evidence_sha256": {
+        "control/healthy-pause-resume.json": "17406eef916aae6494679568496bf06261665193b1f525c93a7a0b5bdf6b37a0",
+        "control/revoke-ack.json": "96dc87d18873841b66335383d834bfae789edc1bd4511d2b2ecc8e362081c72c",
+        "control/revoke-recheck.json": "96dc87d18873841b66335383d834bfae789edc1bd4511d2b2ecc8e362081c72c",
+        "control/woofer-revoke.json": "d9d675fa0fce6c7ce29b02b5156164b39d37639bf2e3ae61cad8eb912a38bc2d",
+        "final-launch.json": "4b42471da796785a130e98c1abec5138ca1ccffbed05fe2141b17508a85fbb7c",
+        "journal-session.jsonl.gz": "1280e764780c537b9af1dee7667bf4ddcc8699e342905365099e7d819529ee31",
+        "outcome.json": "24b40d8e1de375d47966f6f46bd26c81d03793b44c09058a40e6f9e8f9751ba6",
+        "prepared.json": "5ce084ec2f53f5c5c80622f327a4b91610aebe3554dd1ed5f098cf5cfae04c17"
+      },
+      "final_state": {
+        "active": "inactive",
+        "exit_status": "0",
+        "result": "success"
+      },
+      "healthy_pause_resume": {
+        "held_run": {
+          "actual-state": "stopped",
+          "completed-token": 23,
+          "result": 0,
+          "version": 1
+        },
+        "held_snapshot": {
+          "completed": false,
+          "completed-token": 23,
+          "generation": 1,
+          "instance": 2807643887225560758,
+          "kind": 1,
+          "report-generation": 1,
+          "report-sequence": 0,
+          "result": 0,
+          "running": false,
+          "sequence": 33,
+          "version": 1
+        },
+        "original_run": {
+          "actual-state": "running",
+          "completed-token": 11,
+          "result": 0,
+          "version": 1
+        },
+        "resume_run": {
+          "actual-state": "running",
+          "completed-token": 29,
+          "result": 0,
+          "version": 1
+        },
+        "stable": true
+      },
+      "installed_manifest_sha256": "9cf1048831a54e2198e2aaac99a509e35c277216cae14fab0450234c95c3278f",
+      "jit_images": {
+        "built_command_receiver": [
+          "7f32f061de760391d5f042b97bddb60aece88d038f5356a18525a80034bce189"
+        ],
+        "native_command_receiver": [],
+        "optical_image": [
+          "d792c9eb2ec000691009790380c92e696a92243183d6330b2a621a6c0e620638"
+        ],
+        "source_package_images": [
+          "045bde6b29009d8799ffb8709661f4de43da634dd1f2d9f37b34cd2eb948b050",
+          "374c42c8787daa4461e3c001100862e724c341ead40ca770d548f794f116c251",
+          "8406b8678476574d70ed68df6a1d7add0b44a641f2db12f25b7ef521f49f0055"
+        ]
+      },
+      "mode": "fault-systemd-stop",
+      "required_woofer_link": {
+        "admitted_links_after": 0,
+        "fault": "Fault",
+        "groups": {
+          "controller": "stopped"
+        },
+        "journal": "\u250c Error: Session fault handling settled\n\u2502   session_instance = 0x000142a18b90bb12\n\u2502   lifecycle = Fault::Lifecycle = 0x00000005\n\u2502   failure = \"Required Link removed\"\n\u2502   cleanup = nothing\n\u2502   outcome_unknown = false",
+        "originally_admitted_links": 31
+      },
+      "source_revoke": {
+        "ack": {
+          "acquired-sequence": 40,
+          "adopted-sequence": 39,
+          "completed-token": 33,
+          "generation": 1,
+          "instance": 2807643887225560758,
+          "version": 1
+        },
+        "link_removed_to_observed_ack_ms": 1279.502387,
+        "recheck_after_ms": 2492.278189,
+        "snapshot": {
+          "completed": false,
+          "completed-token": 33,
+          "generation": 1,
+          "instance": 2807643887225560758,
+          "kind": 5,
+          "report-generation": 1,
+          "report-sequence": 39,
+          "result": 0,
+          "running": false,
+          "sequence": 39,
+          "version": 1
+        },
+        "stable": true
+      },
+      "sources": {
+        "AdaptiveOpticsSim": {
+          "revision": "018b56baefa73f3436b379597e928656b85caf0a",
+          "tree": "c4cd68356e060ac716d281ab4bae9b091c6e0f4e"
+        },
+        "AdaptiveOpticsSimPipeWireHIL": {
+          "revision": "6137427eb1e0475a3b2556afbe2ea53b8aa814dd",
+          "tree": "26d005e606534a8bab050d4da48af6bc9bcde0b7"
+        },
+        "PipeWireAORTC": {
+          "revision": "fba98e26a1123d06f9a0a99fd076e9e3af1cc7a4",
+          "tree": "c863d54f2f089f3280831210864b45e87aa14646"
+        }
+      },
+      "stop_timing": [
+        {
+          "offline_remaining_ns": 25431725367,
+          "outcome": "completed"
+        }
+      ],
+      "supervisor_quit": {
+        "accepted": true,
+        "attempted": true
+      }
+    }
+  ],
+  "other_active_units_unchanged": true
+}

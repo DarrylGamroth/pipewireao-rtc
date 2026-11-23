@@ -1,0 +1,141 @@
+{
+  "julia": "1.13.3",
+  "native_artifact": "77da251765f3124df77322c562e67a7c7742ab1d",
+  "native_lifecycle": {
+    "original_processes_remaining": 0,
+    "private_socket_removed": true,
+    "quit_accepted": true,
+    "ready": true,
+    "start": "Running",
+    "stop": "Ready"
+  },
+  "packages": {
+    "AdaptiveOpticsSim": {
+      "tree": "69ff7584ab50ca2968b0a8f9a5b61cce349d5e59",
+      "version": "0.3.29"
+    },
+    "AdaptiveOpticsSimPipeWireHIL": {
+      "tree": "910b2882af3212148dc0c3077ca1fe4098eee237",
+      "version": "0.5.12"
+    },
+    "FilterGraphPipeWire": {
+      "tree": "601d7d8e32d4a818e3410b3c66bc943a0eca1ee0",
+      "version": "0.5.11"
+    },
+    "PipeWireAO": {
+      "tree": "bee94d9a9446d3db6a6ab5c475bf42a79310d5fb",
+      "version": "0.9.6"
+    },
+    "PipeWireAORTC": {
+      "tree": "604afe8a20dd09cb832c5b357458baad5c9b45bb",
+      "version": "0.7.29"
+    },
+    "PipeWireAO_jll": {
+      "tree": "4a17dca6880c2bb53c3783fddce18dc129e6b696",
+      "version": "4.0.8+0"
+    }
+  },
+  "profile": "spiders-single",
+  "rtc_revision": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+  "running_streams": {
+    "demand": {
+      "buffers_seen": 5,
+      "distinct_header_sequences": 5,
+      "first_header_sequence": 2,
+      "format": {
+        "layout": "ROW_MAJOR",
+        "schema": "pipewireao/demanded-pdm-command-f32/1",
+        "shape": [
+          468
+        ],
+        "storage_type": "Float32"
+      },
+      "header_sequence_gaps": 0,
+      "last_header_sequence": 6,
+      "max_abs_payload": 0.0
+    }
+  },
+  "sealed_export_commit": "cda6b1199194ca3b178663a97f9e201b8c3fe06c",
+  "sealed_files_sha256": {
+    "Manifest.toml": "8a48e26ccdb99d1c9dd79b452f9b0664ca255867b78bd339bd9d6a12a2c37dc5",
+    "Project.toml": "819cf710b7e9daad4bc0e390862161825cd2479b85268e4a45b52c985b31ddca",
+    "deployment.conf": "af7f8369b00cdfafbc5a31e339cd765784534e2493e2e97cfae7f3caf02bcca2"
+  },
+  "service_quit_and_cleanup_s": 7.085,
+  "service_to_ready_s": 28.616,
+  "source_command_receiver_sha256": "3a278decf5f5c099a120dc5f8634004950c2a73abd11ee0e921da1acccb225a7",
+  "startup_phases": {
+    "rtc": [
+      {
+        "compile_seconds": 0.0,
+        "phase": "prepare control dispatch",
+        "status": "completed",
+        "wall_seconds": 0.000490599
+      }
+    ],
+    "spiders-scc": [
+      {
+        "compile_seconds": 0.0,
+        "phase": "load FilterGraphPipeWire",
+        "status": "completed",
+        "wall_seconds": 6.6304e-05
+      },
+      {
+        "compile_seconds": 0.417702027,
+        "phase": "prepare graph",
+        "process_cpu_seconds": 0.54978815,
+        "status": "completed",
+        "thread_runqueue_seconds": 7.1013e-05,
+        "wall_seconds": 0.546693199
+      },
+      {
+        "compile_seconds": 1.077721231,
+        "phase": "enter prepared graph",
+        "process_cpu_seconds": 1.083813328,
+        "status": "completed",
+        "thread_runqueue_seconds": 4.7258e-05,
+        "wall_seconds": 1.077790481
+      },
+      {
+        "compile_seconds": 0.0,
+        "phase": "configure graph node",
+        "process_cpu_seconds": 0.000535414,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.000534872
+      },
+      {
+        "compile_seconds": 0.011833482,
+        "phase": "construct graph node",
+        "process_cpu_seconds": 0.015117585,
+        "status": "completed",
+        "thread_runqueue_seconds": 2.0499e-05,
+        "wall_seconds": 0.015031461
+      },
+      {
+        "compile_seconds": 0.085461891,
+        "phase": "attach graph observers",
+        "process_cpu_seconds": 0.086139273,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.085572187
+      },
+      {
+        "compile_seconds": 0.0,
+        "phase": "warm up graph",
+        "process_cpu_seconds": 0.000536145,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.000536916
+      }
+    ]
+  },
+  "stop_quiet_window_s": 2.0059770999941975,
+  "unsuccessful_attempts": [
+    {
+      "native_quit_accepted": true,
+      "reason": "observer harness expected its staging depot in the installed HIL process",
+      "service_to_ready_s": 31.221
+    }
+  ]
+}

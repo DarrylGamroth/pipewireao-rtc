@@ -1,0 +1,258 @@
+{
+  "julia": "1.13.3",
+  "native_artifact": "77da251765f3124df77322c562e67a7c7742ab1d",
+  "native_lifecycle": {
+    "original_processes_remaining": 0,
+    "private_socket_removed": true,
+    "quit_accepted": true,
+    "ready": true,
+    "start": "Running",
+    "stop": "Ready"
+  },
+  "packages": {
+    "AdaptiveOpticsSim": {
+      "tree": "69ff7584ab50ca2968b0a8f9a5b61cce349d5e59",
+      "version": "0.3.29"
+    },
+    "AdaptiveOpticsSimPipeWireHIL": {
+      "tree": "910b2882af3212148dc0c3077ca1fe4098eee237",
+      "version": "0.5.12"
+    },
+    "FilterGraphPipeWire": {
+      "tree": "601d7d8e32d4a818e3410b3c66bc943a0eca1ee0",
+      "version": "0.5.11"
+    },
+    "PipeWireAO": {
+      "tree": "bee94d9a9446d3db6a6ab5c475bf42a79310d5fb",
+      "version": "0.9.6"
+    },
+    "PipeWireAORTC": {
+      "tree": "604afe8a20dd09cb832c5b357458baad5c9b45bb",
+      "version": "0.7.29"
+    },
+    "PipeWireAO_jll": {
+      "tree": "4a17dca6880c2bb53c3783fddce18dc129e6b696",
+      "version": "4.0.8+0"
+    }
+  },
+  "profile": "spiders",
+  "public_ndarray_client": {
+    "client_manifest_sha256": "d9fe01a35e43cb614defa4ebbb307c5dcea08ae5dadc6f0addc01556a507d337",
+    "client_timing_mode": "normal Julia client flags and precompiled package image",
+    "installed_manifest_sha256": "8a48e26ccdb99d1c9dd79b452f9b0664ca255867b78bd339bd9d6a12a2c37dc5",
+    "installed_rtc_tree": "604afe8a20dd09cb832c5b357458baad5c9b45bb",
+    "julia": "1.13.3",
+    "loaded_package_images": [
+      "j1cKT_Qtul2.so"
+    ],
+    "other_manifest_records_match": true,
+    "revision": "6ddc12a393de781d21429d5da05c59565b09b375",
+    "rtc_package_slug": "TmtnR",
+    "tree": "2d873affb7bb265c0a8fef8bf7354a9bddb4f8ea"
+  },
+  "rtc_revision": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+  "running_streams": {
+    "applied": {
+      "buffers_seen": 9,
+      "distinct_header_sequences": 9,
+      "first_header_sequence": 1,
+      "format": {
+        "layout": "ROW_MAJOR",
+        "schema": "pipewireao/applied-pdm-command-f32/1",
+        "shape": [
+          468
+        ],
+        "storage_type": "Float32"
+      },
+      "header_sequence_gaps": 0,
+      "last_header_sequence": 9,
+      "max_abs_payload": 5.3775096e-08
+    },
+    "demand": {
+      "buffers_seen": 9,
+      "distinct_header_sequences": 9,
+      "first_header_sequence": 1,
+      "format": {
+        "layout": "ROW_MAJOR",
+        "schema": "pipewireao/demanded-pdm-command-f32/1",
+        "shape": [
+          468
+        ],
+        "storage_type": "Float32"
+      },
+      "header_sequence_gaps": 0,
+      "last_header_sequence": 9,
+      "max_abs_payload": 0.0
+    }
+  },
+  "sealed_export_commit": "583305355a23ebf7f92b34b16106bd1492aeb539",
+  "sealed_files_sha256": {
+    "Manifest.toml": "8a48e26ccdb99d1c9dd79b452f9b0664ca255867b78bd339bd9d6a12a2c37dc5",
+    "Project.toml": "819cf710b7e9daad4bc0e390862161825cd2479b85268e4a45b52c985b31ddca",
+    "deployment.conf": "8a14a64a3d1d1449681c98b647d41811148391e82d7f8fe5f6e9c50bfeb8c0e1"
+  },
+  "service_quit_and_cleanup_s": 7.921,
+  "service_to_ready_s": 34.662,
+  "shape_offset": {
+    "baseline_sequence": 2,
+    "baseline_sha256": "e3dd750851eba7858adfb137b83d9e071e938c668ba3fe36d54f8fd68fff10d4",
+    "channels": 468,
+    "edit": {
+      "native_submit_ms": 500.131848,
+      "readback_sequence": 5,
+      "sha256": "a19d6c40b68bfe0df5b1d2670982342d581dca16781d7d6a826ea041ff758d08",
+      "submit_to_independent_readback_ms": 21413.151848
+    },
+    "independent_applied_frame_after_restore": {
+      "clock": "METADATA_CLOCK_REALTIME",
+      "timestamp_ns": 1795469931879587408
+    },
+    "native_submit_timing_boundary": "SessionRuntime.control! call through rendered response",
+    "restore": {
+      "native_submit_ms": 187.108916,
+      "readback_sequence": 8,
+      "sha256": "e3dd750851eba7858adfb137b83d9e071e938c668ba3fe36d54f8fd68fff10d4",
+      "submit_to_independent_readback_ms": 19260.018575
+    },
+    "restore_readback_to_applied_observation_ms": 8062.104766,
+    "schema": "pipewireao/requested-pdm-command-f32/1"
+  },
+  "source_command_receiver_sha256": "3a278decf5f5c099a120dc5f8634004950c2a73abd11ee0e921da1acccb225a7",
+  "startup_phases": {
+    "rtc": [
+      {
+        "compile_seconds": 0.027530276,
+        "phase": "prepare control dispatch",
+        "status": "completed",
+        "wall_seconds": 0.029252783
+      }
+    ],
+    "scc-differential": [
+      {
+        "compile_seconds": 0.0,
+        "phase": "load FilterGraphPipeWire",
+        "status": "completed",
+        "wall_seconds": 8.7995e-05
+      },
+      {
+        "compile_seconds": 0.045675805,
+        "phase": "prepare graph",
+        "process_cpu_seconds": 0.048323895,
+        "status": "completed",
+        "thread_runqueue_seconds": 3.6108e-05,
+        "wall_seconds": 0.047751182
+      },
+      {
+        "compile_seconds": 0.605917458,
+        "phase": "enter prepared graph",
+        "process_cpu_seconds": 0.610914251,
+        "status": "completed",
+        "thread_runqueue_seconds": 7.1824e-05,
+        "wall_seconds": 0.606006976
+      },
+      {
+        "compile_seconds": 0.0,
+        "phase": "configure graph node",
+        "process_cpu_seconds": 0.000347231,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.00034702
+      },
+      {
+        "compile_seconds": 0.005570134,
+        "phase": "construct graph node",
+        "process_cpu_seconds": 0.007345783,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.007355407
+      },
+      {
+        "phase": "attach graph observers",
+        "reason": "no correction observer",
+        "status": "skipped"
+      },
+      {
+        "compile_seconds": 0.0,
+        "phase": "warm up graph",
+        "process_cpu_seconds": 0.000801403,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.000802233
+      }
+    ],
+    "spiders-scc": [
+      {
+        "compile_seconds": 0.0,
+        "phase": "load FilterGraphPipeWire",
+        "status": "completed",
+        "wall_seconds": 7.1554e-05
+      },
+      {
+        "compile_seconds": 0.703561132,
+        "phase": "prepare graph",
+        "process_cpu_seconds": 0.809585346,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.000376146,
+        "wall_seconds": 0.840657797
+      },
+      {
+        "compile_seconds": 0.621337362,
+        "phase": "enter prepared graph",
+        "process_cpu_seconds": 0.62481835,
+        "status": "completed",
+        "thread_runqueue_seconds": 3.741e-05,
+        "wall_seconds": 0.621420237
+      },
+      {
+        "compile_seconds": 0.0,
+        "phase": "configure graph node",
+        "process_cpu_seconds": 0.000761167,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.000760865
+      },
+      {
+        "compile_seconds": 0.01369972,
+        "phase": "construct graph node",
+        "process_cpu_seconds": 0.01923272,
+        "status": "completed",
+        "thread_runqueue_seconds": 2.8343e-05,
+        "wall_seconds": 0.019103241
+      },
+      {
+        "compile_seconds": 0.102304266,
+        "phase": "attach graph observers",
+        "process_cpu_seconds": 0.103124289,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.102462603
+      },
+      {
+        "compile_seconds": 0.003263182,
+        "phase": "warm up graph",
+        "process_cpu_seconds": 0.004864962,
+        "status": "completed",
+        "thread_runqueue_seconds": 0.0,
+        "wall_seconds": 0.004829456
+      }
+    ]
+  },
+  "stop_quiet_window_s": 2.001745837042108,
+  "unsuccessful_attempts": [
+    {
+      "native_quit_accepted": true,
+      "reason": "observer harness expected its staging depot in the installed HIL process",
+      "service_to_ready_s": 30.195
+    },
+    {
+      "native_quit_accepted": true,
+      "reason": "frozen public Julia client rejected the native parameter_ndarray result during rendering",
+      "service_to_ready_s": 31.831
+    },
+    {
+      "native_quit_accepted": true,
+      "reason": "interpreter-only corrected client was retired before Start after making no readiness progress",
+      "service_to_ready_s": 41.885
+    }
+  ]
+}

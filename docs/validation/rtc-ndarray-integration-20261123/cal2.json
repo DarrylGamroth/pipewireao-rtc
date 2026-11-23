@@ -1,0 +1,156 @@
+{
+  "revisions": {
+    "export_revision": "7be13085f25960b58f861e14d49660e7f8a3265e",
+    "fgpw_tree": "601d7d8e32d4a818e3410b3c66bc943a0eca1ee0",
+    "installed_export_revision": "7be13085f25960b58f861e14d49660e7f8a3265e",
+    "revision": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+    "rtc_tree": "604afe8a20dd09cb832c5b357458baad5c9b45bb",
+    "rtc_version": "0.7.29"
+  },
+  "first_ready_seconds": 37.387264882,
+  "restart_ready_seconds": 23.569225974,
+  "native_start_seconds": 0.870938591,
+  "native_stop_seconds": 0.688533448,
+  "native_quit_seconds": [
+    9.287367026,
+    8.734364354
+  ],
+  "first_residual_seconds": {
+    "llowfs": 29.165118251,
+    "scc": 240.479180762
+  },
+  "first_residual_sequences": {
+    "llowfs": 14,
+    "scc": 4
+  },
+  "rtc_free_gap": {
+    "llowfs": {
+      "continuity_discontinuities": [],
+      "frames": 5,
+      "model_ns_range": [
+        50000000,
+        58000000
+      ],
+      "sequence_range": [
+        26,
+        30
+      ],
+      "start_to_final_sequences": [
+        6,
+        32
+      ]
+    },
+    "scc": {
+      "continuity_discontinuities": [],
+      "frames": 1,
+      "model_ns_range": [
+        50000000,
+        50000000
+      ],
+      "sequence_range": [
+        6,
+        6
+      ],
+      "start_to_final_sequences": [
+        2,
+        7
+      ]
+    }
+  },
+  "first_corrections": {
+    "llowfs": {
+      "acquisition": 21,
+      "camera_model_pts_ns": 40000000,
+      "channels_compared": 2304,
+      "domain": "ce7df1f60ca1338b464b3d1ac56f547d",
+      "generation": 1,
+      "maximum_abs_error_m": 3.1567764192649385e-16,
+      "maximum_abs_tolerance_m": 8.800238278910323e-15,
+      "maximum_observed_opd_m": 4.6138595e-09,
+      "maximum_oracle_opd_m": 4.613859326773336e-09,
+      "maximum_signed_observed_opd_m": 4.4220663e-09,
+      "minimum_observed_opd_m": -4.6138595e-09,
+      "modal_residual": [
+        3.3998315e-08,
+        4.021171e-08,
+        3.391577e-08,
+        3.5764096e-08,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_channels": 861,
+      "physical_offset_sha256": "da0dec507ea2f0d29fd6491fdd3fc46114dd640f571a128d7bce8842304d7cc3",
+      "positive_channels": 551,
+      "projection_fits_sha256": "86377cef2950fb7797f82f10ff96454938c5066dc2652e0f170932614971ccec",
+      "zero_channels": 892
+    },
+    "scc": {
+      "acquisition": 5,
+      "camera_model_pts_ns": 40000000,
+      "channels_compared": 2304,
+      "domain": "cdf174d4b7be33b317451c4bd00b9ba8",
+      "generation": 1,
+      "maximum_abs_error_m": 4.7889344975240215e-17,
+      "maximum_abs_tolerance_m": 1.429814720328047e-15,
+      "maximum_observed_opd_m": 7.490888e-10,
+      "maximum_oracle_opd_m": 7.490887707001595e-10,
+      "maximum_signed_observed_opd_m": 7.461172e-10,
+      "minimum_observed_opd_m": -7.490888e-10,
+      "modal_residual": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        3.5234546e-09,
+        -7.378204e-09,
+        -8.203897e-10,
+        -8.246469e-09
+      ],
+      "negative_channels": 812,
+      "physical_offset_sha256": "14e248656ccb6d3b7f29b54c9837dc7a952578ebf2e256dea08dd69eebd3bd98",
+      "positive_channels": 600,
+      "projection_fits_sha256": "86377cef2950fb7797f82f10ff96454938c5066dc2652e0f170932614971ccec",
+      "zero_channels": 892
+    }
+  },
+  "rtc_free_gap_s": 115.256950829,
+  "archive_sha256": "593c2dfc5292ddc546b02e8a456722ec1cb2087492448166134f7c087b9816e2",
+  "first_close_ack_to_offset_s": {
+    "llowfs": 26.055875061,
+    "scc": 133.619833962
+  },
+  "open_max_abs_m": {
+    "llowfs": 0.0,
+    "scc": 0.0
+  },
+  "same_camera_domains_and_generations": true,
+  "same_core_and_source_processes": true,
+  "post_quit_sequences": {
+    "llowfs": 32,
+    "scc": 7
+  },
+  "early_close": {
+    "cal2-scc-controller": {
+      "reason": "ArgumentError: correction closure requires a valid live open-loop measurement",
+      "state": "Running",
+      "controller": {
+        "pipewireao.correction-control.correction:closed.primed": false,
+        "pipewireao.correction-control.correction:closed.state": "Open",
+        "pipewireao.frame-observer.state": "active"
+      },
+      "active_generation": 0
+    },
+    "cal2-llowfs-controller": {
+      "reason": "ArgumentError: correction closure requires a valid live open-loop measurement",
+      "state": "Running",
+      "controller": {
+        "pipewireao.correction-control.correction:closed.primed": false,
+        "pipewireao.correction-control.correction:closed.state": "Open",
+        "pipewireao.frame-observer.state": "active"
+      },
+      "active_generation": 0
+    }
+  }
+}

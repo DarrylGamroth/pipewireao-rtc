@@ -1,0 +1,66 @@
+{
+  "original_graph_sha256": "6d0351b19af08f2feee3cd63977ddca87af5234612f76678a8fea3d02a6d0982",
+  "translated_graph_sha256": "4220626b696cb8af301e52a230ae1661745d9751dceb73c5525b26d689bc6ad7",
+  "calibration_sha256": {
+    "hidden-to-shape.f32le": "dca67435629d486cac458300c323b247b68ed22541e3169dbaa0ec0412d595e6",
+    "parameter-active-to-full.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+    "parameter-background.f32": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a",
+    "parameter-controller-to-vdm.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+    "parameter-full-to-active.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+    "parameter-pdm-to-vdm.f32": "05fd64b56ca512946a07991ed547478fcf29558c7574ee0160e3f04957a07f55",
+    "parameter-reconstructor.f32": "1f46e372f50f64d27ee1fa5883861031a257341923b74d1081b9dcd8a7f7b370",
+    "parameter-system-flat.f32": "b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919",
+    "parameter-vdm-to-controller.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+    "parameter-vdm-to-pdm.f32": "19d2e6ef5f5eb43e535a6076fca5a2ac2cb835b8c746c05876d6fa25f43fcd92",
+    "shape-to-hidden.f32le": "dca67435629d486cac458300c323b247b68ed22541e3169dbaa0ec0412d595e6"
+  },
+  "rtc": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+  "scope": "archived controller graph with translated configuration, local native owner",
+  "phases": [
+    {
+      "wall_seconds": 29.028871672,
+      "compile_seconds": 14.457197016,
+      "phase": "load FilterGraphPipeWire"
+    },
+    {
+      "wall_seconds": 30.081627487,
+      "compile_seconds": 29.963459032,
+      "process_cpu_seconds": 26.985568874,
+      "thread_runqueue_seconds": 4.967504277,
+      "phase": "prepare graph"
+    },
+    {
+      "wall_seconds": 10.722708975,
+      "compile_seconds": 10.722587496,
+      "process_cpu_seconds": 9.39879328,
+      "thread_runqueue_seconds": 2.131458715,
+      "phase": "enter prepared graph"
+    },
+    {
+      "wall_seconds": 0.795013215,
+      "compile_seconds": 0.793093425,
+      "process_cpu_seconds": 0.693900908,
+      "thread_runqueue_seconds": 0.145501228,
+      "phase": "configure graph node"
+    },
+    {
+      "wall_seconds": 62.340004824,
+      "compile_seconds": 62.330480575,
+      "process_cpu_seconds": 57.004844122,
+      "thread_runqueue_seconds": 9.748063289,
+      "phase": "construct graph node"
+    },
+    {
+      "wall_seconds": 14.132872367,
+      "compile_seconds": 14.129051734,
+      "process_cpu_seconds": 12.539473989,
+      "thread_runqueue_seconds": 2.814443745,
+      "phase": "warm up graph"
+    }
+  ],
+  "assertions": 3,
+  "native_quit": true,
+  "julia": "1.13.3",
+  "graph_log_sha256": "76343e17b988d14bbf72a7397753cee9e14673cb72137ce49f5f1b869c31b9b4",
+  "parse_arguments_world_age_warning": true
+}

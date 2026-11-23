@@ -1,0 +1,25 @@
+{
+  "rtc": "fba98e26a1123d06f9a0a99fd076e9e3af1cc7a4",
+  "fixture": "direct native Quit from a settled required-Link fault; withhold only the parameter owner acknowledgement",
+  "assertions": 36,
+  "deadline_budget_ns": 5000000000,
+  "failed_effect": "ShutdownOwners",
+  "failure_reason": "Session effect expired",
+  "original_fault": "Required Link removed",
+  "returned": "native control outcome unknown: owner proxy was removed",
+  "targets": [
+    {
+      "kind": "bootstrap",
+      "name": "pipewireao.rtc.bootstrap.simulator",
+      "submitted": true,
+      "acknowledged": true
+    },
+    {
+      "kind": "bootstrap",
+      "name": "pipewireao.rtc.bootstrap.parameters",
+      "submitted": true,
+      "acknowledged": false
+    }
+  ],
+  "exact_identity_verified": true
+}

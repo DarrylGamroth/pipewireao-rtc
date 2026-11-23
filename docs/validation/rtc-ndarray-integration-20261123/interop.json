@@ -1,0 +1,21 @@
+{
+  "rtc": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+  "sdk": "4.0.8+0",
+  "native_parameter_codec_assertions": 63,
+  "native_parameter_private_core_assertions": 9,
+  "management_meson_tests": 1,
+  "native_management_socket_assertions": 171,
+  "rust_codec_tests": 3,
+  "rust_julia_native_transfer": {
+    "bytes": 32768,
+    "sha256": "8a05d5d258ab671cc16172fae521e6f67ed134afe9522e11d07d3e0f6de33c5a"
+  },
+  "gui_base": "99de6ea6b7e9c71f15440b50363dd445c5bb8bb4",
+  "gui_source": "local GUI working tree snapshot",
+  "rust_test_sha256": "45af83b1d4473c1de010fa50c73cc087ad2029223231b877d8508a55e1b8a277",
+  "software_log_checksums_sha256": "0bd855c3edbd86e001fd3aa596fd8544f4d7a1be3e5229a3b5133363ce8e803f",
+  "qualification_retries": [
+    "Cold C catalog worker exceeded the 120-second operation deadline during package compilation. The same socket suite passed with the package image available.",
+    "The initial Rust producer lacked the private SDK plugin path. The same binary passed using the matched SDK and private configuration."
+  ]
+}
