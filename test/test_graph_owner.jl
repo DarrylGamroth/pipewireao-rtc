@@ -78,6 +78,23 @@ end
     @test graph ==
         ["--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control"]
     @test fits == "bindings.conf"
+    disabled = GraphOwner.arguments([argv; "--unpublished-output"; "mean-pupil-intensity"])
+    @test disabled[2] == graph
+    @test last(disabled) === (; port = Symbol("mean-pupil-intensity"), node = nothing, media = nothing, sink = nothing)
+    live_args = ["--latest-output", "mean-pupil-intensity", "rtc-display", "mean-pupil-intensity"]
+    enabled = GraphOwner.arguments([argv; live_args])
+    @test enabled[2] == graph
+    @test last(enabled) == (; port = Symbol("mean-pupil-intensity"), node = "rtc-display",
+        media = "mean-pupil-intensity", sink = nothing)
+    sink_args = ["--latest-output-sink", "rtc-display-sink", "playback_1"]
+    linked = GraphOwner.arguments([argv; live_args; sink_args])
+    @test last(linked).sink == (; node = "rtc-display-sink", port = "playback_1")
+    @test linked[2] == graph
+    @test_throws ArgumentError GraphOwner.arguments([argv; sink_args])
+    @test_throws ArgumentError GraphOwner.arguments([argv; live_args; sink_args; sink_args])
+    @test_throws ArgumentError GraphOwner.arguments([argv; live_args[1:3]])
+    @test_throws ArgumentError GraphOwner.arguments([argv; live_args; "--unpublished-output"; "other"])
+    @test_throws ArgumentError GraphOwner.arguments([argv; "--latest-output"; "value"; "bad/name"; "media"])
     with_loop = GraphOwner.arguments([argv; "--correction-property"; "controller:closed"])
     @test with_loop[4] == ["controller:closed"]
     @test with_loop[5] == 5000

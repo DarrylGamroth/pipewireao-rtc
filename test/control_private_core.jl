@@ -34,6 +34,7 @@ function with_control_private_core(
     remote_name = nothing,
     telemetry_loop = false,
     modules = "",
+    module_dirs = (),
     spa_libraries = "",
     prefix = get(
         ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
@@ -90,7 +91,7 @@ context.modules = [
             "XDG_RUNTIME_DIR" => runtime,
             "PIPEWIREAO_RUNTIME_DIR" => runtime,
             "PIPEWIREAO_CONFIG_DIR" => config,
-            "PIPEWIREAO_MODULE_DIR" => joinpath(libdir, "pipewire-ao-0.3"),
+            "PIPEWIREAO_MODULE_DIR" => join((joinpath(libdir, "pipewire-ao-0.3"), module_dirs...), ':'),
             "PIPEWIREAO_SPA_PLUGIN_DIR" => joinpath(libdir, "spa-ao-0.2"),
             "PIPEWIREAO_DEBUG" => "0",
             "LD_LIBRARY_PATH" => libdir * ":" * get(ENV, "LD_LIBRARY_PATH", ""),

@@ -55,6 +55,8 @@ function arguments(arguments)
     graph = String[]
     correction_properties = String[]
     recovery_nodes = String[]
+    local_output = nothing
+    display_sink = nothing
     forbidden = (
         "--prepared-event",
         "--connect-request",
@@ -70,7 +72,25 @@ function arguments(arguments)
         terms = split(argument, '='; limit = 2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in (
+        if key in ("--latest-output", "--unpublished-output", "--latest-output-sink")
+            count = key == "--latest-output" ? 3 : key == "--latest-output-sink" ? 2 : 1
+            length(terms) == 1 && index + count <= length(arguments) || throw(
+                ArgumentError("$key requires $count separate arguments"),
+            )
+            fields = arguments[(index + 1):(index + count)]
+            all(field -> occursin(r"^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$", field), fields) ||
+                throw(ArgumentError("invalid $key identifier"))
+            if key == "--latest-output-sink"
+                display_sink === nothing || throw(ArgumentError("duplicate $key"))
+                display_sink = (; node = String(fields[1]), port = String(fields[2]))
+            else
+                local_output === nothing || throw(ArgumentError("only one local output may be declared"))
+                port = Symbol(first(fields))
+                local_output = count == 1 ? (; port, node = nothing, media = nothing) :
+                    (; port, node = String(fields[2]), media = String(fields[3]))
+            end
+            index += count
+        elseif key in (
             "--bootstrap-node",
             "--bootstrap-instance",
             "--remote",
@@ -158,6 +178,9 @@ function arguments(arguments)
     supervision === nothing ||
         length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
+    display_sink === nothing || (local_output !== nothing && local_output.node !== nothing) ||
+        throw(ArgumentError("--latest-output-sink requires --latest-output"))
+    local_output === nothing || (local_output = merge(local_output, (; sink = display_sink)))
     clock_policy =
         haskey(values, "--reference-clock") ?
         (;
@@ -175,7 +198,8 @@ function arguments(arguments)
     recovery_nodes,
     supervision,
     get(values, "--physical-offsets", nothing),
-    get(values, "--chopped-warmup", nothing)
+    get(values, "--chopped-warmup", nothing),
+    local_output
 end
 
 """
@@ -293,7 +317,8 @@ extension).
 function read_bindings end
 
 function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
-                       recovery_nodes, supervision_path, offsets_path, warmup_path)
+                       recovery_nodes, supervision_path, offsets_path, warmup_path,
+                       local_output = nothing)
     return merge(
         Base.invokelatest(fgp.parse_arguments, graph_arguments),
         (;
@@ -305,6 +330,7 @@ function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
                           read_supervision(supervision_path),
             chopped_warmup = warmup_path === nothing ? nothing :
                              read_chopped_warmup(warmup_path),
+            local_output,
         ),
     )
 end
@@ -315,7 +341,7 @@ function _main(
     load_science = () -> Base.require(Main, :FilterGraphPipeWire),
     run = run_owner,
 )
-    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path = arguments(
+    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path, local_output = arguments(
         args
     )
     with_owner(binding) do admitted
@@ -328,6 +354,7 @@ function _main(
         options = graph_options(
             filter_graph_pipewire, graph_arguments, correction_properties,
             correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path,
+            local_output,
         )
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
@@ -364,6 +391,11 @@ typed graph outputs. Monitor-only is the default and never changes closure.
 `exposure_duration_ns` and explicit `trigger_high_is_fringed`. Three unpublished
 synthetic F/U/F samples prime either the detector pair or the SCC pixel
 residual before completion. The Graph is then reset. The owner requires explicit identity, exposure timing and optical chopping records.
+`--latest-output PORT NODE MEDIA` publishes a complete-frame scalar on an
+independent display Node. `--latest-output-sink NODE PORT` declares an optional
+native sink for that publisher. `--unpublished-output PORT` discards the same
+logical Graph output. In both cases the Graph owner exposes no native Port
+for the scalar, while retaining the Graph's scientific state and calibration output.
 """
 main(args) = _main(args)
 
