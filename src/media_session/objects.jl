@@ -115,6 +115,7 @@ const OBJECT_IDENTITY_KEYS = (
     "pipewireao.rtc-control.profile",
     "pipewireao.rtc-control.instance",
     "pipewireao.rtc-control.owner-pid",
+    "pipewireao.source-revoke.version",
     "pipewireao.source-control.protocol",
     "pipewireao.source-control.instance",
     "pipewireao.source-control.owner-pid",
@@ -969,11 +970,15 @@ function _correlated_link(object::Global, records)
     )
 end
 function remove_links!(runtime, job)
+    check_job(runtime, job)
     runtime.withdrawing = true
     for record in runtime.links
         record.retiring = true
     end
     for record in runtime.links
+        if job isa Job && record.proxy !== nothing && job.ticket.operation == QUIT_OPERATION
+            submitted!(runtime.machine, job.ticket)
+        end
         _destroy_created!(runtime.core, record.proxy)
     end
     await_condition!(runtime, job) do

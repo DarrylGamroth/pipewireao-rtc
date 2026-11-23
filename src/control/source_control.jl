@@ -12,10 +12,21 @@ const RUN = Int32(1)
 const RESET = Int32(2)
 const QUERY = Int32(3)
 const INVALID = Int32(4)
+const REVOKE = Int32(5)
+const REVOCATION_PROPERTY = "pipewireao.source-revoke.version"
 const QUERY_NAMES = (
     "pipewireao.source-query.version",
     "pipewireao.source-query.request-token",
     "pipewireao.source-query.instance",
+)
+const REVOKE_NAMES = map(name -> replace(name, "source-query" => "source-revoke"), QUERY_NAMES)
+const REVOKE_ACK_NAMES = (
+    "pipewireao.source-revoke-ack.version",
+    "pipewireao.source-revoke-ack.instance",
+    "pipewireao.source-revoke-ack.completed-token",
+    "pipewireao.source-revoke-ack.generation",
+    "pipewireao.source-revoke-ack.acquired-sequence",
+    "pipewireao.source-revoke-ack.adopted-sequence",
 )
 const SNAPSHOT_NAMES = (
     "pipewireao.source-snapshot.version",
@@ -82,8 +93,11 @@ owner applies them, after adoption, outside the lock. It then publishes under
 that same lock and clears the slot before releasing the lock. No borrowed POD
 escapes a callback and no simulation or report work runs on the PipeWire loop.
 """
-mutable struct Mailbox{Q,S,P}
+mutable struct Mailbox{Q,S,P,A,AP}
     instance::Int64
+    revocation::Bool
+    pending_revoke::Int64
+    revoke_ack_visible::Bool
     ready::Threads.Atomic{Bool}
     kind::Int32
     token::Int64
@@ -100,6 +114,10 @@ mutable struct Mailbox{Q,S,P}
     run_status::Base.RefValue{RunControlStatus}
     reset_status::Base.RefValue{ResetControlStatus}
     query::Q
+    revoke::Q
+    revoke_ack::A
+    revoke_ack_destination::Base.RefValue{Tuple{Int32,Int64,Int64,Int64,Int64,Int64}}
+    revoke_parameters::AP
     query_destination::Base.RefValue{QueryValues}
     snapshot::S
     snapshot_destination::Base.RefValue{SnapshotValues}
@@ -110,9 +128,12 @@ mutable struct Mailbox{Q,S,P}
     parameters::P
 end
 
-function Mailbox(instance::Int64)
+function Mailbox(instance::Int64; revocation::Bool = false)
     instance > 0 || throw(ArgumentError("source instance must be positive"))
     query = PropsBuffer(QUERY_NAMES, query_values(Int64(0), instance))
+    revoke = PropsBuffer(REVOKE_NAMES, query_values(Int64(0), instance))
+    ack_values = (VERSION, instance, Int64(0), Int64(1), Int64(0), Int64(0))
+    revoke_ack = PropsBuffer(REVOKE_ACK_NAMES, ack_values)
     initial = snapshot_values(
         instance,
         INITIAL,
@@ -134,8 +155,14 @@ function Mailbox(instance::Int64)
     parameters = PreparedParams((
         run_buffer.pod, reset_buffer.pod, snapshot.pod, rejection.pod
     ))
+    revoke_parameters = PreparedParams((
+        run_buffer.pod, reset_buffer.pod, snapshot.pod, rejection.pod, revoke_ack.pod
+    ))
     return Mailbox(
         instance,
+        revocation,
+        0,
+        false,
         Threads.Atomic{Bool}(false),
         INITIAL,
         0,
@@ -152,6 +179,10 @@ function Mailbox(instance::Int64)
         Ref{RunControlStatus}(),
         Ref{ResetControlStatus}(),
         query,
+        revoke,
+        revoke_ack,
+        Ref(ack_values),
+        revoke_parameters,
         Ref(query_values(Int64(0), instance)),
         snapshot,
         Ref(initial),
@@ -164,7 +195,7 @@ function Mailbox(instance::Int64)
 end
 
 function source_properties(mailbox::Mailbox)
-    return Dict(
+    properties = Dict(
         "pipewireao.run-control" => "true",
         "pipewireao.reset-control" => "true",
         "pipewireao.source-query.version" => "1",
@@ -173,6 +204,8 @@ function source_properties(mailbox::Mailbox)
         "pipewireao.source-control.instance" => string(mailbox.instance),
         "pipewireao.source-control.owner-pid" => string(getpid()),
     )
+    mailbox.revocation && (properties[REVOCATION_PROPERTY] = "1")
+    return properties
 end
 
 # Rejections never overwrite an accepted request. A flooding controller can
@@ -190,7 +223,11 @@ end
 function stage!(
     mailbox::Mailbox, kind::Int32, token::Int64, requested_running::Bool = false
 )
-    if (mailbox.kind == kind && mailbox.token == token) ||
+    if kind == REVOKE && !mailbox.revocation
+        return reject!(mailbox, kind, token, Int32(-Base.Libc.EOPNOTSUPP))
+    end
+    if (kind == REVOKE && mailbox.pending_revoke == token && token > 0) ||
+        (mailbox.kind == kind && mailbox.token == token) ||
         (mailbox.last_token == token && mailbox.last_kind == kind)
         # A duplicate has the original pending/committed outcome. Publishing
         # a competing EALREADY reply could reach a controller before that ACK.
@@ -198,7 +235,13 @@ function stage!(
     end
     if token <= mailbox.last_token
         reject!(mailbox, kind, token, Int32(-Base.Libc.ESTALE))
-    elseif mailbox.kind != INITIAL
+    elseif kind == REVOKE && mailbox.kind != INITIAL && mailbox.kind != REVOKE &&
+           token > mailbox.token && mailbox.pending_revoke == 0
+        # The owner may already be applying the pending request outside the
+        # loop lock. Only the owner can decide whether it still needs cancelling.
+        mailbox.pending_revoke = token
+        mailbox.ready[] = true
+    elseif mailbox.kind != INITIAL || mailbox.pending_revoke != 0
         result = token == mailbox.token ? -Base.Libc.EALREADY : -Base.Libc.EBUSY
         reject!(mailbox, kind, token, Int32(result))
     else
@@ -238,10 +281,18 @@ function (callback::ParameterChanged)(
         else
             stage!(mailbox, QUERY, token)
         end
+    elseif parse_props!(mailbox.query_destination, mailbox.revoke, pod) == 0
+        version, token, instance = mailbox.query_destination[]
+        if version != VERSION || token <= 0 || instance != mailbox.instance
+            reject!(mailbox, INVALID, Int64(0), Int32(-Base.Libc.EINVAL))
+        else
+            stage!(mailbox, REVOKE, token)
+        end
     elseif parse_run_control_status!(mailbox.run_status, pod) == 0 ||
         parse_reset_control_status!(mailbox.reset_status, pod) == 0 ||
         parse_props!(mailbox.snapshot_destination, mailbox.snapshot, pod) == 0 ||
-        parse_props!(mailbox.rejection_destination, mailbox.rejection, pod) == 0
+        parse_props!(mailbox.rejection_destination, mailbox.rejection, pod) == 0 ||
+        parse_props!(mailbox.revoke_ack_destination, mailbox.revoke_ack, pod) == 0
         # The stream's initial/publication parameters are not requests.
         return nothing
     else
@@ -267,7 +318,18 @@ function (callback::ParameterOverflow)(::Stream, id::UInt32, total::Int)
 end
 
 """Read the pending scalar request while holding the source loop lock."""
-pending(mailbox::Mailbox) = (mailbox.kind, mailbox.token, mailbox.requested_running)
+function pending(mailbox::Mailbox)
+    if mailbox.pending_revoke != 0
+        if mailbox.kind != INITIAL
+            reject!(mailbox, mailbox.kind, mailbox.token, Int32(-Base.Libc.ECANCELED))
+        end
+        mailbox.kind = REVOKE
+        mailbox.token = mailbox.pending_revoke
+        mailbox.requested_running = false
+        mailbox.pending_revoke = 0
+    end
+    return (mailbox.kind, mailbox.token, mailbox.requested_running)
+end
 
 publish_parameters!(stream::Stream, parameters::PreparedParams) =
     update_params!(stream, parameters)
@@ -309,14 +371,24 @@ function publish!(
     )
     props!(mailbox.snapshot, values)
     mailbox.snapshot_destination[] = values
-    publish_parameters!(stream, mailbox.parameters)
+    if kind == REVOKE
+        adopted = Int64(state.sequence)
+        acquired = Int64(state.acquired_sequence)
+        0 <= adopted <= acquired && (!state.completed || acquired == adopted) ||
+            throw(ArgumentError("invalid revocation cursor"))
+        props!(mailbox.revoke_ack, (VERSION, mailbox.instance, token, generation, acquired, adopted))
+        publish_parameters!(stream, mailbox.revoke_parameters)
+    else
+        publish_parameters!(stream, mailbox.parameters)
+    end
+    mailbox.revoke_ack_visible = kind == REVOKE
     if mailbox.kind == kind && mailbox.token == token
         mailbox.last_token = token
         mailbox.last_kind = kind
         mailbox.kind = INITIAL
         mailbox.token = 0
     end
-    mailbox.ready[] = mailbox.kind != INITIAL || mailbox.rejected_kind != INITIAL
+    mailbox.ready[] = mailbox.kind != INITIAL || mailbox.pending_revoke != 0 || mailbox.rejected_kind != INITIAL
     return nothing
 end
 
@@ -341,9 +413,9 @@ function publish_rejection!(
             mailbox.report_sequence,
         ),
     )
-    publish_parameters!(stream, mailbox.parameters)
+    publish_parameters!(stream, mailbox.revoke_ack_visible ? mailbox.revoke_parameters : mailbox.parameters)
     mailbox.rejected_kind = INITIAL
-    mailbox.ready[] = mailbox.kind != INITIAL
+    mailbox.ready[] = mailbox.kind != INITIAL || mailbox.pending_revoke != 0
     return nothing
 end
 
@@ -381,12 +453,12 @@ function apply!(
 ) where {F}
     period >= 0 || throw(ArgumentError("source pacing period must be nonnegative"))
     observe_clock!(state, now)
-    kind in (RUN, RESET, QUERY) || return Int32(-Base.Libc.EINVAL)
+    kind in (RUN, RESET, QUERY, REVOKE) || return Int32(-Base.Libc.EINVAL)
     token > state.last_request_id || return Int32(-Base.Libc.ESTALE)
     state.last_request_id = token
-    if kind == RUN
-        if requested_running
-            state.completed && return Int32(-Base.Libc.EALREADY)
+    if kind == RUN || kind == REVOKE
+        if kind == RUN && requested_running
+            (state.completed || (hasproperty(state, :exhausted) && state.exhausted)) && return Int32(-Base.Libc.EALREADY)
             if !state.running
                 state.deadline_ns = Base.checked_add(now, period)
                 state.running = true

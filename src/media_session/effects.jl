@@ -178,13 +178,32 @@ function _validate_hold(::ConfiguringOrigin, snapshot::SourceSnapshot)
     return nothing
 end
 
-function perform!(runtime, job, ::HoldSources)
+function _quit_source_target!(runtime, job, binding::AcquisitionBinding)
+    owner = binding.owner
+    quit_target!(
+        runtime, job, :source, ControlClient.profile_name(owner.profile), owner.handle;
+        pid = owner.pid, instance = owner.instance,
+    )
+    return nothing
+end
+function _quit_source_target!(runtime, job, binding::SourceControlBinding)
+    quit_target!(
+        runtime, job, :source, SOURCE_CONTROL_PROFILE, binding.handle;
+        pid = binding.pid, instance = binding.instance,
+    )
+    return nothing
+end
+
+function perform!(runtime, job, effect::HoldSources)
     for binding in runtime.sources
         # Retired acquisition bindings carry the validated terminal Shutdown
         # proof. They must not receive another scientific command.
         _source_retired(binding) && continue
-        snapshot = source_operation!(runtime, job, binding, :run; running = false)
+        _quit_source_target!(runtime, job, binding)
+        operation = effect.revoke && supports_revocation(runtime, binding) ? :revoke : :run
+        snapshot = source_operation!(runtime, job, binding, operation; running = false)
         _validate_hold(job.ticket.origin, snapshot)
+        quit_acknowledge!(runtime, job)
     end
     return nothing
 end
@@ -230,7 +249,11 @@ end
 
 function perform!(runtime, job, ::ShutdownSources)
     for binding in runtime.sources
-        _source_retired(binding) || shutdown_source!(runtime, job, binding)
+        _source_retired(binding) && continue
+        binding isa SourceControlBinding && continue # Its bootstrap owns process retirement.
+        _quit_source_target!(runtime, job, binding)
+        shutdown_source!(runtime, job, binding)
+        quit_acknowledge!(runtime, job)
     end
     return nothing
 end
@@ -249,9 +272,6 @@ function _bootstrap_order(runtime, index::Int, owner::Owner{OwnerBootstrapCodec.
     declaration["pid"] == owner.pid &&
     _declared_instance(declaration, "bootstrap-instance") == owner.instance ||
         throw(ArgumentError("captured bootstrap declaration differs"))
-    owner.retired ||
-        property(runtime, owner.handle, "node.name") == declaration["bootstrap-node"] ||
-        throw(ArgumentError("captured bootstrap control node differs"))
     return (declaration["role"] != runtime.configuration["source"]["role"], index)
 end
 function perform!(runtime, job, ::ShutdownGraphOwners)
@@ -284,8 +304,14 @@ function perform!(runtime, job, ::ShutdownOwners)
 end
 function _shutdown_bootstrap!(runtime, job, owner::Owner{OwnerBootstrapCodec.Profile})
     owner.retired && return nothing
+    name = property(runtime, owner.handle, "node.name")
+    quit_target!(
+        runtime, job, :bootstrap, something(name, ControlClient.profile_name(owner.profile)),
+        owner.handle; pid = owner.pid, instance = owner.instance,
+    )
     retire_owner!(runtime, owner) do
         shutdown_owner!(runtime, job, owner)
+        quit_acknowledge!(runtime, job)
     end
     return nothing
 end
@@ -335,8 +361,13 @@ _graph_states!(runtime, group::AbstractString, running::Bool) =
     (runtime.groups[group].running = running; nothing)
 
 function _run_graphs!(runtime, job, running::Bool, group)
+    pids = get(runtime.configuration, "node.pids", nothing)
     for name in graph_order(runtime, running, group)
-        node_operation!(runtime, job, runtime.graphs[name], :run, running)
+        handle = runtime.graphs[name]
+        pid = pids === nothing ? nothing : get(pids, name, nothing)
+        quit_target!(runtime, job, :graph, name, handle; pid)
+        node_operation!(runtime, job, handle, :run, running)
+        quit_acknowledge!(runtime, job)
     end
     _graph_states!(runtime, group, running)
     return nothing
