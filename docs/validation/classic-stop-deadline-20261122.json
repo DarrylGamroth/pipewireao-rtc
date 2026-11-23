@@ -1,0 +1,51 @@
+{
+  "rtc_release": "v0.7.28",
+  "release_commit": "6416ed86b4bf69040bb6a10603cd2490093f83c7",
+  "instrumented_stop_commit": "3b1295af19f1220aab0a7a24961d3182ac4ee9b2",
+  "julia": "1.13.4",
+  "pipewireao": "0.9.6",
+  "pipewireao_jll": "4.0.8+0",
+  "classic_cpu_export_commit": "cfe7b858ac045f6208cc33e38db4f7658aebbb13",
+  "manifest_sha256": "128afdeff5651e28525a612b6cfdb60404a6c7562ed1b016760ef5fcb6190901",
+  "deployment_sha256": "47c7f7b0ca1a21d7365400966b858236abc09d467627f7c8ebac39041bfe52f7",
+  "unit": "pipewireao-session@cefaeb19b321.service",
+  "session_uuid": "e74c3fc8-2c14-4993-ac40-ead5fa9e3f96",
+  "running_confirmed": true,
+  "stop_helper_cpu": [
+    3
+  ],
+  "overall_budget_ns": 30000000000,
+  "quit_budget_max_ns": 8000000000,
+  "journal": {
+    "unit": "pipewireao-session@cefaeb19b321.service",
+    "invocation": "68e99ad801e3440cabdce7e86a020580",
+    "outcome": "completed",
+    "deadline_ns": 303218357043525,
+    "capability_remaining_ns": 26945571141,
+    "completion_remaining_ns": 26945517310,
+    "rejection_remaining_ns": 26945466265,
+    "controller_admission_remaining_ns": 26945571141,
+    "connection_ready_remaining_ns": 26945206528,
+    "quit_submission_remaining_ns": 26060053690,
+    "offline_remaining_ns": 21848293279,
+    "process_exit_remaining_ns": 21351445883
+  },
+  "pidfd_exit_remaining_ns": 21454006323,
+  "quit": {
+    "accepted": true,
+    "attempted": true
+  },
+  "phase": "stopped",
+  "service_result": "success",
+  "cleanup_complete": true,
+  "unit_files_removed": true,
+  "owner_pids_absent": {
+    "analysis-wfs": true,
+    "core": true,
+    "julia": true,
+    "parameters": true,
+    "simulator": true
+  },
+  "main_pid_zero": true,
+  "socket_absent": true
+}
