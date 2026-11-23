@@ -1,0 +1,261 @@
+local_branch	commit	exact_ancestor_of_local_main	exact_ancestor_of_upstream_main	commits_outside_local_main	unmatched_nonmerge_patches	matched_nonmerge_patches	commits_omitted_by_patch_comparison	same_named_remote_tip	worktree	tip_subject
+audit/live-control-retirement-20261006	a71aacbf29fd607b4faac0f4792b447feb9d5618	no	no	5	0	5	0			docs: record bounded stale Rust build cleanup
+benchmark/gpi2-handoff-20261121	c84cee46fc7f565969322056e28c9a8d4cbacd21	no	no	3	3	0	0			Compare event-driven and polling GPI2 handoffs on dedicated receiver CPUs
+cal2-external-pupil-gpu	e637c3e46483bafebfb10b31d46ba683dbd083f0	yes	yes	0	0	0	0	e637c3e46483bafebfb10b31d46ba683dbd083f0		Complete data-only optical calibration and Host reference admission
+cal2-mixed-backend-profiles	db876041c4f0b947b4f264d2255e76ec82d23a71	yes	yes	0	0	0	0	7c2e862f6233e180f070016b3a48b1e2c14e63be		Support chopped optical calibration and managed CAL2 transport
+cal2-shared-definition	d6abb5b999278bb8ed77f3c46ada6e09678ca9a9	yes	yes	0	0	0	0			Share standalone optical instrument and detector preparation
+codex/acquisition-terminal-shutdown-20261009	5ce1ca8503fbb4851f0412a11ae55f6d521ae0ff	yes	yes	0	0	0	0			Record the Classic graceful simulator baseline
+codex/analysis-cancellation	cac3c752d41ce1cd988b6ac34f986e2dff981603	yes	yes	0	0	0	0			Cancel optional analysis startup through systemd
+codex/analysis-single-input-20261027	1551f6b3bf973660bbdc37d972afb2dc9515b1ad	yes	yes	0	0	0	0			Clarify GPI2 operator validation receipts
+codex/archive/worktrees-20261102/pipewireao-rtc-release-generated-header	fd8e475fdf7d76cf746f9ac3e0b9fe99ee0c8423	no	no	1	1	0	0			Archive retained pipewireao-rtc-release-generated-header draft without integration
+codex/archive/worktrees-20261102/pipewireao-rtc-spiders-proper	7aea8e9774a4a9b73956a0b2179bd190e4fd431e	no	no	1	1	0	0			Archive retained pipewireao-rtc-spiders-proper draft without integration
+codex/artifact-history-20261020	355fbffee5b39bbfa6fde5b13ff49a90f80333af	yes	yes	0	0	0	0			Record configuration tooling stopping point and deferred evaluation
+codex/bootstrap-error-invalidation	e0fe1e7ef2854efa9a7d57619ab2d792bc369d25	yes	yes	0	0	0	0		~/workspaces/codex/worktrees/rtc-bootstrap-exceptions	Cache bootstrap routes with calibration methods loaded
+codex/cal2-live-prime	f62e1e1cf4868d78ed63a7433a0adad9a949b003	yes	no	0	0	0	0			Record CAL2 live restart, first-frame and first-correction measurements
+codex/cal2-startup-attribution	27da978bfe81d43ad8977394a4c721a36484dc6c	yes	no	0	0	0	0			Measure CAL2 service startup CPU and compare native HEART readiness
+codex/cal2-startup-diagram	f563cbd95e25491a3a9b1efdf58fbc2357a1f84e	yes	no	0	0	0	0			Distinguish live open-loop priming from CAL2 startup self-tests and profile deployment preflight
+codex/cal2-warmup-evidence	742195ae6e9cb8d9632eb45df4695f9c8687dd42	yes	no	0	0	0	0			Verify CAL2 RTC replacement against an independently publishing simulator
+codex/calibration-capture-20261027	21b3f23ba48e0cc63e3463b3c9d0580e11c7d323	no	no	12	0	12	0			Match parameterized native action types in the pilot
+codex/calibration-owner-20261027	2f87b277143a15d35595b7186685bf53e1516159	yes	yes	0	0	0	0			Fix calibration startup readiness notifications
+codex/calibration-preparation-20261027	e241bc6c493c0c90f815e1a5539576c5bf06e399	yes	yes	0	0	0	0	71e7014caf0d576a7a41a85511b2e6d087908f0c		Merge simulated dark acquisition and preparation contract
+codex/calibration-projections-20261027	875755cef9094654f19123225eb0652907aa9892	no	no	2	0	2	0			Own calibration graph workers and bounded probe transport
+codex/calibration-release-20261026	06fa9eae66ce513f02e44cbfd6bc40aabcda2ed6	yes	yes	0	0	0	0			Record registered RTC 0.2.17 validation and Julia 1.13 policy
+codex/calibration-scope-review	15e8638dc32441e014a7ae4588fff40244d370b1	yes	yes	0	0	0	0			Review calibration numerics for AdaptiveOpticsCalibration transfer
+codex/calibration-staging-tools	ae97d3f49d7ba3fec50b62fe9ff4b3176745a32d	yes	yes	0	0	0	0			Expose the RTC export APIs used by shared calibration staging
+codex/calibration-yaml-events-20261027	864281b8e0dcd2e0b7bf86e583b9de9c6979559e	yes	yes	0	0	0	0			Release PipeWireAORTC 0.2.21
+codex/canonical-metadata-latency	a4e474d3bc178dd4d7a7d1e6cd460b01904e7ea6	no	no	1	1	0	0			Reduce optical simulator startup compilation
+codex/chopped-detector-warmup	52eda81644b08d7a6fe6f7c42bde4f53a19b8ff7	yes	yes	0	0	0	0		~/workspaces/spiders-coherent.iLV7Oy/rtc	Release PipeWireAORTC 0.7.27
+codex/classic-platform-latency-20260930	2795d07328a32c12c87e2db13683ff592d97216a	yes	yes	0	0	0	0			Characterize Classic latency with matched CPU QoS and scheduler traces
+codex/classic-quit-event-precompile	b41d433235c0bbb1cec88dda4d66157709f94d35	yes	yes	0	0	0	0			Prepare RTC and owner Quit paths before admission
+codex/classic-stop-precompile	dbc95c64b1bdcfa6ebe628bd848cd2e73e09bab1	yes	yes	0	0	0	0			Precompile the RTC shutdown hooks and invocation codec
+codex/clocked-applied-command	d00513bbb6ca617ae21ea6fa1783779ab3b3c462	yes	yes	0	0	0	0			Declare Applied readback for managed clocked sources
+codex/cold-start-budget	0ff37b5d3a22e21f8eb810b6e8b4dca04898dff6	no	no	1	0	1	0			Honor an explicit bounded cold startup budget
+codex/core-observation-queues	5720396c8dfc53521a803a15d7df49945ad73d4b	no	no	1	0	1	0			Admit sealed core queue stream endpoints
+codex/cuda-651	3d080dfda6a46857abe57135e82e9ff5c2e87fe2	no	no	6	6	0	0		~/workspaces/cuda-cohort.iKrfzF/rtc	Record GPU checks against updated package upstreams
+codex/default-simulation-settings	be4f431c7272cda4aaf1262aaecdf366d885f1e1	yes	yes	0	0	0	0			Use default simulation settings for empty overrides
+codex/detector-authoring-rtc	6b3b47c35beea917faf21b9308da23a7ad60e973	yes	yes	0	0	0	0			Use AOS detector selectors in shared simulation templates
+codex/direct-controlled-actuators	6567a259635a8e49e2cfa176aaaeb74fe0bc7156	no	no	1	0	1	0			Derive controlled actuator masks without preparing the RTC graph
+codex/direct-quit	5338530dad3193322d441340b5ca444d61e3bc23	yes	yes	0	0	0	0			Send native Quit without a preceding Status request
+codex/dm-plane-opd-20261028	2f5a70cf179582bd26738718a9bf58be2ed159c0	yes	yes	0	0	0	0	2f5a70cf179582bd26738718a9bf58be2ed159c0		Require the AOS runtime optical input API
+codex/dm-pupil-gpi	f79a8fd5e0f0259b81c6d1feb9d7752af980b93d	yes	yes	0	0	0	0			Publish registered mirror clear apertures from intrinsic dimensions
+codex/event-calibration	6c9c21ed2c880880e946698d0958580fef768c9a	yes	yes	0	0	0	0			Document shared calibration interfaces and delivery evidence
+codex/export-graph-warmup	9b5c4a597b14e41be1908080825b230c264103ec	yes	yes	0	0	0	0			Exercise overlapping owner Connect failure handling
+codex/fga-names	ac7a670a6bfc898bf29f7cb6636c692f68e879b0	yes	yes	0	0	0	0			Use canonical algorithm counts in calibration and framework dependencies
+codex/fgpw055-verification	2031fde5d6a7251c822becb3751e6542608e846f	no	no	4	4	0	0		~/workspaces/fgpw-055.liDncp/rtc	Record Classic startup and native Quit with separated CPU placement
+codex/filtergraphs-010-20261107	00b2b28368ba5289e45bf291347f9127d0b06c02	yes	yes	0	0	0	0	00b2b28368ba5289e45bf291347f9127d0b06c02		Record verified FilterGraphs 0.10 cohort and cold installation
+codex/generated-optics-20261028	065afbe3533bfd46d1bcb24a3aa61bfe420ed1e0	yes	yes	0	0	0	0	065afbe3533bfd46d1bcb24a3aa61bfe420ed1e0		Validate generated HIL optics and preserve authored calibration identity
+codex/git-only-runtime-integrity	e288573dc9b3e48b49c2c99a7230f669cf9f7355	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.22
+codex/git-verified-install	944bb6e33a8b9a9c2ad3702a2f76bd794b741ec3	yes	yes	0	0	0	0			Verify export file integrity only through Git
+codex/gpi-reference-calibration-20261027	3ef081f13c2324d78dca6f1fcda01830dd16ce7a	yes	yes	0	0	0	0	3ef081f13c2324d78dca6f1fcda01830dd16ce7a		Clarify the registered application qualification order
+codex/gpi2-0722-quit	97925bafe8da5f5d93ab81bf6b4201cea37f501e	no	no	2	2	0	0			Record GPI2 Quit expiry and private-core fix verification
+codex/gpi2-heart-20261025	054da1956748350bb410585152172c8119c231ad	yes	yes	0	0	0	0	054da1956748350bb410585152172c8119c231ad		Add calibrated hidden-mode controller preparation and matched GPI evidence
+codex/gpi2-integration	d4cddc61566d225b7018df6a9bbc3bc84a87232a	yes	yes	0	0	0	0			Record controlled DM shape and live GPI presentation validation
+codex/gpi2-intensity-export	0ee4c0e8a09d3e5c522933dce8905d1b23eaa15f	no	no	1	0	1	0		~/workspaces/codex/worktrees/rtc-gpi2-intensity-export	Compile view-selected latest graph outputs on telemetry queues
+codex/gpi2-intensity-runtime	e46035fd19f8efb9493b3ad019864e697e134db7	no	no	2	0	2	0		~/workspaces/codex/pipewire/pipewireao-rtc-gpi2-intensity-runtime	Verify optional display Link incarnations and native queue negotiation
+codex/gpi2-mirror-calibration-20261026	49548303f08ff144f693d2c81047a831341c0a8d	yes	yes	0	0	0	0	49548303f08ff144f693d2c81047a831341c0a8d		Audit GPI mirror calibration, wavefront units and command crop
+codex/gpi2-pupil-tap	01c55371cc14924c4029667878c4d362ecec32b9	yes	yes	0	0	0	0		~/workspaces/codex/worktrees/rtc-gpi2-pupil-tap	Integrate cooperative MediaSession polling after sealed GPI2 qualification
+codex/gpi2-pupil-tap-pre-upstream-rebase	859eef8d952f077e8c23729c06ebc3f456ad2ff2	no	no	5	1	4	0			Record GPI2 display isolation and delivered woofer Hold
+codex/gpi2-registered-deployment-20261025	e23c30a6b47c8a78b4d43c21e2ab1b301b47fa0e	yes	yes	0	0	0	0	e23c30a6b47c8a78b4d43c21e2ab1b301b47fa0e		Prepare measured optical cleanup specialization before admission
+codex/gpi2-rtc-startup-precompile	9f83439b44ba88d2c1f5111895c3c69380a6c417	yes	yes	0	0	0	0			Precompile RTC session construction and ingress startup
+codex/gpi2-session-idle-integration	c2c5ad51e5a0b14dce5864580d0c0588887a01b5	yes	no	0	0	0	0		~/workspaces/codex/worktrees/rtc-session-idle-integration	Integrate cooperative MediaSession polling after sealed GPI2 qualification
+codex/gpi2-startup	e27ae9f20924ae34b4c87cf1be73fb56c1d70ed6	no	no	1	1	0	0			Record GPI2 controller compilation and private-core startup verification
+codex/gpi2-temporal-split-20261026	c8307b0dd97dabcbff75cd8d74fb4788daa0c434	yes	yes	0	0	0	0	c8307b0dd97dabcbff75cd8d74fb4788daa0c434		Retain matched GPI stage-response replay and independent review
+codex/gpi2-woofer-stroke-20261026	7c302200d86c7e30d7afb2780a20474635094c56	yes	yes	0	0	0	0	7c302200d86c7e30d7afb2780a20474635094c56		Record matched GPI woofer command-bound replay
+codex/graph-before-optical-install	7e077a2fa1a87c37e2a1deaad4788c7cdfb1b4fb	yes	yes	0	0	0	0			Combine optional graph extensions with early controller validation
+codex/graph-host-scope-20261107	4ebd761b964aa12e9a36905188ce732cbe2ecd8f	yes	yes	0	0	0	0	4ebd761b964aa12e9a36905188ce732cbe2ecd8f		Record verified graph host scope reduction and remaining API limits
+codex/hidden-mode-tools	b4c3ab78d38c75dc5d59200a9ff2574560abfe0f	yes	yes	0	0	0	0			Record SPIDERS fitted-dual offline CPU calibration
+codex/hil-optical-extraction-20261107	e6e428682ef34a8d561622c20080a5509dc654af	yes	yes	0	0	0	0	1326e9aa25ede0a4b7530f55054c79edcdc9f41f		Record full private-core HIL admission results
+codex/hil-optical-image	a7293e9738a4be100e7d4d5d286a1476e42827dc	yes	yes	0	0	0	0			Record CAL2 and SPIDERS HIL startup image verification
+codex/hil-startup-latency	c57b1152824cd86c8849e78c52580acad3f9233d	no	no	2	2	0	0			Precompile startup configuration parsing
+codex/independent-spa-metadata	c5a1b010f3ac2f42616056be269e7ca62547185b	yes	yes	0	0	0	0	c5a1b010f3ac2f42616056be269e7ca62547185b		Describe the independent metadata delivery boundary
+codex/instrument-modes	68b6cf389be6420b9d9e8dff6cab1ac2d3b31db1	yes	yes	0	0	0	0			Select instrument application modes through native configuration fragments
+codex/julia-package-root-20261008	c8d2102a2a448dbd6b8de2626115c007e59367c0	yes	yes	0	0	0	0	ca27a5576ca58d3874ad0d08f373a6673a02a3b6		Record installed shutdown qualification and worktree cleanup
+codex/julia-package-updates	05b61f2570fc48493d03d9a4ad3e4007d68b9a58	yes	yes	0	0	0	0			Merge remote-tracking branch 'origin/main'
+codex/julia-session-policy-20261104	0048cfc41f7605d125ffcdda05479b40a0e68e18	yes	yes	0	0	0	0			Record public cohort resolution and cold installation receipts
+codex/libwireplumber-bridge-evaluation-20261104	24ad2e9f202fd7410f95a97e44ce4118ccfecdb6	no	no	1	1	0	0			Preserve the tested libwireplumber bridge evaluation
+codex/loop-controls-20261026	e1b2a9bcfde9b4702912cf17af70b7aaf36549bd	yes	yes	0	0	0	0			Validate generic correction-loop controls and dependency ordering
+codex/managed-session-restart	cd58d4e64d250c460653dea8bea52b451af2022a	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.23
+codex/managed-stop	41e56eb0c3243468e4ba5b71e79afe4ea336c6ea	yes	yes	0	0	0	0			Use systemd stop for managed RTC shutdown
+codex/metadata-migration	6c56f8088bed7fb9143b506b33cf628e0756eb96	yes	yes	0	0	0	0	6c56f8088bed7fb9143b506b33cf628e0756eb96		Select the breaking Properties dependency cohort for RTC 0.3
+codex/modal-controls	2abb7a1612b67e6d440e26bb742c82cfe6553129	yes	yes	0	0	0	0			Record modal control validation and preserve dispatch conventions
+codex/named-channels	dcfc205f33e1e488adf3ff428436629b10a54da0	yes	yes	0	0	0	0			Publish named source channels and analysis units
+codex/native-ndarray-interchange	fadea7a7b3f1e9de0200e0c92f1a03d31bef517a	no	no	6	6	0	0		~/workspaces/codex/worktrees/rtc-native-ndarray-interchange	Precompile native NDArray operator commands in the RTC package image
+codex/optical-camera-pools	c9db5748f5fd650a276995aabd6644227f1945bd	yes	yes	0	0	0	0	c9db5748f5fd650a276995aabd6644227f1945bd		Default optical camera pools to the telemetry queue buffer count
+codex/optical-campaign-tools	92fe2a5c33ff04a197687b22a1c899d8e3be152e	yes	yes	0	0	0	0			Move offline optical calibration out of RTC
+codex/optical-publication-batching	39869fc494e3fd20600fe06030e6fd921947c975	yes	yes	0	0	0	0			Batch completed optical exposures before triggering the graph
+codex/optical-reconstruction	29eaea63af6052124079260a1030a295098b4f4d	yes	yes	0	0	0	0			Verify optical calibration with registered AOC 0.17.4
+codex/optional-analysis	c2bc141773f469d4c15a84d91cfd6c3802808e7e	yes	yes	0	0	0	0			Run optional analysis through the RTC systemd invocation
+codex/owner-bootstrap-precompile	73726c90e6acc0cb88d668e730e2a21dc022e38b	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.21
+codex/package-cleanup-20261104	a0e47d2d84aac27d2ccaf8bdc3e5fc9f5a45d278	yes	yes	0	0	0	0			Document API migrations, verification and incremental commits
+codex/parameter-dispatch-fix-20261027	fe989e621d30cd4d22829551238d9c8e68d47897	yes	yes	0	0	0	0			Release PipeWireAORTC 0.2.22
+codex/pipewireaortc-implementation-20261014	fdc2c559c7755b89ac58b9dfe823761cb406fc96	yes	yes	0	0	0	0	4ace306c7b1931954ca7ea298b8633993c3124e6		Test fault containment through the actual RTC session path
+codex/protective-recovery-20261027	801871a63506419938fbc83323112973631712a9	yes	yes	0	0	0	0			Record final protective recovery CPU and native evidence
+codex/queue-dependency-20261109	16ef84a18450b908a49bb789ccdc516ee55cdcd0	yes	yes	0	0	0	0			Record CAL2 verification with the registered queue module
+codex/reconcile-worktrees-20261102	b8679769f87ead9a10a0433cc6b07046204b302d	yes	yes	0	0	0	0			Merge retained simulator settings and shutdown fixes
+codex/reference-campaign-tools	e4c0007fff9f7c74cc3e7e048226115a5857e117	yes	yes	0	0	0	0			Expose reference acquisition and retire RTC campaign orchestration
+codex/reference-delivery-diagnostic-20261027	2f83f1340558952bad96b211dd1498963808bdac	yes	yes	0	0	0	0			Merge branch 'main' into codex/revolt-reference-campaign-20261027
+codex/reference-stall-observer-20261027	d7e45686fb9b7db9d8bc96e174b2d72ce0f98757	yes	yes	0	0	0	0			Service calibration driver processing requests and verify online references
+codex/reference-sync-capture-ab-20261027	d7e45686fb9b7db9d8bc96e174b2d72ce0f98757	yes	yes	0	0	0	0			Service calibration driver processing requests and verify online references
+codex/reference-sync-fence-trace-20261027	d7e45686fb9b7db9d8bc96e174b2d72ce0f98757	yes	yes	0	0	0	0			Service calibration driver processing requests and verify online references
+codex/release-buffer-properties-0.2.52	1f92ad340ddc4e62a7e70f1724648dc7af852725	yes	yes	0	0	0	0			Allow host opt-in for optical buffer properties
+codex/release-rtc-0.7.24	22f8b942e9a29a186ed6f4146fc94ff97905c65d	yes	yes	0	0	0	0		/tmp/rtc0724-release.v1u4MU/rtc	Release PipeWireAORTC 0.7.24
+codex/release-rtc-0710	7977ebb8e1f1ea798d3f35526de39c3b963731dd	yes	yes	0	0	0	0			Load the optical startup image before RTC dependencies
+codex/release-rtc-0726	1c0db1aa4903e00ea95c5227af9a1c720173dacf	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.26
+codex/remaining-rtc-scope	216c8f4c288ea977e9397ecd15cb8817b8157a1e	yes	yes	0	0	0	0			Isolate GPI2 calibration differences to FFT planning
+codex/retire-python-live-control	d9f3905ebc63c4a83664423de793f557a346241d	no	no	1	0	1	0			Retire direct Python live-control commands
+codex/revolt-reference-campaign-20261027	171ca0998bfb6669496adde7350aa39f8993f231	yes	yes	0	0	0	0	76e756cdd753b6af9ec0c427bcf46874d69ca3e4		Record RTC 0.2.31 registered Classic qualification and delivery
+codex/rtc-071-release-20261107	b2260ef0f420daff6b8bdfde5aa856e15da04624	yes	yes	0	0	0	0			Record RTC 0.7.1 publication and public registry verification
+codex/rtc-0720	bc4c4f88485036380e6ea0f92fcbf8594e537d4a	yes	yes	0	0	0	0			Record registered SPIDERS CUDA calibration compilation timing
+codex/rtc-079-release	79ddbee40525877f267f7f4ad97e7c6992cfba20	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.9
+codex/rtc-application-metadata-20261020	7fd134911dbce5f8fb92e391b490519c3f1458b0	yes	yes	0	0	0	0			Publish PipeWire application names for native RTC owners
+codex/rtc-astra-review-20261014	8a175c2a3608f74e66571617906d0aa8f8e5f580	yes	yes	0	0	0	0			Record Astra application review and PipeWireAORTC migration decisions
+codex/rtc-calibration-bindings-20261026	23f42526e0334a782f7835dfb7191bea69e058f3	yes	yes	0	0	0	0			Load explicit node-construction calibration bindings
+codex/rtc-clean-shutdown	f7777e8154f9593b793edb50b5162df05161b9aa	yes	yes	0	0	0	0			Qualify selected native profiles and retain truthful control scopes
+codex/rtc-continuous-input	8ebb1b4146e7eabea4cdbea4adc9d26066bd0b69	no	no	1	0	1	0			Admit external data streams without source lifecycle controls
+codex/rtc-correction-supervision-20261027	ad9c54a5fcd2e9cef27e1206650b34ac078b115d	no	no	1	0	1	0			Add optional clipping supervision recommendations
+codex/rtc-independent-service	27286072b798147c0b577e9239dc6c8a714bf300	yes	no	0	0	0	0			Integrate upstream shutdown tracing with independent RTC attachment
+codex/rtc-lua-bindings	f057b614e853a3725267e2e2f6ae5ea112028ece	yes	yes	0	0	0	0			Move Lua and POD binding gaps into the headless RTC
+codex/rtc-optional-graph-extensions	7caea8af3cfbc1e95feca90c523a94f965abb056	yes	yes	0	0	0	0			Prepare instrument graphs with the standalone optics extension
+codex/rtc-stop-deadline-trace	1a0bd2edabe43fe507abda9d3f6feaaa2c32e67d	yes	no	0	0	0	0			Verify sealed RTC 0.7.28 simulation flow and GPI2 replay
+codex/rtc-stop-deadline-trace-v0728	a8b20297b2e7028f4b724033be0cb109630588a4	yes	yes	0	0	0	0	a8b20297b2e7028f4b724033be0cb109630588a4	~/workspaces/codex/worktrees/rtc-stop-deadline-trace	Merge remote-tracking branch 'origin/main' into codex/rtc-stop-deadline-trace-v0728
+codex/rtc-stop-deadline-v050	ccaa1d51717d747e4494d33b3b5766ddab1991cc	yes	yes	0	0	0	0		~/workspaces/codex/worktrees/rtc-stop-deadline-v050	Derive observation queue metadata from resolved source profiles
+codex/rtc39-optical-clock	60951458232f1339205adcc3adb6cb0dd43b9547	yes	yes	0	0	0	0			Record final RTC 0.4.4 focused integration checks
+codex/rtc41-cold-controls	7140c2e5e23d6476aa2bf9e1d50a7773081351dc	yes	yes	0	0	0	0			Prepare cold RTC control and parameter owner dispatch
+codex/rtc41-main	98f36df0afec5997b082f718272af933ccfdca4a	yes	yes	0	0	0	0			Merge RTC cold control preparation
+codex/scoped-controller-warmup	1c2515fcfd3e631a542854ddd17d962baafa8abe	no	no	2	2	0	0		~/workspaces/codex/rtc-scoped-controller-warmup	Use a complete controller invocation in the export test
+codex/sealed-simulator-preparation	16f20d41ce29d2d1bcb5a621119ab6a155cb9808	yes	yes	0	0	0	0			Overlap owner Connect on the session thread
+codex/session-agent-idle	5ffcaa75df0a97cd77e375f4a4e79d51220f715f	yes	no	0	0	0	0		~/workspaces/codex/worktrees/rtc-session-agent-idle	Use cooperative Agent polling on the MediaSession owner task
+codex/session-fault-operation	1db10219a99b2efcf13cd5bf9c8ec30ecd03cbdb	no	no	1	1	0	0		~/workspaces/spiders-cuda-fault.qEnXyf/rtc	Report the RTC operation that entered Fault
+codex/session-registry-20261108	88c8bb97616f02f7d2c30408b562fa39b170807d	yes	yes	0	0	0	0			Record matched CAL2 calibration and full private-core admission
+codex/simple-metadata	ccaa1d51717d747e4494d33b3b5766ddab1991cc	yes	yes	0	0	0	0			Derive observation queue metadata from resolved source profiles
+codex/simulator-releases-20261019	7fd134911dbce5f8fb92e391b490519c3f1458b0	yes	yes	0	0	0	0			Publish PipeWire application names for native RTC owners
+codex/simulator-settings-and-shutdown	a2fd27af196f3d9b140dc0e784144de7088cacbd	yes	yes	0	0	0	0			Record passing browser simulator replacement acceptance
+codex/simulator-status-selection	7aeded4400317f5c1903bdcf38ac273be7abbdf6	no	no	1	1	0	0			Refresh native request tokens after cold validation
+codex/source-channels	8ff79955c43da26dfd8a1b68147107de9a11466d	yes	yes	0	0	0	0			Preserve earlier source-channel implementation before consolidation
+codex/source-channels-preserved-20261026	ba29bf042606df78c24674963d6e18e8023a0b20	yes	yes	0	0	0	0			Preserve source-channel annotations before worktree consolidation
+codex/spa-json	ebb3103d1fff2f22ddd694b92325f49d12c1a463	yes	yes	0	0	0	0			Generate standard SPA-JSON for upstream WirePlumber startup
+codex/spiders-camera	cd412f16c24cf164db28fd820e3fbd9bf6dcbe9e	yes	yes	0	0	0	0			Verify detector calibration across unequal exposure windows
+codex/spiders-camera-acquisition	1b1c81ac3f8e55471e169c6a6e2e63edda9259e2	no	no	8	8	0	0			Measure SPIDERS camera-driven acquisition from the normal DM flat
+codex/spiders-clock-import	2fa58e2564099ba2dea9c7a7a0da0af82466c525	yes	yes	0	0	0	0			Release optical owner startup fix as RTC 0.4.4
+codex/spiders-cog-calibration	f7923eb3c5ee27184c0725ef2c94d0eccbbe97d4	yes	yes	0	0	0	0			Document cold compiled-model identity validation
+codex/spiders-control-qualification	65983c27ea1e5aa4724baf34cc9a33dffe29625a	yes	yes	0	0	0	0	37fb818e00b06ce11ec77f71a031bd92ea7d6019		Record registered SPIDERS recovery application acceptance
+codex/spiders-dark-hole	edbc79567b18ab21a47cd88d73c58ae0739fd2fc	no	no	1	1	0	0			Record SPIDERS private-core dark-hole contrast and modal calibration
+codex/spiders-factorial	ccefae5f4da3f2405ac8c18d79d93c410ec34278	no	no	5	5	0	0			Measure SPIDERS SCC bank width and damping on CUDA HIL
+codex/spiders-fringe	8f6c0e34a9e2fcbef1f0347378b45f46314eba6a	no	no	25	25	0	0			Verify protective flat and independent reclose recover the 112-mode dark hole
+codex/spiders-install-cache-overlap	e288573dc9b3e48b49c2c99a7230f669cf9f7355	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.22
+codex/spiders-performance	600279f250181d2af60178be91d1ccd92b1913fe	no	no	1	1	0	0			Report prepared shared optical execution and fallback coverage
+codex/spiders-physical-plane-calibration	1bc206f3d0c6d6c8d46f066d9232637947ac5a8c	yes	yes	0	0	0	0			Validate session graph schemas against prepared ports
+codex/spiders-post-start	c5d99bcda9eca65df0039864ce10cd626c8ce0be	no	no	12	12	0	0			Verify GPI2 FIFO host scheduling after admission
+codex/spiders-proper	f6d3706a259b1e91f720fa2cce7602821dbbc912	yes	yes	0	0	0	0			Reuse owned Float32 optical frames for stream transport
+codex/spiders-recovery	3e8164168aaf36ec07f8a05e2dc34300799b3e0d	no	no	3	3	0	0			Record SPIDERS biased calibration and closed-loop contrast
+codex/spiders-scc-error	a1349fb2aa9d7246655360dec742c373ce2b511d	no	no	6	6	0	0			Measure SPIDERS SCC mean error and dark-hole brightening
+codex/spiders-scc-gain	30bb033d024363cb605a5b86ef0bc77bc385058f	no	no	7	7	0	0			Clarify SPIDERS tracking experiment operating point
+codex/spiders-wide-bank	25c45054219053ae819c553f1c8623dfd070e854	no	no	4	4	0	0			Compare SPIDERS SCC probe banks on held-out PipeWire trajectories
+codex/standard-calibration	9cf5dd9effd8a108d898e999da58f963b8e7076f	yes	yes	0	0	0	0			Remove obsolete TOML report and graph references from RTC checks
+codex/standard-links	d72483d29777fe107b193a21a9687d797ff5e8cc	yes	yes	0	0	0	0			Use public libwireplumber Link APIs for RTC connections
+codex/startup-shutdown-scope	260be58bcc62ba02770a09f3fda10f14e6567bae	yes	yes	0	0	0	0			Review RTC startup, optional analysis, and shutdown scope
+codex/yaml-config	8df8c909085703e83a2f7d5f8d9368e4e39971f5	yes	yes	0	0	0	0			Read simulation graphs and GUI exports as YAML
+codex/yaml-defaults	57f28f34ad1488a3e95512a40a4902085b4aa64d	yes	yes	0	0	0	0			Reject registered pupil transforms in grid-index bindings
+codex/yaml-science-components-20261026	21fcedf82ae1dd135efcdd8079db25a103f1fd0b	yes	yes	0	0	0	0			Reuse named optical components and configure science imaging
+docs/context-navigation-20261006	ef8ead2233270260986b7c68b1865239a0cf09ba	yes	yes	0	0	0	0			Route RTC work through concise instructions and current task index
+docs/gui-selection-allocation-diagnostic-20261006	3e270fbd66808e24087713a3e47c09f59d325ddf	no	no	1	0	1	0			Record native selection allocation and cold retirement diagnostics
+docs/prepared-exchange-resolution-20261004	1d3f1b5cadab0bb222390d90311b4094c30a40c3	yes	yes	0	0	0	0			Require released prepared exchange API for HIL
+feat/evidence-closure	68fa05f9165ee2d4751f5c4ce44e8eee82f1184d	no	no	1	1	0	0			Validate RTC runtime updates and equivalence
+feat/external-processing-node	b195d73c62205e60f1f0cefae1177edc885b0791	yes	yes	0	0	0	0			Use published PipeWireAO run control
+feat/increment-1-runner	590b8d95451e945fca99c8efadc3b619782d7c78	yes	yes	0	0	0	0	cbb5b9b6dd109ea0affbd8b110233b20499a21db		feat: add selective RTC graph run control
+feat/rt-deployment-profile-20260928	cbd4f5a20166bc6626f9fd626390939b4c3e6d14	yes	yes	0	0	0	0	cbd4f5a20166bc6626f9fd626390939b4c3e6d14		Add Copper laboratory baseline and placement records
+feat/runtime-control	b57789824b954a20ec1796f14e86b2db906b2e27	yes	yes	0	0	0	0			Add RTC graph runtime controls
+feature/standalone-pupil-source	22b66f60e237258bbe81034259617a493df8d7fd	yes	yes	0	0	0	0			Reject shared physical command bindings and compile selected applications
+fix/bootstrap-controller-seal-20261006	7efd4327ea4420e7d1c9103ea877d6fcb787230f	no	no	1	0	1	0			Retain admitted bootstrap controller before source science begins
+fix/cal2-optical-precision-20261029	7a1efe1b314a1061edfef2e108ed984a8208161f	yes	yes	0	0	0	0	7a1efe1b314a1061edfef2e108ed984a8208161f		Support explicit optical precision in cold simulation configuration
+fix/calibration-keyword-timeout-20261006	b023c95109614d82f77cbfc348794fb1d8c8c69c	no	no	1	0	1	0			Fix calibration HIL timeout keyword calls
+fix/calibration-optical-references-20261121	ab50059ebb8ceb6d6f5decd7f50b235127479964	yes	yes	0	0	0	0			Record native info merge and NDArray builder migration priorities
+fix/captured-cuda-optical-calibration-20261029	c90c56fc1ca1361ffd41941622f9c52477e56f38	yes	yes	0	0	0	0	c90c56fc1ca1361ffd41941622f9c52477e56f38		Release captured optical calibration support as 0.2.51
+fix/captured-optical-execution	008c0fcfa0ce40772593769306914d8678d557dd	yes	yes	0	0	0	0			Require captured execution for RTC GPU optical preparation
+fix/cold-metadata-json-20261028	78d1f830eab8bbc722531dba74b440a64e3c8735	yes	yes	0	0	0	0			Bound cold physical metadata JSON serialization
+fix/component-core-queues	7cdd47be2bd02f93f3bac92cd5b9864ec99a8dd6	yes	yes	0	0	0	0	7cdd47be2bd02f93f3bac92cd5b9864ec99a8dd6		Preserve component core ownership during composition
+fix/external-pupil-sensor-rates-20261028	989349b13fdcd1446067867e340bf9a89088cfe9	no	no	1	0	1	0			Declare external sensor stream rates from model exposures
+fix/jfg-staged-sdk-compat-20261006	96729f50e30690a24be554898c29b03404baf5bf	no	no	2	0	2	0			Record exporter fixture log normalization and original capture hash
+fix/native-explicit-socket-20261006	3f85f12752587c48b40f05ba49e4b1109f723ddf	no	no	1	0	1	0			Connect native public clients through exact bounded owned sockets
+fix/native-ndarray-admission-20261121	28500969f229efc4359c3cfb5ec0be2ea9d10841	yes	yes	0	0	0	0			Use the native NDArray decoder for RTC format admission
+fix/session-fault-logging-20261122	b5e54873230084928c2cd90fe9d66a392d4351ef	yes	yes	0	0	0	0			Report settled RTC session faults
+fix/session-leader-affinity-20261028	16df901794c3d6106be41b61b1457c51872f0e88	no	no	1	0	1	0			Pin native session leader to its declared CPU
+fix/standalone-pupil-review	22b66f60e237258bbe81034259617a493df8d7fd	yes	yes	0	0	0	0			Reject shared physical command bindings and compile selected applications
+gpi2-zemax-definition	b49cb89084ee5ff1516446231e7a993c16f3f21f	yes	yes	0	0	0	0	b49cb89084ee5ff1516446231e7a993c16f3f21f		Publish scientific pupil fields from declarative simulation owners
+improvements/management-endpoint-20261103	8bfd4ed96f25b3ffa26d6203f0672effd840f3c2	yes	yes	0	0	0	0			Provide RTC-owned local management endpoint
+improvements/startup-settings-memory-20261104	4658e7f676c538df01c919b4902c9df25a63a105	yes	yes	0	0	0	0			Reduce management inspection memory and select request tokens after validation
+integrate/pipewireao-094-20261121	e546dcc72d3951a0d7c3b275faddff40e928bef8	yes	yes	0	0	0	0			Pin the merged PipeWireAO 0.9.4 and verify RTC admission
+main	f62e1e1cf4868d78ed63a7433a0adad9a949b003	yes	no	0	0	0	0	23469636d5ed817f4e41d2f2de5f590a936b0a62	~/workspaces/codex/pipewire/pipewireao-rtc	Record CAL2 live restart, first-frame and first-correction measurements
+preserve/pre-package-rtc-main-20261020	aa3face36f05245a5d2966bff42cf3a3fbb90c0b	no	no	1	1	0	0			Preserve pre-package finite-source control edits
+qualify/copper-main-observer-20261006	8a5e3bfd5b787653f4b503b60c24b9b70a623b06	yes	yes	0	0	0	0			Reuse completed qualification evidence across control migration
+refactor/rtc-session-orchestration-20261121	0a4344f9f68aed7974f61b3cb4b21b4744166cf4	yes	yes	0	0	0	0			Use the RTC admission gate for local session controller discovery and capture
+release/cal2-chopped-0.2.38	2a973b5e6f254d2cf2184a26d62505980aca15d7	yes	yes	0	0	0	0	2a973b5e6f254d2cf2184a26d62505980aca15d7		Record merged CAL2 release validation and static acceptance
+release/captured-optics-0.2.42	eac5dcae2e8bf57f1c5b981a495c47dd87bd370d	yes	yes	0	0	0	0	eac5dcae2e8bf57f1c5b981a495c47dd87bd370d		Release PipeWireAORTC 0.2.42
+release/cold-metadata-0.2.44	2104680b235ba7a63e6b34c639f382cff5c336d6	yes	yes	0	0	0	0	b1b0253fc1909c3af8ea7baffac2edeca25322ab		Merge pull request #31 from DarrylGamroth/release/cold-metadata-0.2.44
+release/external-pupil-sensor-rates-0.2.46	a65289645dfac1d16f89b0d600520deb817de5e1	yes	yes	0	0	0	0	80d9a40d5046cab56db84ad867b057352d1057c3		Merge pull request #32 from DarrylGamroth/release/external-pupil-sensor-rates-0.2.46
+release/generated-header-0.2.39	d4e638451cd0a97577c8700d30a9732afc117b6b	yes	yes	0	0	0	0			Merge pull request #23 from DarrylGamroth/release/cal2-chopped-0.2.38
+release/rtc-pwao-408-20261122	8cb53530ec1c4718421bc0ef92c8b613c337f691	yes	yes	0	0	0	0			Record published SDK assets and registered RTC test results
+release/session-leader-0.2.47	983af791682b01b5403dbdfcbb27c54fcd0b536b	yes	yes	0	0	0	0	983af791682b01b5403dbdfcbb27c54fcd0b536b		Prepare 0.2.47 session placement release
+release/standalone-pupil-0.2.40	83b910fc6fb633d1b6a5b92e47bf35e35b5d422e	yes	yes	0	0	0	0	83b910fc6fb633d1b6a5b92e47bf35e35b5d422e		Preserve default F64 optical output quantity
+review/acquisition-lifecycle-helpers-20261006	14d30753f62564fecfeaf1555192fd037a20320f	no	no	1	0	1	0			Review native acquisition lifecycle transport helpers
+review/acquisition-lifecycle-owners-20261006	d5d44feb9f1ff087ea2e0926f215b3549692be21	no	no	7	0	7	0			Review native acquisition owner ordering and verify report cursor fix
+review/calibration-action-codec-20261006	307395edac6378ebc4995650748b16af989cbdc7	no	no	2	1	1	0			Review calibration action codec and verify array correction
+review/calibration-actions-20261006	70aa9560a11cbb969fac5d00081c053fa30be27f	no	no	4	0	4	0			Independently verify foreign ticket retirement and fail-closed owner paths
+review/native-daw-20261122	23f0a044eda5f40b1651078915da928991540f49	yes	yes	0	0	0	0			Adopt native info tracking and NDArray formats in the RTC environment
+review/native-supervisor-public-d7a711b	62c834c742cdd8daa4e90b824dc1a4562c38210e	no	no	5	2	2	1			docs: independently verify public supervisor client and failure grammar
+review/observation-9055db3	db6e35612d5450712ce6f91da9987633905a1767	no	no	1	0	1	0			Review optional observation identity containment and qualification
+review/rtc-buffer-ownership-20261121	7e5b7b1184379ac8583b6b8393909023b4c8190a	no	no	4	4	0	0			Compare GPI2 buffer ownership and orchestration with HEART and MagAO-X
+review/rtc-fault-lifecycle-20261123	e3113f56db5feea4fb45eb23543b3da33048c9b6	no	no	1	1	0	0		~/workspaces/codex/worktrees/rtc-fault-lifecycle-review	Review lockstep Hold, finite completion and faulted RTC shutdown
+review/rtc-transport-20261121	583319452d7e2d0340efeda94ead13dd50a662e2	no	no	1	1	0	0			Review RTC transport decisions against HEART, CACAO and iceoryx2
+review/rtc-wrapper-boundary-20261121	5242c5a9245d57ac5f91263f3a0e7066491f7ffd	yes	yes	0	0	0	0			Review Julia binding behavior against the native PipeWireAO SDK
+review/supervisor-codec-2a78a31	320d237db772b76ab9b041898c9e72ae42fa1d7a	no	no	2	1	1	0			Record independent native supervisor codec review
+review/upstream-spa-modules-20261122	a4c08326e488a75c005c22ef68d0b640069d58d1	yes	yes	0	0	0	0			Record upstream SDK verification and operator logging boundaries
+rtc-calibration-lifecycle-codec	d64879efdfe74d44929e9ae8fe4c3c7e80a48a70	no	no	6	0	6	0			Preserve correction hold truth and refresh native owner fixtures
+rtc-copper-control	aea95ccae1b45a3c0f3f89ecdc598b4e3b9de609	yes	yes	0	0	0	0			Validate Copper RTC source completion and runtime updates
+rtc-native-supervisor	8d2ec943f3ac0ed69eaba76e6e44e0d569af305b	no	no	9	5	1	3			Review session publication and verify read-only listing correction
+rtc-topology-oracles	bf711377d3b4ede20d1a0860ba6747104c80a901	yes	yes	0	0	0	0			Merge current RTC main into topology and Copper work
+test/cal2-selected-calibration	4d302d8dc091568786780ea0331fafd53528fdb8	no	no	7	7	0	0	4d302d8dc091568786780ea0331fafd53528fdb8		Record ndarray queue binary in CAL2 session evidence
+test/cuda-reference-pilot-20261028	dd681b0609d136a1028a488bfe754615e8a2ea4b	no	no	1	1	0	0			Add optional captured CUDA optical reference measurement pilot
+test/rtc-sink-fault-recovery	fdc2c559c7755b89ac58b9dfe823761cb406fc96	yes	yes	0	0	0	0			Test fault containment through the actual RTC session path
+wip/latest-hold-uncommitted-20260928	6f5c2433e61045e5b3b521560fe780aef9468a54	yes	yes	0	0	0	0			Merge branch 'main' into wip/latest-hold-uncommitted-20260928
+work/calibration-acquisition-20261002	dccb17931df131e8845c1dc4f8bb5c7c252ba625	yes	yes	0	0	0	0			Record installed Classic calibration parity and startup validation
+work/calibration-action-codec-20261006	0fb933ca7ca66d88794651a45e2a7465495f4b2f	no	no	1	1	0	0			Add bounded native calibration action codec foundation
+work/calibration-action-inventory-20261006	37d3353eff23f005b2585978388d424395a4e199	no	no	1	0	1	0			Document native calibration action wire inventory
+work/calibration-campaign-20261002	04f692c2178ed79726232d409ba40fddd21b672d	yes	yes	0	0	0	0			Record source integrity and shared-input calibration parity
+work/calibration-completion-20261003	528bb92a2cbb555dd8d4d08da98551e5b659e68d	yes	yes	0	0	0	0			Record completed finite calibration and correction qualification
+work/classic-calibration-quality-20261003	7fe0bcdc64ae53d7fa24eeb0116d206033b6ce8e	yes	yes	0	0	0	0			Qualify Classic Hadamard reconstructor with fresh held-out correction checks
+work/copper-calibration-capture-20261003	2f62fd582be3a6e0b5fc2dcb7af4a7b77426d698	yes	yes	0	0	0	0			Support bounded Copper calibration capture through deployed graph owners
+work/copper-calibration-quality-20261003	7aa7cbd610d92f60d40200e395b2c2d581796bf1	yes	yes	0	0	0	0			Record matched Copper calibration pilot and precision limits
+work/copper-calibration-reference-20261003	3ea1706f383ed23276982074c232ab90209149ab	yes	yes	0	0	0	0			Acquire and characterize measured Copper dark and reference candidates
+work/deployment-20261001	1bc5eaa154cfb43f9df289da4ad0f6118b816a53	yes	yes	0	0	0	0			Qualify installed RTC deployment and live replacement recovery
+work/generic-calibration	ac3956d8a08b847c2da3ad2ac7edb80da023c59c	yes	yes	0	0	0	0			Project reference acquisition from declared graph Ports
+work/gpi2-connected-latency	070d94a83efb4a77320761bdf988b431baac2b9c	yes	yes	0	0	0	0			Clarify GC hook timing outside GPI2 replay
+work/gpi2-data-thread-timing	91a68bc6abaa3c5005829204b502f0768677a851	yes	yes	0	0	0	0			Record GPI2 PipeWire data-thread timing
+work/gpi2-matched-heart	d4b4579c5a7f6817cbaa8c015a5937585adcd33b	yes	yes	0	0	0	0			Clarify shutdown and GPU context evidence
+work/gpi2-native-quit	12628b5fa04b5200a80e9d649b06716abb752ff9	yes	yes	0	0	0	0			Record GPI2 native Quit verification
+work/gpi2-quit-deadline	04d7105aa687aa2b93b93f5063778ba38ab975c5	yes	yes	0	0	0	0			Record GPI2 Quit deadline and startup compilation measurements
+work/gpi2-quit-exact	6e41d9d9fe745bb52856505a68df729f6bd8158a	yes	yes	0	0	0	0			Record reproduced GPI2 Quit expiry and fresh-depot verification
+work/gpi2-startup	4f0c45f39fa7d2f4845f39516ce2d68d4fe034c1	no	no	1	1	0	0		~/workspaces/rtc41-startup.Cq08FN/rtc	Record GPI2 startup and cold control verification for RTC 41
+work/gpi2-tail	5b1196e75dea389ae8b80f8040e2fec2848896a1	yes	yes	0	0	0	0			Record GPI2 deadline miss stage and device traces
+work/hil-live-controls-20261005	0c937285bc395888989a0b6e22eb0219cfc14117	yes	yes	0	0	0	0			Record installed native controls from committed main
+work/julia-calibration-orchestration-20261003	395c8bfdc417bcd04d6e47776d731176aef0e5ae	yes	yes	0	0	0	0			Require Julia for operational calibration orchestration
+work/julia-module-headers	d42c7860f923475ce50958fc7802c84a5b7d0dca	yes	yes	0	0	0	0			Place Julia imports and API declarations in module headers
+work/native-calibration-actions-20261006	c6e4ea066729375af3ba4466f600003df37258a6	no	no	3	0	3	0			Connect the Rust calibration coordinator to the native Julia owner
+work/native-calibration-consumer-20261006	43bc1fd3dded56232af5067b5166e59b5867ad70	no	no	14	8	4	2			Retain typed acquisition Connect and readiness failure diagnostics
+work/native-control-planes-20261005	d846b572b2d116522871d4d8ee843e3541b5ad99	yes	yes	0	0	0	0	e01aa824360b616d39b7746925d5d7389fab682c		Align deployment with reviewed SDK and record main integration boundaries
+work/native-owner-bootstrap-design-20261006	93a0661d2234ada8cfb11243a9b96167b73caedb	no	no	7	1	5	1			Keep native bootstrap quiet monitor allocation free
+work/native-session-selection-review-20261006	46a25908b1ca07ad18ff6a5473cf3a4c840c6e35	no	no	1	0	1	0			docs: review exact native session selection and permission correction
+work/observation-qualified-20261005	adcd3f6b9bf3e67d9a1839ef24dac485937bb9e5	no	no	1	1	0	0			Add optional HIL detector observation boundary and bounded qualification
+work/operational-calibration-20261002	cfa36b02b82fa4730274412f769d13dc63b2a0c1	yes	yes	0	0	0	0			Add calibration completion transport and graph assets
+work/pkg-app	c7a092ccdd11e33f84f93bacad753060bf5e2ea8	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.5
+work/rtc-077-release	a7aac1c3755fe038c97674997498009bda9f0249	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.7
+work/rtc-078-release	20897c905de6b7a1034a79d66f61ded2dac89428	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.8 with refreshed workspace Manifest
+work/rtc-dev-013-revolt-monitor-20260929	1fc9e905f55d9f3cb62cde8a00648ae1e6b496a6	yes	yes	0	0	0	0			Monitor REVOLT endpoints during live frame exchange
+work/rtc-ui-restart-issue-1-20261003	46b718a3f53d5644ebd84028cf63901b698b4fa7	yes	yes	0	0	0	0			Read live discard counters for RTC lifecycle checks after inspection
+work/runtime-checksums	5102293a00618cf06cc8be7036f7f8d92c42ed2f	yes	yes	0	0	0	0			Limit deployment checksums to runtime inputs
+work/sustained-hil-20261004	600de343bd3914157333e23697a9c1b54833b7da	yes	yes	0	0	0	0			Qualify sustained full-frame HIL with zero-allocation simulator loop
+work/systemd-julia-runtime-20261005	f3f0815dc0ffa074e4265aebc51fb07a0d39dac4	yes	yes	0	0	0	0			Seal the tested shutdown source and wrapper evidence identities
+work/systemd-owners-20261007	a0109750664c78515499363a56c9a7313d7a5f85	yes	yes	0	0	0	0			Qualify Copper RTC systemd owner lifecycle and cleanup
+work/telemetry-queues	edf047aa9db373f69a3c1e7c4351fa4a863ebb77	yes	yes	0	0	0	0			Release PipeWireAORTC 0.7.4
+work/wireplumber-realization-20261007	dde0bf44eb074ee1583e9fe5adbd2da411c1ecd6	yes	yes	0	0	0	0			Add opt-in WirePlumber session link ownership
+work/wireplumber-session-20261007	354ae53a1223986015f96477de2399ca5b234090	yes	yes	0	0	0	0	354ae53a1223986015f96477de2399ca5b234090		Replace RTC coordinators with WirePlumber session authority

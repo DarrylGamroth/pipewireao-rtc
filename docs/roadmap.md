@@ -12,6 +12,14 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### RTC startup and outstanding branches — 2026-11-23
+
+The [startup review](reviews/20261123-rtc-startup-worktrees/REVIEW.md) traces the
+Classic CPU launch and the independently publishing CAL2 case. Its
+[branch and worktree inventory](reviews/20261123-rtc-startup-worktrees/worktrees.md)
+identifies the native NDArray integration, the fault review, and the existing
+checkouts that already match main.
+
 ### CAL2 first measurement and loop closure — 2026-11-23
 
 The development RTC supports testing both installed CAL2 graph owners at

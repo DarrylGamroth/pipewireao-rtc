@@ -1,0 +1,91 @@
+# Classic CPU paired fresh service runs on 2026-11-23 Pacific, this host.
+# Journal offset = (event journal __MONOTONIC_TIMESTAMP - systemd Starting journal __MONOTONIC_TIMESTAMP) / 1e6.
+# Journal stamps are receipt times. Julia interval values come from the emitted wall_seconds and compile_seconds counters.
+# Julia compile_seconds is elapsed compiler-counter time; it is not process CPU and can exceed the phase wall time.
+# Harness offsets use running.json (published_ns, ready_ns or running_ns minus systemd_start_ns) / 1e9. Publication and Running agree with comparison-metrics.json.
+# RTC dispatch process CPU and main-thread runnable wait use the temporary PREPARE_RESOURCE probe, via comparison-metrics.json.
+# CPU consumption from unit shutdown logs covers the full unit lifetime; it does not isolate startup.
+# owner-journal.jsonl stores parent and parameter units only. Query the child units for the other event stamps.
+# baseline: RTC revision bf497d26fc1bea787f2eb2e4bd6dd03f021047aa; source capture directory /var/tmp/gui-dm-check.q3W6Lr/live-ndarray/run-bf497d2-base-dVGSDt.
+# baseline comparison-metrics.json SHA-256 1c81fc16d0c04f4eec699fd7f4d98c0a6e62f3cb556b7734081b98b7544aaf10
+# baseline running.json SHA-256 e7b0ab344720cc65faf7805a4394f5276234fe9eb31b9750d5586072f4f1bd31
+# baseline ready.json SHA-256 03eeff3ec724c57a37f8b6bd0c3936113f881cf2f54ed40c1475f461a1ae73d6
+# baseline owner-journal.jsonl SHA-256 abf6ef71d5b28371328a450343d9f2af2e273278388efc2a39e89eb1b7895082
+# baseline original-source-sha256.txt SHA-256 5f35314fb9591cb1215998865aa1a0a799a4c3c154b27deba9356b20091cd9a5
+# baseline read-only journal query: journalctl --user --since "2026-11-23 10:28:00" --until "2026-11-23 10:45:00" --no-pager -o json -u pipewireao-session@b9a59f069b8d.service -u pipewireao-owner-f8a17b82c1f74730ab3f5a1d7978ebee-core.service -u pipewireao-owner-f8a17b82c1f74730ab3f5a1d7978ebee-julia.service -u pipewireao-owner-f8a17b82c1f74730ab3f5a1d7978ebee-simulator.service -u pipewireao-owner-f8a17b82c1f74730ab3f5a1d7978ebee-parameters.service -u pipewireao-owner-f8a17b82c1f74730ab3f5a1d7978ebee-analysis-wfs.service
+# package-image: RTC revision fadea7a7b3f1e9de0200e0c92f1a03d31bef517a; source capture directory /var/tmp/gui-dm-check.q3W6Lr/live-ndarray/run-bf497d2-final-3ZH9Wx.
+# package-image comparison-metrics.json SHA-256 279b2e264d8effc542b5bca06f972d58cd797a4b8243a3d393cd7851b4307a13
+# package-image running.json SHA-256 49410058b477b8452345e35ac1a32250d05f9b3ed2a78199f40f5e0970cc01ed
+# package-image ready.json SHA-256 13c75da9ebd690718e302cb226d852e8f23ec7f128c6759bc25a26e81880a7e0
+# package-image owner-journal.jsonl SHA-256 0e64816a8008c19decbb06d04aeabeb39bd2c2a9b52acd98833d4ca58402af94
+# package-image original-source-sha256.txt SHA-256 d51f1fb8a7ea43499c45a2260be39fddca5fa02a11bcf7c9f46bd2049ad89694
+# package-image read-only journal query: journalctl --user --since "2026-11-23 10:28:00" --until "2026-11-23 10:45:00" --no-pager -o json -u pipewireao-session@b7b6ba5c7b24.service -u pipewireao-owner-306b43c230054d1b83715d84cc0133df-core.service -u pipewireao-owner-306b43c230054d1b83715d84cc0133df-julia.service -u pipewireao-owner-306b43c230054d1b83715d84cc0133df-simulator.service -u pipewireao-owner-306b43c230054d1b83715d84cc0133df-parameters.service -u pipewireao-owner-306b43c230054d1b83715d84cc0133df-analysis-wfs.service
+trial	boundary	metric	journal_monotonic_us	seconds
+baseline	systemd start requested	journal offset	347145916712	0.000000000
+baseline	core unit started	journal offset	347158582053	12.665341000
+baseline	graph unit started	journal offset	347160705051	14.788339000
+baseline	simulator unit started	journal offset	347160704671	14.787959000
+baseline	parameter owner unit started	journal offset	347160700222	14.783510000
+baseline	simulator prepared	journal offset	347183076551	37.159839000
+baseline	simulator connected held	journal offset	347278472825	132.556113000
+baseline	load FilterGraphPipeWire starts	journal offset	347176458125	30.541413000
+baseline	load FilterGraphPipeWire ends	journal offset	347183836635	37.919923000
+baseline	load FilterGraphPipeWire	phase wall duration		6.962733572
+baseline	load FilterGraphPipeWire	phase elapsed compilation		1.512720670
+baseline	prepare graph starts	journal offset	347198467346	52.550634000
+baseline	prepare graph ends	journal offset	347272695050	126.778338000
+baseline	prepare graph	phase wall duration		74.227413250
+baseline	prepare graph	phase elapsed compilation		75.384110452
+baseline	prepare control dispatch starts	journal offset	347196191805	50.275093000
+baseline	prepare control dispatch ends	journal offset	347261672740	115.756028000
+baseline	prepare control dispatch	phase wall duration		65.161833594
+baseline	prepare control dispatch	phase elapsed compilation		65.099263049
+baseline	warm up graph starts	journal offset	347448024779	302.108067000
+baseline	warm up graph ends	journal offset	347469762603	323.845891000
+baseline	warm up graph	phase wall duration		21.737055608
+baseline	warm up graph	phase elapsed compilation		21.735656929
+baseline	publisher waiting for RTC control endpoint	journal offset	347224550144	78.633432000
+baseline	publisher connected, waiting for warmup	journal offset	347266623281	120.706569000
+baseline	publisher observed RTC warm	journal offset	347478900505	332.983793000
+baseline	optional analysis unit started	journal offset	347487954375	342.037663000
+baseline	systemd session started	journal offset	347488065707	342.148995000
+baseline	publication returned	harness offset		342.189521644
+baseline	harness independently confirmed native Ready	harness offset		351.695955350
+baseline	native Running reached	harness offset		355.175906650
+baseline	prepare control dispatch	process CPU		20.948233874
+baseline	prepare control dispatch	leader runnable wait		44.211591795
+baseline	prepare control dispatch	probe wall duration		65.161896843
+package-image	systemd start requested	journal offset	347688629676	0.000000000
+package-image	core unit started	journal offset	347705597906	16.968230000
+package-image	graph unit started	journal offset	347707324088	18.694412000
+package-image	simulator unit started	journal offset	347707324789	18.695113000
+package-image	parameter owner unit started	journal offset	347707325319	18.695643000
+package-image	simulator prepared	journal offset	347729607544	40.977868000
+package-image	simulator connected held	journal offset	347755778694	67.149018000
+package-image	load FilterGraphPipeWire starts	journal offset	347722492331	33.862655000
+package-image	load FilterGraphPipeWire ends	journal offset	347730343646	41.713970000
+package-image	load FilterGraphPipeWire	phase wall duration		7.433531473
+package-image	load FilterGraphPipeWire	phase elapsed compilation		1.571619771
+package-image	prepare graph starts	journal offset	347739454110	50.824434000
+package-image	prepare graph ends	journal offset	347791924552	103.294876000
+package-image	prepare graph	phase wall duration		52.470055005
+package-image	prepare graph	phase elapsed compilation		53.582731856
+package-image	prepare control dispatch starts	journal offset	347740152097	51.522421000
+package-image	prepare control dispatch ends	journal offset	347740768252	52.138576000
+package-image	prepare control dispatch	phase wall duration		0.085494436
+package-image	prepare control dispatch	phase elapsed compilation		0.067630013
+package-image	warm up graph starts	journal offset	347888618414	199.988738000
+package-image	warm up graph ends	journal offset	347899072124	210.442448000
+package-image	warm up graph	phase wall duration		10.453406399
+package-image	warm up graph	phase elapsed compilation		10.452087485
+package-image	publisher waiting for RTC control endpoint	journal offset	347762355558	73.725882000
+package-image	publisher connected, waiting for warmup	journal offset	347769593626	80.963950000
+package-image	publisher observed RTC warm	journal offset	347904250951	215.621275000
+package-image	optional analysis unit started	journal offset	347910061681	221.432005000
+package-image	systemd session started	journal offset	347910126568	221.496892000
+package-image	publication returned	harness offset		221.561044014
+package-image	harness independently confirmed native Ready	harness offset		224.221397002
+package-image	native Running reached	harness offset		226.110292196
+package-image	prepare control dispatch	process CPU		0.020119123
+package-image	prepare control dispatch	leader runnable wait		0.065442705
+package-image	prepare control dispatch	probe wall duration		0.085564087
