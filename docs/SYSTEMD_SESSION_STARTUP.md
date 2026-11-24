@@ -34,6 +34,13 @@ each loop. The operator sends Close after the owner reports primed. An invalid
 measurement clears priming for its camera, and Reset clears priming for all of
 the owner's cameras.
 
+Managed controller activation supports CPU graphs. Live priming uses
+complete-frame CPU graphs and CPU compositions. The optical simulator can use
+an accelerator and still supply live exposures to those CPU controllers.
+Managed startup rejects captured CUDA and AMDGPU controller graphs before
+graph preparation because capture executes a frame on synthetic input. The
+direct GPU API remains available for offline qualification and replay.
+
 Classic qualifies a fresh usable measurement according to its calibrated
 Shack–Hartmann pipeline. The slopes and validity must belong to the same
 acquisition. The slopes must be finite and at least one currently active

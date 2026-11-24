@@ -65,6 +65,18 @@ end
     end
 end
 
+@testset "Managed captures reject before graph preparation" begin
+    P = GraphOwnerStartupProbe
+    runtime = P.Runtime((; endpoint = (; instance = Int64(1))), Symbol[])
+    for capture_backend in ("cuda", "amdgpu")
+        options = (; capture_backend, check = false, session_run_control = true)
+        @test_throws "managed RTC does not start captured controller graphs" begin
+            PipeWireAORTC.GraphOwner.run_owner(options, runtime, ())
+        end
+        @test isempty(runtime.events)
+    end
+end
+
 @testset "Correction priming observes accepted open-loop acquisitions" begin
     extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
     graph = mktemp() do path, io

@@ -188,6 +188,9 @@ function PipeWireAORTC.InstrumentExport.validate_feedback(
 end
 
 function Owner.run_owner(options, runtime, entries)
+    options.capture_backend === nothing || throw(
+        ArgumentError("managed RTC does not start captured controller graphs because GPU capture executes a synthetic frame"),
+    )
     Bootstrap.preparation_check!(runtime)
     options.check && throw(ArgumentError("native graph owner cannot run --check"))
     options.session_run_control ||
@@ -218,8 +221,6 @@ function Owner.run_owner(options, runtime, entries)
             worker_thread_ids = workers,
             initial_parameters,
             parameters = options.parameters,
-            capture_backend = options.capture_backend === nothing ? nothing :
-                              Symbol(options.capture_backend),
         )
     end
     try
