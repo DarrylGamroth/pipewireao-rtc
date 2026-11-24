@@ -104,9 +104,9 @@ function analysis_error!(record, error)
     return nothing
 end
 
-# ExecStartPre retains each optional job before submission. ExecStopPost
+# The session retains each optional job before submission. ExecStopPost
 # can cancel retained jobs and remove their units if startup fails.
-function start_analysis!(package, prefix, spec, record; deadline, clock)
+function start_analysis!(package, prefix, spec, record; deadline, clock, paths, project)
     validate_ledger(record)
     entries = get(spec, "analysis", [])
     isempty(entries) && return nothing
@@ -115,8 +115,6 @@ function start_analysis!(package, prefix, spec, record; deadline, clock)
         current = Clocks.time_nanos(clock)
         current < deadline || fail("no startup budget remains for optional analysis")
         deadline = min(deadline, Base.checked_add(current, ANALYSIS_START_BUDGET_NS))
-        paths = D.installed_paths(prefix)
-        project = D.application_environment(spec, package)
         client = D.relative_asset(package, spec["client"]["analysis"])
         bindings = Dict(
             "PACKAGE" => package, "PREFIX" => prefix, "RUNTIME" => runtime,

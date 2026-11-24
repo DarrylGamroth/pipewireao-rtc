@@ -383,7 +383,7 @@ end
             92_000_000_000
         clock = Clocks.CachedNanoClock(10)
         @test_logs (:warn, r"Optional analysis startup failed") L.start_analysis!(
-            runtime, "/missing", Dict("analysis" => [Dict()]), launch; deadline = 10, clock
+            runtime, "/missing", Dict("analysis" => [Dict()]), launch; deadline = 10, clock, paths = Dict(), project = runtime
         )
         record = C.read_json(joinpath(runtime, "launch.json"))
         @test length(record["analysis_errors"]) == 1

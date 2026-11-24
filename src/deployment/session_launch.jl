@@ -862,7 +862,7 @@ function prepare!(
         # jobs. Their condition permits execution only after RTC notifies systemd.
         clock = Clocks.SystemNanoClock()
         analysis_deadline = analysis_start_deadline(spec, started_us, Clocks.time_nanos(clock))
-        start_analysis!(package, prefix, spec, record; deadline = analysis_deadline, clock)
+        start_analysis!(package, prefix, spec, record; deadline = analysis_deadline, clock, paths, project)
         record["admission"] = Dict(
             "package" => package,
             "prefix" => prefix,
