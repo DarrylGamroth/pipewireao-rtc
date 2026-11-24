@@ -167,6 +167,54 @@ function wait_native(f, pump)
         sleep(0.001)
     end
 end
+@testset "Registry-only progress and silent deadline wake the Link effect" begin
+    with_control_private_core() do socket, directory, daemon
+        clock = Clocks.CachedNanoClock(Int64(0))
+        session = cleanup_session(socket, directory, daemon; clock)
+        source = nothing
+        try
+            # Isolate the Link effect from the other installed owners in this fixture.
+            for effect in (S.CaptureOwners, S.ConnectOwners, S.CaptureParameters,
+                           S.CaptureSources, S.PrepareSources, S.DiscoverGraphs, S.HoldSources)
+                ticket = something(session.machine.effect)
+                @test ticket.effect isa effect
+                S.complete!(session.machine, ticket)
+            end
+            job = S.Job(something(session.machine.effect), false)
+            @test job.ticket.effect isa S.ConnectLinks
+            session.active_job = job
+            observed = Ref(false)
+            name = "link-wake-registry-source"
+            effect_task = session.active_task = @async begin
+                S.await_condition!(session, job) do
+                    !isempty(find_globals(session.registry; properties = ("node.name" => name,)))
+                end
+                observed[] = true
+                try
+                    S.await_condition!(() -> false, session, job)
+                catch err
+                    err
+                end
+            end
+            yield()
+            @test !observed[] && !istaskdone(effect_task)
+            # An ordinary node addition updates the native Registry without staging
+            # a controller-added application event. The effect must still wake.
+            source = NdArraySource(
+                session.core, name, zeros(Float32, 2), LINK_FORMAT; schema = LINK_SCHEMA
+            )
+            wait_native(() -> observed[], () -> Agent.do_work(session))
+            @test !istaskdone(effect_task)
+            Clocks.update!(clock, job.ticket.deadline)
+            wait_native(() -> istaskdone(effect_task), () -> Agent.do_work(session))
+            @test job.cancelled && fetch(effect_task) isa S.Cancelled
+        finally
+            source === nothing || close(source)
+            close(session)
+        end
+    end
+end
+
 function port_endpoint(registry, endpoint)
     id = node_id(endpoint)
     node = something(find_global(registry, id))
@@ -340,19 +388,14 @@ function check_transport_cleanup(socket, directory, daemon, emergency)
                 "injected ingress Hold failure";
                 submitted = true,
             )
-            S.fail!(
-                session.machine,
-                session.machine.effect,
-                "injected fault ingress Hold failure";
-                submitted = true,
-            )
-            ticket = session.machine.effect
-            @test !S.budgeted(ticket.effect)
+            # A submitted Hold has an unknown outcome. Quit disconnects immediately.
+            ticket = something(session.machine.effect)
+            @test ticket.effect isa S.Disconnect && !S.budgeted(ticket.effect)
             @test !session.done
             @test S.perform!(session, S.Job(ticket, false), ticket.effect) === nothing
             disconnected_before_receipt = !isopen(session.core) && !session.done
             @test disconnected_before_receipt
-            @test_logs (:error, "Session disconnected during cleanup") begin
+            @test_logs (:error, "Session disconnected during cleanup") (:error, "Session Quit effect failed") begin
                 S.update!(
                     session,
                     S.EffectCompleted(ticket, nothing, Clocks.time_nanos(session.source_clock)),
