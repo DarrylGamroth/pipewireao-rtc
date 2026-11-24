@@ -295,6 +295,28 @@ function installed_graphs(package, prefix, spec, external)
     return manifest
 end
 
+function retain_persistent_graphs!(package, prefix, spec, external, coordinator, record)
+    services = Dict{String,S.Service}()
+    digest = get(ENV, GRAPH_MANIFEST_ENV, nothing)
+    digest === nothing && return (; digest, services)
+    runtime = record["runtime"]
+    launch_record!(runtime, record)
+    try
+        manifest = installed_graphs(package, prefix, spec, external)
+        for (role, item) in manifest["owners"]
+            service = external_service(coordinator, role, item["unit"])
+            verify_persistent_service!(service, item)
+            services[role] = service
+        end
+    catch error
+        record["phase"] = "failed"
+        record["error"] = sprint(showerror, error)
+        launch_record!(runtime, record)
+        rethrow()
+    end
+    return (; digest, services)
+end
+
 function graph_library_mapping(line, library, inode)
     fields = split(line; limit = 6)
     return length(fields) == 6 && lstrip(fields[6]) == library &&

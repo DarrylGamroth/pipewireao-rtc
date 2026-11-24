@@ -556,14 +556,6 @@ function prepare!(
         fail("external stream requires independent core and source service bindings")
     external === nothing || external_source!(spec, source)
     coordinator, _ = preparation_identity(request, source_role)
-    persistent = installed_graphs(package, prefix, spec, external)
-    persistent_entries = persistent === nothing ? Dict{String,Any}() : persistent["owners"]
-    persistent_services = Dict{String,S.Service}()
-    for (role, item) in persistent_entries
-        service = external_service(coordinator, role, item["unit"])
-        verify_persistent_service!(service, item)
-        persistent_services[role] = service
-    end
     invocation = coordinator.invocation
     root = request.runtime_root
     isdir(root) && !islink(root) || fail("private runtime root is unavailable")
@@ -574,6 +566,19 @@ function prepare!(
     runtime = joinpath(root, invocation)
     mkdir(runtime; mode = 0o700) # Never reuse a previous invocation directory.
     chmod(runtime, 0o700)
+    record = Dict{String,Any}(
+        "version" => LEDGER_VERSION,
+        "phase" => "preparing",
+        "name" => spec["name"],
+        "unit" => request.unit,
+        "invocation" => invocation,
+        "source_role" => source_role,
+        "runtime" => runtime,
+        "owners" => Dict{String,Any}(),
+        "error" => nothing,
+    )
+    persistent = retain_persistent_graphs!(package, prefix, spec, external, coordinator, record)
+    persistent_services = persistent.services
     remote_name = external === nothing ? "rtc-" * invocation[1:12] : N.private_remote(external.socket)
     remote = joinpath(runtime, remote_name)
     ncodeunits(remote) <= 100 ||
@@ -627,25 +632,16 @@ function prepare!(
         any(owner -> owner["role"] == "fgn", spec["owners"]) &&
         fail("FGN host role conflicts with a declared external owner")
     prepare_julia_overlay!(request, paths, spec, runtime)
-    record = Dict{String,Any}(
-        "version" => LEDGER_VERSION,
-        "phase" => "preparing",
-        "name" => spec["name"],
-        "unit" => request.unit,
-        "invocation" => invocation,
+    merge!(record, Dict(
         "session_uuid" => session_uuid,
         "session_control_instance" => parse(Int64, bindings["SESSION_CONTROL_INSTANCE"]),
         "session_controller_instance" =>
             parse(Int64, bindings["SESSION_CONTROLLER_INSTANCE"]),
         "admission_controller_instance" =>
             parse(Int64, bindings["ADMISSION_CONTROLLER_INSTANCE"]),
-        "source_role" => source_role,
-        "runtime" => runtime,
         "remote" => remote,
         "session_executable" => D.session_executable(spec, package, prefix),
-        "owners" => Dict{String,Any}(),
-        "error" => nothing,
-    )
+    ))
     launch_record!(runtime, record)
     try
         contracts = [contract for (role, contract) in spec["placement"]
@@ -851,8 +847,8 @@ function prepare!(
             "launcher" => request.launcher,
             "placement" => spec["placement"]["session"],
         )
-        if persistent !== nothing
-            record["admission"]["graph_manifest_sha256"] = ENV[GRAPH_MANIFEST_ENV]
+        if persistent.digest !== nothing
+            record["admission"]["graph_manifest_sha256"] = persistent.digest
         end
         record["session_process"] = process_binding
         record["config"] = String(config)

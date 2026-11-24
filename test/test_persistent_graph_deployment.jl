@@ -144,11 +144,17 @@ end
         write(joinpath(package, "deployment.conf"), "{}")
         write(joinpath(package, "graph.conf"), "{}")
         write(joinpath(package, "client.conf"), "{}")
+        calibration = joinpath(package, "reconstructor.fits")
+        write(calibration, "first calibration")
+        Common.write_json(joinpath(package, "parameters.conf"), Dict(
+            "parameters" => [Dict("port" => "reconstructor", "path" => basename(calibration))],
+        ))
         mkpath(joinpath(package, "systemd"))
         controller = graph_deployment_owner([
             "--graph", "@PACKAGE@/graph.conf", "--session-run-control",
             "--bootstrap-node", "bootstrap", "--bootstrap-instance",
             "@BOOTSTRAP_INSTANCE_CONTROLLER@", "--remote", "@RUNTIME@/@REMOTE@",
+            "--fits-bindings", "@PACKAGE@/parameters.conf",
         ])
         controller["environment"] = Dict{String,String}()
         splice!(
@@ -160,7 +166,9 @@ end
         spec = Dict(
             "name" => "instrument", "source-owner" => "detector",
             "runtime" => Dict("kind" => "registered", "project" => "."),
-            "artifacts" => Dict("graph.conf" => nothing, "client.conf" => nothing),
+            "artifacts" => Dict(name => nothing for name in (
+                "graph.conf", "client.conf", basename(calibration), "parameters.conf",
+            )),
             "client" => Dict("controller" => "client.conf"),
             "owners" => [source, controller], "placement" => Dict("controller" => placement),
             "environment" => Dict{String,String}(),
@@ -181,8 +189,50 @@ end
             @test external.socket in arguments
             @test item["environment"]["JULIA_LOAD_PATH"] == "@:@stdlib"
             @test isfile(joinpath(item["environment"]["PIPEWIREAO_CONFIG_DIR"], "client.conf"))
-            write(joinpath(package, "graph.conf"), "{\"changed\":true}")
-            @test_throws Launch.LaunchError Launch.installed_graphs(package, prefix, spec, external)
+            write(calibration, "new calibration")
+            @test_throws "persistent graph input changed" Launch.installed_graphs(
+                package, prefix, spec, external
+            )
+            invocation = "0123456789abcdef0123456789abcdef"
+            root = mkdir(joinpath(package, "run"))
+            runtime = mkdir(joinpath(root, invocation))
+            source_role = spec["source-owner"]
+            unit_name = "pipewireao-session@instrument.service"
+            coordinator = Launch.S.Coordinator(unit_name, invocation, "/session")
+            record = Dict{String,Any}(
+                "version" => Launch.LEDGER_VERSION, "phase" => "preparing",
+                "name" => spec["name"], "unit" => unit_name,
+                "invocation" => invocation, "runtime" => runtime, "source_role" => source_role,
+                "owners" => Dict{String,Any}(), "error" => nothing,
+            )
+            systemctl = joinpath(root, "systemctl")
+            log = joinpath(root, "systemctl.log")
+            write(systemctl, raw"""
+            #!/bin/sh
+            printf '%s\n' "$2" >> "$RTC_TEST_SYSTEMCTL_LOG"
+            case "$2" in
+                list-units) printf '%s loaded active running\n' core.service source.service pipewireao-graph-instrument-controller.service ;;
+                list-jobs) printf '%s\n' '12 pipewireao-graph-instrument-controller.service start running' ;;
+                *) exit 1 ;;
+            esac
+            """)
+            chmod(systemctl, 0o700)
+            withenv(
+                "INVOCATION_ID" => invocation, "SERVICE_RESULT" => "exit-code",
+                "PATH" => root, "RTC_TEST_SYSTEMCTL_LOG" => log,
+            ) do
+                @test_throws "persistent graph input changed" Launch.retain_persistent_graphs!(
+                    package, prefix, spec, external, coordinator, record
+                )
+                @test !isfile(log)
+                @test Launch.cleanup_invocation!(root, invocation; source_role) === nothing
+            end
+            failed = Launch.load_record(runtime, invocation, source_role)
+            @test failed["phase"] == "failed"
+            @test failed["error"] == "persistent graph input changed: $calibration"
+            @test failed["cleanup_complete"] === true
+            @test isempty(failed["owners"])
+            @test Set(readlines(log)) == Set(("list-units", "list-jobs"))
         end
         composition = joinpath(package, "graph.conf")
         write(composition, "{\"filter.composition\":{}}")
