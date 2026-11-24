@@ -239,23 +239,57 @@ end
 
 function Owner.prepare_persistent_owner(options, runtime, entries)
     Owner.supports_offline_qualification(options) && options.session_run_control && !options.check &&
-        options.matrix_layout === :shared && isempty(options.recovery_nodes) &&
-        isempty(options.parameters) || throw(ArgumentError(
-            "persistent graph owners require ordinary complete-frame CPU execution with session run control. Bind startup parameters with FITS and omit recovery and offsets.",
+        options.matrix_layout === :shared && isempty(options.parameters) || throw(ArgumentError(
+            "persistent graph owners require complete-frame CPU execution with session run control and FITS startup parameters.",
         ))
     FilterGraphPipeWire.configure_threads(options)
     algorithms = FilterGraphPipeWire.algorithm_declarations(;
         packages = options.packages, algorithms = options.algorithms, builtins = options.builtins,
     )
-    prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
-    document = PipeWireAORTC.DeploymentConfiguration.decode(options.graph, prefix)
-    haskey(document, "filter.composition") &&
-        throw(ArgumentError("persistent graph owners require an ordinary complete-frame graph"))
+    document = persistent_graph_document(options.graph)
+    composition = map(Owner.composition_files(document, abspath(options.graph))) do file
+        child = persistent_graph_document(file)
+        haskey(child, "filter.composition") &&
+            throw(ArgumentError("persistent composition members must be ordinary graphs"))
+        return child
+    end
     Bootstrap.preparation_check!(runtime)
     options = merge(options, (; persistent = true))
     parameters = Ref{Union{Nothing,Vector{Pair{Symbol,Array}}}}(nothing)
-    return (; options, algorithms, document, entries, parameters)
+    return (; options, algorithms, document, composition, entries, parameters)
 end
+
+function persistent_graph_document(path)
+    prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+    document = PipeWireAORTC.DeploymentConfiguration.decode(path, prefix)
+    document isa AbstractDict || throw(ArgumentError("persistent graph must be an object: $path"))
+    return document
+end
+
+function prepare_persistent_graph(document, composition, algorithms)
+    isempty(composition) && return FilterGraphs.prepare_graph(deepcopy(document); algorithms)
+    # FilterGraphs prepares compositions through its path-based API. Materialize
+    # only the retained declarations, with paths local to this preparation.
+    return mktempdir() do directory
+        names = map(eachindex(composition)) do index
+            name = "graph-$index.conf"
+            Common.write_json(joinpath(directory, name), composition[index])
+            return name
+        end
+        descriptor = deepcopy(document)
+        config = descriptor["filter.composition"]
+        for (branch, name) in zip(config["branches"], names)
+            branch["graph"] = name
+        end
+        config["shared"] = last(names)
+        path = joinpath(directory, "composition.conf")
+        Common.write_json(path, descriptor)
+        return FilterGraphs.prepare_composition(path; algorithms)
+    end
+end
+
+check_persistent_corrections(composition::FilterGraphs.PreparedComposition, declared) =
+    check_persistent_corrections(composition.graph, declared)
 
 function check_persistent_corrections(graph, declared)
     corrections = Set{String}()
@@ -277,12 +311,12 @@ function check_persistent_corrections(graph, declared)
 end
 
 function Owner.run_persistent_owner(retained, runtime)
-    (; options, algorithms, document, entries, parameters) = retained
+    (; options, algorithms, document, composition, entries, parameters) = retained
     Bootstrap.preparation_check!(runtime)
     # Each attachment gets fresh Plans and Workspaces. The retained configuration
     # and calibration never participate in runtime property or NDArray adoption.
     graph = Common.startup_phase(options.name, "prepare graph") do
-        FilterGraphs.prepare_graph(deepcopy(document); algorithms)
+        prepare_persistent_graph(document, composition, algorithms)
     end
     try
         check_persistent_corrections(graph, options.correction_properties)

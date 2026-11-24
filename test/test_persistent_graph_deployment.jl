@@ -29,6 +29,7 @@ end
     controller = graph_deployment_owner([
         "--session-run-control", "--execution=complete-frame",
         "--correction-property", "integrator:closed", "--prime-on-output", "measurement",
+        "--recovery-node", "conditioner",
     ])
     source = Dict("role" => "detector", "argv" => ["/opt/detector"])
     observer = Dict("role" => "observer", "argv" => ["/opt/observer"])
@@ -95,7 +96,7 @@ end
 @testset "Graph attachment executable pins calibration to its invocation" begin
     mktempdir() do directory
         calibration = joinpath(directory, "reconstructor.fits")
-        write(calibration, "first calibration")
+        write(calibration, "{}")
         manifest = joinpath(directory, "graph-owner-assets.json")
         expected = merge(
             Launch.graph_file_identity(calibration),
@@ -236,9 +237,21 @@ end
         end
         composition = joinpath(package, "graph.conf")
         write(composition, "{\"filter.composition\":{}}")
+        @test_throws ArgumentError Launch.graph_argument_files(
+            ["--graph", composition], package, Dict(composition => nothing), prefix,
+        )
+        branch, shared = joinpath.(package, ("branch.conf", "shared.conf"))
+        foreach(path -> write(path, "{}"), (branch, shared))
+        Common.write_json(composition, Dict("filter.composition" => Dict(
+            "branches" => [Dict("graph" => basename(branch))], "shared" => basename(shared),
+        )))
+        inventory = Dict(path => nothing for path in (composition, branch, shared))
+        @test Launch.graph_argument_files(
+            ["--graph", composition], package, inventory, prefix,
+        ) == Set(keys(inventory))
+        delete!(inventory, branch)
         @test_throws Launch.LaunchError Launch.graph_argument_files(
-            ["--graph", composition], package, Dict(composition => nothing), prefix;
-            check_graph = true,
+            ["--graph", composition], package, inventory, prefix,
         )
     end
 end

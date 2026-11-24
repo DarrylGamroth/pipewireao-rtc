@@ -344,6 +344,23 @@ function prepare_bindings(entries, formats; check = () -> nothing)
     ]
 end
 
+function composition_files(document, path)
+    descriptor = get(document, "filter.composition", nothing)
+    haskey(document, "filter.composition") || return String[]
+    descriptor isa AbstractDict ||
+        throw(ArgumentError("filter.composition must be an object"))
+    branches = get(descriptor, "branches", nothing)
+    branches isa AbstractVector && 1 <= length(branches) <= 16 ||
+        throw(ArgumentError("composition requires 1:16 branches"))
+    all(branch -> branch isa AbstractDict, branches) ||
+        throw(ArgumentError("composition branches must be objects"))
+    files = [map(branch -> get(branch, "graph", nothing), branches);
+             get(descriptor, "shared", nothing)]
+    all(file -> file isa AbstractString && !isempty(file), files) ||
+        throw(ArgumentError("composition branches and shared graph require file paths"))
+    return [normpath(joinpath(dirname(path), file)) for file in files]
+end
+
 function precompile_graph_warmup end
 
 function run_owner end

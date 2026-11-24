@@ -29,7 +29,7 @@ function graph_owners(spec)
             fail("persistent graph owner $role requires session run control")
         flags = Set(first(split(arg, '='; limit = 2)) for arg in arguments)
         unsupported = (
-            "--physical-offsets", "--recovery-node", "--row-workers", "--capture-backend",
+            "--physical-offsets", "--row-workers", "--capture-backend",
             "--matrix-layout", "--persistent", "--parameter", "--check",
         )
         any(in(flags), unsupported) &&
@@ -75,7 +75,7 @@ function graph_asset_inventory(package, spec, project, executables, paths, gener
     )
 end
 
-function graph_argument_files(arguments, directory, inventory, prefix; check_graph = false)
+function graph_argument_files(arguments, directory, inventory, prefix)
     files = Set{String}()
     function input(path)
         selected = realpath(joinpath(directory, path))
@@ -89,10 +89,13 @@ function graph_argument_files(arguments, directory, inventory, prefix; check_gra
         first(terms) in ("--graph", "--fits-bindings", "--supervision", "--chopped-warmup") ||
             continue
         path = input(length(terms) == 2 ? last(terms) : arguments[index + 1])
-        if first(terms) == "--graph" && check_graph
+        if first(terms) == "--graph"
             document = D.decode(path, prefix)
-            document isa AbstractDict && !haskey(document, "filter.composition") ||
-                fail("persistent graph mode requires an ordinary complete-frame graph: $path")
+            document isa AbstractDict || fail("persistent graph must be an object: $path")
+            # Use the argument's path when resolving relative references, as the
+            # scientific graph loader does. Check canonical paths against the inventory.
+            graph = joinpath(directory, length(terms) == 2 ? last(terms) : arguments[index + 1])
+            foreach(input, PipeWireAORTC.GraphOwner.composition_files(document, graph))
         elseif first(terms) == "--fits-bindings"
             entries = PipeWireAORTC.GraphOwner.bindings(path, D.decode(path, prefix))
             foreach(entry -> input(entry.source.path), entries)
@@ -232,9 +235,7 @@ function install_persistent_graphs!(package, prefix, spec, external)
             all(arg -> occursin(r"^(?:--(?:project|threads)=.+|--startup-file=no|-O[0-3])$", arg), julia_arguments) ||
             fail("persistent graph owner $role has unsupported Julia launch arguments")
         directory = joinpath(runtime, role)
-        graph_argument_files(
-            argv[(split_arg + 3):end], directory, inventory, prefix; check_graph = true
-        )
+        graph_argument_files(argv[(split_arg + 3):end], directory, inventory, prefix)
         (isfile(overrides) && first(split(env["JULIA_DEPOT_PATH"], ':')) !=
             joinpath(runtime, "julia-depot")) &&
             fail("persistent graph owner $role overrides its native depot binding")
