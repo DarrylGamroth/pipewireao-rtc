@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## MediaSession owns installed admission — 2026-11-23
+
+The [CAL2 restart and live frame measurements](validation/session-owned-admission-20261123/README.md)
+compare the former publication helper with the in-process admission path using
+the same independently publishing cameras. The measurements cover systemd
+Ready, the first qualifying residual and the held physical offsets.
+
 ## Open-loop startup and first live correction — 2026-11-23
 
 The [paired CAL2 restarts](validation/open-loop-startup-20261123/README.md)

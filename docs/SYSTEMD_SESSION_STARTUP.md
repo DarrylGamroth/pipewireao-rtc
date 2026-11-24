@@ -21,8 +21,23 @@ cannot silently restart either after its identity was retained.
 
 Target activation is not proof that every owner started. Check each loaded unit
 definition and actual active PID, invocation, start time and cgroup. Then render
-application configuration from those retained identities. Native warmup,
-placement inspection and MediaSession admission precede release.
+application configuration from those retained identities.
+
+The installed RTC service uses `Type=notify`. Its main process owns admission
+for every instrument. Once the required PipeWire Links have negotiated and the
+graphs have acknowledged Hold, MediaSession opens a separate native connection
+to its own public control endpoint. It matches the session UUID, node, PID,
+control instance and PipeWire object incarnation to the prepared invocation.
+A fresh Status request from that connection checks the held graph. Each managed
+source must acknowledge that it is held. An independent provider keeps
+publishing while its RTC graph is held.
+
+MediaSession verifies the current systemd invocation, process arguments, owner
+identities and CPU placement before it publishes the discovery record and
+signals Ready to systemd. A missing Link, placement mismatch, expired deadline
+or lost owner prevents successful startup. The installed service has no
+post-start admission process. Direct private-core sessions may still use the
+native inspection and admission commands.
 
 ## First live correction
 
@@ -95,8 +110,9 @@ quiescence. Remove only exact invocation-owned runtime unit links and files;
 retain the launch ledger and fence cleanup on identity or ownership uncertainty.
 An unreadable ledger permits ingress revocation but fences consumer/file removal.
 
-The session HSM coordinates required owner shutdown. Optional analysis units
-follow the session unit lifetime through `PartOf` and share invocation cleanup.
+The session HSM coordinates required owner shutdown. Invocation cleanup revokes
+the required core and sources before stopping optional analysis. An optional
+observer can finish shutdown independently of the native Quit acknowledgement.
 
 ## Implementation and validation
 

@@ -106,9 +106,10 @@ coordinated loop; independent corrector closure requires an allocation policy.
 
 ## Headless WFS measurements
 
-After the RTC reports native Ready, the systemd startup hook submits the
-declared optional analysis units without waiting for their graphs to start.
-Their unit definitions are retained in the same invocation's `launch.json`.
+During preparation, the launcher records the declared optional analysis units
+in the invocation's `launch.json` and submits their systemd jobs with a budget
+of up to two seconds. Each job waits for the RTC unit and checks that the same
+invocation is active before starting its graph.
 A failed analysis service is visible in its systemd status and journal. RTC
 admission and live readiness depend only on required owners. The invocation's
 cleanup removes both required and optional units. Native Quit enters the
