@@ -273,7 +273,9 @@ function prepare_persistent_graph(document, composition, algorithms)
     return mktempdir() do directory
         names = map(eachindex(composition)) do index
             name = "graph-$index.conf"
-            Common.write_json(joinpath(directory, name), composition[index])
+            PipeWireAORTC.ScienceExport.write_spa_config(
+                joinpath(directory, name), composition[index]
+            )
             return name
         end
         descriptor = deepcopy(document)
@@ -283,7 +285,7 @@ function prepare_persistent_graph(document, composition, algorithms)
         end
         config["shared"] = last(names)
         path = joinpath(directory, "composition.conf")
-        Common.write_json(path, descriptor)
+        PipeWireAORTC.ScienceExport.write_spa_config(path, descriptor)
         return FilterGraphs.prepare_composition(path; algorithms)
     end
 end

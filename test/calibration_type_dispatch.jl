@@ -36,7 +36,7 @@ end
 
 # Cold composition data exercises the warmup generator's input routing only;
 # numerical chopped processing is covered by calibration_chopped.jl.
-function independent_cameras(directory)
+function independent_camera_configuration(directory; closed = true)
     node(name, label, config) =
         Dict("name" => name, "type" => "ndarray", "label" => label, "config" => config)
     port(name, endpoint) = Dict("name" => name, "endpoint" => endpoint)
@@ -55,6 +55,7 @@ function independent_cameras(directory)
         integrator = node(
             name * "-integrator", "closed-loop-integrator-f32", Dict("state_length" => 6)
         )
+        integrator["props"] = Dict("closed" => closed)
         document = Dict(
             "filter.graph" => Dict(
                 "nodes" => [pixels, integrator],
@@ -166,12 +167,14 @@ function independent_cameras(directory)
             ),
         ),
     )
-    return FilterGraphs.prepare_composition(path; algorithms = FGA.algorithms())
+    return path
 end
 
 @testset "composition warmup dispatch preserves independent and simultaneous arrivals" begin
     mktempdir() do directory
-        composition = independent_cameras(directory)
+        composition = FilterGraphs.prepare_composition(
+            independent_camera_configuration(directory); algorithms = FGA.algorithms()
+        )
         try
             @test G.validate_owner_feedback(composition, nothing) === nothing
             @test_throws ArgumentError G.validate_owner_feedback(
@@ -205,6 +208,33 @@ end
             )
         finally
             FilterGraphPipeWire.close_execution(composition)
+        end
+    end
+end
+
+@testset "retained camera composition restores open controllers on a fresh attachment" begin
+    mktempdir() do directory
+        path = independent_camera_configuration(directory; closed = false)
+        document = G.persistent_graph_document(path)
+        files = PipeWireAORTC.GraphOwner.composition_files(document, path)
+        members = map(G.persistent_graph_document, files)
+        algorithms = FGA.algorithms()
+        properties = ("left-integrator:closed", "right-integrator:closed")
+        first_attachment = G.prepare_persistent_graph(document, members, algorithms)
+        try
+            @test G.check_persistent_corrections(first_attachment, properties) === nothing
+            FilterGraphs.replace_properties!(first_attachment, first(properties) => true)
+            @test_throws ArgumentError G.check_persistent_corrections(first_attachment, properties)
+            foreach(rm, [path; files])
+            next_attachment = G.prepare_persistent_graph(document, members, algorithms)
+            try
+                @test G.check_persistent_corrections(next_attachment, properties) === nothing
+                @test FilterGraphs.composition_observation(next_attachment).sequence == 0
+            finally
+                FilterGraphPipeWire.close_execution(next_attachment)
+            end
+        finally
+            FilterGraphPipeWire.close_execution(first_attachment)
         end
     end
 end
