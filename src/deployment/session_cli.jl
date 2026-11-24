@@ -230,8 +230,8 @@ end
 """
     publish_ready!(check, context, endpoint; deadline, clock)
 
-After native Ready, prepare optional analysis and verify required owner and RTC
-placement before retaining startup evidence and publishing discovery. Run the
+After native Ready, verify required owner and RTC placement before retaining
+startup evidence and publishing discovery. Run the
 session's readiness check immediately before and after publishing discovery.
 Withdraw the locator if the final check fails.
 """
@@ -243,14 +243,7 @@ function publish_ready!(check, context::InstalledAdmission, endpoint; deadline, 
         throw(ArgumentError("installed RTC discovery was already published"))
     _verify_main(context; deadline, clock)
     pid, ticks, _ = context.process
-    request = context.request
     record = context.record
-    admission = record["admission"]
-    SessionLaunch.start_analysis!(
-        request.package, request.prefix, Dict("analysis" => admission["analysis"]), record;
-        deadline, clock, project = record["session_process"]["project"],
-        client_asset = admission["analysis_client"], check,
-    )
     record["placement_snapshot"] = _placement_snapshot(context; deadline, clock)
     _verify_main(context; deadline, clock)
     session_record = Discovery.SessionRecord(

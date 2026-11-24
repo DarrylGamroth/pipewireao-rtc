@@ -319,13 +319,14 @@ end
         Dict(),
         "/tmp",
         Dict("cpus" => [7, 6], "leader-cpu" => 6);
-        part_of = [coordinator.unit],
+        after = [coordinator.unit],
+        condition = L.analysis_start_condition(coordinator.unit, coordinator.invocation),
         ordinary = true,
         stop_signal = "SIGHUP",
     )
     lines = split(unit, '\n')
     for line in (
-        "PartOf=$(coordinator.unit)",
+        "After=$(coordinator.unit)",
         "KillSignal=SIGHUP",
         "CPUAffinity=6 7",
         "Nice=10",
@@ -341,10 +342,15 @@ end
             startswith(line, "Requires=") ||
             startswith(line, "Wants=") ||
             startswith(line, "Requisite=") ||
+            startswith(line, "PartOf=") ||
             startswith(line, "BindsTo="),
         lines,
     )
-    @test !any(line -> startswith(line, "After=") || startswith(line, "Before="), lines)
+    condition = only(filter(line -> startswith(line, "ExecCondition="), lines))
+    @test occursin("ActiveState,InvocationID", condition)
+    @test occursin(coordinator.unit, condition)
+    @test occursin(coordinator.invocation, condition)
+    @test !any(line -> startswith(line, "Before="), lines)
     paths = Dict("library" => "/private/lib", "modules" => "/private/modules", "spa" => "/private/spa")
     env = L.analysis_environment(paths, "/private/runtime", "analysis-wfs", "/private/prefix", "core")
     @test env["PIPEWIRE_REMOTE"] == "core"
@@ -365,6 +371,16 @@ end
             "invocation" => INVOCATION,
             "owners" => Dict("core" => Dict("unit" => "required-core")),
         )
+        spec = Dict("startup-timeout-ms" => 120_000)
+        started = "1000000"
+        @test L.analysis_start_deadline(spec, started, Int64(10_000_000_000)) ==
+            12_000_000_000
+        @test L.analysis_start_deadline(spec, started, Int64(90_000_000_000)) ==
+            91_000_000_000
+        @test L.analysis_start_deadline(spec, started, Int64(92_000_000_000)) <
+            92_000_000_000
+        @test L.analysis_start_deadline(spec, "", Int64(92_000_000_000)) ==
+            92_000_000_000
         clock = Clocks.CachedNanoClock(10)
         @test_logs (:warn, r"Optional analysis startup failed") L.start_analysis!(
             runtime, "/missing", Dict("analysis" => [Dict()]), launch; deadline = 10, clock

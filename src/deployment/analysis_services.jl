@@ -1,4 +1,25 @@
-const ANALYSIS_START_BUDGET_NS = Int64(20_000_000_000)
+const ANALYSIS_START_BUDGET_NS = Int64(2_000_000_000)
+const ANALYSIS_MAIN_RESERVE_NS = Int64(30_000_000_000)
+
+function analysis_start_deadline(spec, started_us::AbstractString, now::Int64)
+    started = tryparse(Int64, started_us)
+    started !== nothing && 0 < started <= now ÷ 1000 || return now
+    budget = Int64(D.startup_timeout_ms(spec)) * 1_000_000
+    reserve = min(ANALYSIS_MAIN_RESERVE_NS, budget ÷ 2)
+    return min(now + ANALYSIS_START_BUDGET_NS, 1000 * started + budget - reserve)
+end
+
+const ANALYSIS_START_CONDITION = raw"""
+    values=$("$1" --user show --no-pager --property=ActiveState,InvocationID -- "$2") &&
+        printf '%s\n' "$values" | grep -Fxq 'ActiveState=active' &&
+        printf '%s\n' "$values" | grep -Fxq "InvocationID=$3"
+    """
+
+function analysis_start_condition(unit, invocation)
+    systemctl = Sys.which("systemctl")
+    systemctl === nothing && fail("cannot resolve systemctl for optional analysis")
+    return ["/bin/sh", "-c", ANALYSIS_START_CONDITION, "analysis-start", systemctl, unit, invocation]
+end
 
 function analysis_environment(paths, runtime, role, prefix, remote)
     return Dict(
@@ -48,8 +69,8 @@ function install_analysis!(entry, package, prefix, paths, project, client, recor
         record["remote"],
     ]
     env = analysis_environment(paths, runtime, role, prefix, record["remote"])
-    # The session has reached native Ready and has yet to notify systemd.
-    # PartOf permits submission during activation and binds analysis lifetime.
+    # Queue during activation. The condition proves the parent reached active
+    # in this invocation. ExecStopPost reclaims analysis after required owners.
     # Julia handles SIGTERM through its runtime exit path, which can stall
     # during compilation. SIGHUP terminates this independent process and its
     # compiler children through the OS. PipeWire releases their objects on disconnect.
@@ -59,7 +80,8 @@ function install_analysis!(entry, package, prefix, paths, project, client, recor
         env,
         package,
         placement;
-        part_of = [coordinator.unit],
+        after = [coordinator.unit],
+        condition = analysis_start_condition(coordinator.unit, coordinator.invocation),
         ordinary = true,
         stop_signal = "SIGHUP",
     )
@@ -68,7 +90,7 @@ function install_analysis!(entry, package, prefix, paths, project, client, recor
 end
 
 function analysis_error!(record, error)
-    @warn "Optional analysis startup failed; RTC remains admitted" exception = (
+    @warn "Optional analysis startup failed" exception = (
         error, catch_backtrace()
     )
     push!(get!(record, "analysis_errors", String[]), sprint(showerror, error))
@@ -82,25 +104,20 @@ function analysis_error!(record, error)
     return nothing
 end
 
-# The main process retains each optional job before submission. ExecStopPost
+# ExecStartPre retains each optional job before submission. ExecStopPost
 # can cancel retained jobs and remove their units if startup fails.
-function start_analysis!(
-    package, prefix, spec, record;
-    deadline, clock, project = nothing, client_asset = nothing, check = Returns(nothing),
-)
+function start_analysis!(package, prefix, spec, record; deadline, clock)
     validate_ledger(record)
     entries = get(spec, "analysis", [])
     isempty(entries) && return nothing
     runtime = record["runtime"]
     try
-        check()
         current = Clocks.time_nanos(clock)
         current < deadline || fail("no startup budget remains for optional analysis")
         deadline = min(deadline, Base.checked_add(current, ANALYSIS_START_BUDGET_NS))
         paths = D.installed_paths(prefix)
-        project === nothing && (project = D.application_environment(spec, package))
-        client_asset === nothing && (client_asset = spec["client"]["analysis"])
-        client = D.relative_asset(package, client_asset)
+        project = D.application_environment(spec, package)
+        client = D.relative_asset(package, spec["client"]["analysis"])
         bindings = Dict(
             "PACKAGE" => package, "PREFIX" => prefix, "RUNTIME" => runtime,
             "REMOTE" => record["remote"], "INSTANCE" => record["invocation"],
@@ -108,26 +125,21 @@ function start_analysis!(
         rendered = D.substitute(read(client, String), bindings; quoted = true)
         services = S.Service[]
         for entry in entries
-            check()
             try
                 push!(services, install_analysis!(
                     entry, package, prefix, paths, project, rendered, record, deadline; clock
                 ))
             catch error
-                check()
                 analysis_error!(record, error)
             end
         end
         isempty(services) && return nothing
-        check()
         result = S.checked(["systemctl", "--user", "daemon-reload"]; deadline, clock)
         result.returncode == 0 || fail("cannot load optional analysis units")
         for service in services
-            check()
             try
                 item = record["owners"][service.role]
                 S.verify_fragment!(service.unit, record; ordinary = true, deadline, clock)
-                check()
                 item["state"] = "submitted"
                 launch_record!(runtime, record)
                 result = S.checked(
@@ -135,12 +147,10 @@ function start_analysis!(
                 )
                 result.returncode == 0 || fail("cannot submit optional analysis: $(service.role)")
             catch error
-                check()
                 analysis_error!(record, error)
             end
         end
     catch error
-        check()
         analysis_error!(record, error)
     end
     return nothing

@@ -135,7 +135,9 @@ end
 
 function preparation_identity(request::Request, source_role::AbstractString)
     values = S.properties(
-        request.unit; extra = "ControlPID,ExecStop,ExecStopPost," * LIFETIME_PROPERTIES
+        request.unit;
+        extra = "ControlPID,ExecStop,ExecStopPost,InactiveExitTimestampMonotonic," *
+                LIFETIME_PROPERTIES,
     )
     values["LoadState"] == "loaded" && values["ActiveState"] == "activating" ||
         fail("RTC unit is not in start preparation")
@@ -155,7 +157,8 @@ function preparation_identity(request::Request, source_role::AbstractString)
         fail("RTC unit lacks its exact emergency cleanup hook")
     stop_hook_valid(values["ExecStop"], request) ||
         fail("RTC unit lacks its exact native stop hook")
-    return S.Coordinator(request.unit, invocation, group, request.launcher)
+    return S.Coordinator(request.unit, invocation, group, request.launcher),
+        values["InactiveExitTimestampMonotonic"]
 end
 
 function launch_record!(runtime, record)
@@ -549,7 +552,7 @@ function prepare!(
     external === nothing && D.uses_external_stream(source) &&
         fail("external stream requires independent core and source service bindings")
     external === nothing || external_source!(spec, source)
-    coordinator = preparation_identity(request, source_role)
+    coordinator, _ = preparation_identity(request, source_role)
     invocation = coordinator.invocation
     root = request.runtime_root
     isdir(root) && !islink(root) || fail("private runtime root is unavailable")
@@ -793,7 +796,7 @@ function prepare!(
             fail("session generator emitted retired WirePlumber configuration")
         get(generated["context.properties"], "remote.name", nothing) == remote ||
             fail("RTC configuration targets a different private core")
-        final_coordinator = preparation_identity(request, source_role)
+        final_coordinator, started_us = preparation_identity(request, source_role)
         final_coordinator.invocation == invocation &&
         final_coordinator.cgroup == coordinator.cgroup ||
             fail("RTC unit incarnation changed during preparation")
@@ -817,14 +820,16 @@ function prepare!(
         process_binding = D.session_process_binding(spec, package, String(config))
         process_binding["julia"] == julia && process_binding["project"] == project ||
             fail("selected Julia process binding changed during session preparation")
-        analysis = get(spec, "analysis", [])
+        # Reserve the main process's activation budget before staging optional
+        # jobs. Their condition permits execution only after RTC notifies systemd.
+        clock = Clocks.SystemNanoClock()
+        analysis_deadline = analysis_start_deadline(spec, started_us, Clocks.time_nanos(clock))
+        start_analysis!(package, prefix, spec, record; deadline = analysis_deadline, clock)
         record["admission"] = Dict(
             "package" => package,
             "prefix" => prefix,
             "launcher" => request.launcher,
             "placement" => spec["placement"]["session"],
-            "analysis" => analysis,
-            "analysis_client" => isempty(analysis) ? nothing : spec["client"]["analysis"],
         )
         record["session_process"] = process_binding
         record["config"] = String(config)

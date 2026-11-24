@@ -77,6 +77,7 @@ function service_unit(
     binds_to = String[],
     part_of = String[],
     requisite = String[],
+    condition = String[],
     ordinary = false,
     stop_signal = "SIGTERM",
 )
@@ -118,12 +119,15 @@ function service_unit(
         names = _after_units(units)
         isempty(names) || push!(lines, key * "=" * join(names, " "))
     end
+    append!(lines, ["", "[Service]", "Type=exec"])
+    if !isempty(condition)
+        _owner_command(condition)
+        isabspath(first(condition)) || fail("service condition executable must be absolute")
+        push!(lines, "ExecCondition=:" * join(unit_argument.(condition), " "))
+    end
     append!(
         lines,
         [
-            "",
-            "[Service]",
-            "Type=exec",
             "ExecStart=:" * join(unit_argument.(String.(argv)), " "),
             # Path directives consume the whole value, not a quoted argument list.
             "WorkingDirectory=" * replace(cwd, "%" => "%%"),
