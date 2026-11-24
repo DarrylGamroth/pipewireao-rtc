@@ -13,9 +13,12 @@ application manifests. Reinstall after changing these inputs.
 
 Pass `--julia-sysimage /absolute/path/to/image.so` to install with an application
 sysimage. Build it with the selected Julia runtime from the exact application
-Project and Manifest, with `PipeWireAORTC` preloaded. Installation checks the
-image and records its SHA-256 and file identity in the activation seal. Keep
-the image at the recorded path. The main RTC invocation selects that image
+Project and Manifest, with `PipeWireAORTC` preloaded. Use the same registered
+package depot paths for the build and installation. Installation checks each
+preloaded package and extension against the Manifest's resolved source path.
+Bundled standard libraries resolve through the selected Julia installation.
+Installation records the image's SHA-256 and file identity in the activation
+seal. Keep the image at the recorded path. The main RTC invocation selects that image
 explicitly and checks its mapping at admission and before native Quit. Retained
 graph owners and management commands use their regular Julia environments.
 
