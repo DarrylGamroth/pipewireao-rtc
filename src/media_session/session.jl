@@ -1130,6 +1130,31 @@ function precompile_ingress()
     return nothing
 end
 
+function precompile_registry(::Type{T}) where {T<:Session}
+    registry = fieldtype(T, :registry)
+    callbacks = Core.Compiler.return_type(object_callbacks, Tuple{EventQueue,UInt32,UInt64})
+    for (interface, info) in ((Node, NodeInfo), (Port, PortInfo), (Client, ClientInfo),
+                              (Factory, FactoryInfo))
+        precompile(_bind_object!, (T, Global, Type{interface}, Type{info}))
+        arguments = (registry, Global, Type{interface}, callbacks, EventQueue, UInt32)
+        precompile(_bind_object, arguments)
+        proxy = Core.Compiler.return_type(_bind_object, Tuple{arguments...})
+        isconcretetype(proxy) || continue
+        precompile(close, (proxy,))
+        precompile(update!, (T, ObjectUpdated{info}))
+        if interface === Node || interface === Port
+            precompile(_enumerate_object!, (T, Job, Object{proxy,info}, UInt32))
+        end
+        if interface === Node
+            precompile(controller_fact, (T, Object{proxy,info}, NodeInfo))
+        end
+    end
+    for event in (ObjectBound, ObjectError, ParamReceived)
+        precompile(update!, (T, event))
+    end
+    return nothing
+end
+
 # Infer the same concrete wrappers as live construction without opening a core.
 @compile_workload begin
     precompile_ingress()
@@ -1144,6 +1169,8 @@ end
     if all(isconcretetype, types)
         session_type = Session{types...,clock}
         prepare_dispatch!(session_type)
+        precompile_registry(session_type)
+        precompile_admission(session_type)
         for rank in RunnerCodec.PARAMETER_NDARRAY_PRECOMPILE_RANKS
             prepare_parameter_ndarray!(session_type, rank)
         end

@@ -688,6 +688,47 @@ _check_controller_instance(value::Integer) =
     0 < value <= typemax(Int64) ||
     throw(ArgumentError("controller instance must be positive Int64"))
 
+client_core(context, path, client) = CoreConnection(
+    context;
+    properties = Dict("remote.name" => path),
+    on_error = (_, _, _, error) ->
+        fail!(client, sprint(showerror, error); retirement = true),
+)
+
+listen_registry!(registry, client) = add_listener!(
+    registry;
+    on_global_added = (_, _) -> wake!(client),
+    on_global_removed = (_, _) -> wake!(client),
+)
+
+bind_marker(registry, marker, client) = bind(
+    registry,
+    marker,
+    Node;
+    on_info = (_, info) -> node_info!(client, info; marker = true),
+    on_removed = _ ->
+        fail!(client, "controller proxy was removed"; retirement = true),
+    on_error = (_, _, error) ->
+        fail!(client, sprint(showerror, error); retirement = true),
+)
+
+bind_owner(registry, owner, client, observation) = bind(
+    registry,
+    owner,
+    Node;
+    on_info = (_, info) -> node_info!(client, info; marker = false),
+    on_removed = _ ->
+        fail!(client, "owner proxy was removed"; retirement = true),
+    on_error = (_, _, error) ->
+        fail!(client, sprint(showerror, error); retirement = true),
+    on_param = (_, _, id, _, pod) -> begin
+        id == SPA.PARAM_PROPS &&
+            pod !== nothing &&
+            observe!(observation, pod; at = Clocks.time_nanos(client.clock))
+        wake!(client)
+        nothing
+    end,
+)
 
 """
     connect(profile, remote, node_name, expected_pid, expected_instance; deadline, check=()->nothing)
@@ -760,23 +801,17 @@ function connect(
     client.last_at = current
     stage = "connection and controller export"
     try
-        with_thread_loop_lock(client.loop) do _
+        registry = with_thread_loop_lock(client.loop) do _
             deadline_check(client, deadline, check)
-            client.context = Context(client.loop)
-            client.core = CoreConnection(
-                something(client.context);
-                properties = Dict("remote.name" => path),
-                on_error = (core, id, sequence, error) ->
-                    fail!(client, sprint(showerror, error); retirement = true),
-            )
-            client.registry = Registry(something(client.core))
-            client.registry_listener = add_listener!(
-                client.registry;
-                on_global_added = (_, _) -> wake!(client),
-                on_global_removed = (_, _) -> wake!(client),
-            )
-            client.marker = Filter(
-                something(client.core),
+            context = Context(client.loop)
+            client.context = context
+            core = client_core(context, path, client)
+            client.core = core
+            bound_registry = Registry(core)
+            client.registry = bound_registry
+            client.registry_listener = listen_registry!(bound_registry, client)
+            filter = Filter(
+                core,
                 marker_name;
                 properties = Dict(
                     "node.name" => marker_name,
@@ -787,7 +822,9 @@ function connect(
                     "pipewireao.rtc-control.owner-pid" => string(getpid()),
                 ),
             )
-            connect!(something(client.marker); flags = FILTER_ASYNC | FILTER_INACTIVE)
+            client.marker = filter
+            connect!(filter; flags = FILTER_ASYNC | FILTER_INACTIVE)
+            return bound_registry
         end
         start!(client.loop)
         stage = "controller identity"
@@ -800,16 +837,7 @@ function connect(
                 marker.id, serial(marker.properties, marker_name), instance
             )
             trace === nothing || (trace.controller = client.identity)
-            client.marker_node = bind(
-                something(client.registry),
-                marker,
-                Node;
-                on_info = (proxy, info) -> node_info!(client, info; marker = true),
-                on_removed = proxy ->
-                    fail!(client, "controller proxy was removed"; retirement = true),
-                on_error = (proxy, sequence, error) ->
-                    fail!(client, sprint(showerror, error); retirement = true),
-            )
+            client.marker_node = bind_marker(registry, marker, client)
         end
         poll(_ -> client.marker_ready, client, deadline, check)
         stage = "owner identity"
@@ -822,23 +850,7 @@ function connect(
                 throw(UnknownOutcome("owner global ID is not assigned"))
             client.global_id = owner.id
             client.serial = serial(owner.properties, client.node_name)
-            client.node = bind(
-                something(client.registry),
-                owner,
-                Node;
-                on_info = (proxy, info) -> node_info!(client, info; marker = false),
-                on_removed = proxy ->
-                    fail!(client, "owner proxy was removed"; retirement = true),
-                on_error = (proxy, sequence, error) ->
-                    fail!(client, sprint(showerror, error); retirement = true),
-                on_param = (proxy, sequence, id, index, next, pod) -> begin
-                    id == SPA.PARAM_PROPS &&
-                        pod !== nothing &&
-                        observe!(observation, pod; at = Clocks.time_nanos(client.clock))
-                    wake!(client)
-                    nothing
-                end,
-            )
+            client.node = bind_owner(registry, owner, client, observation)
         end
         poll(_ -> client.owner_ready, client, deadline, check)
         stage = "retained parameters and controller admission"
