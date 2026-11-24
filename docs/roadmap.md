@@ -26,7 +26,9 @@ for each camera. The [startup profile](validation/session-owned-admission-202611
 attributes 6.52 s to RTC compilation after package initialization and measures
 the wait for both controller processes to answer their connection requests.
 Precompiling five control operations brought CAL2 to Ready in 12.11–12.30 s
-across two subsequent untraced restarts.
+across two subsequent untraced restarts. The [PipeWire application review](reviews/20261124-pipewire-application-startup/REVIEW.md)
+proposes separate graph-owner and session lifetimes and event-driven admission
+for independently negotiated Links.
 
 ### Native parameter NDArray transfer — 2026-11-23 UTC
 
