@@ -100,16 +100,28 @@ The replacement refused release using the prior activation's actual recovery
 generation, accepted an Open write and applied a new recovery request. The
 prior control client reported that its owner proxy had been removed.
 
+SPIDERS fitted dual used RTC `84fcd27` with the FilterGraphPipeWire backport
+and graph-only `-O0`. The already-publishing source ran the retained optical
+configuration with HIL 0.5.13 in Julia 1.13.3. The private core, source and
+both graph-owner services kept their process identities through forced RTC
+replacement and graceful stop. The camera and DM source Nodes kept their
+native serials. The composition's graph Node changed from serial 690 to 788
+and the RTC allocated new Link serials. Both correction branches were Open
+and unprimed while held, became primed from live output in Running and
+remained Open. The SCC and LLOWFS camera sequences advanced from 10 to 19
+within their respective acquisition domains and generations. Their modal
+residual sequences advanced from 12 to 21 and 11 to 20, respectively. The
+replacement rejected the prior recovery generation, accepted an Open write,
+applied a new recovery request and stopped cleanly. The old client's owner
+proxy had been removed.
+
 ## Reproduction
 
-The local fixture directory recorded in `/var/tmp/rtc-direct-instruments-location`
-contains `stage.py`, `install.jl`, `run.py` and `controls.jl` for rebuilding
-and exercising the staged profiles. The stage records each RTC source tree
-and, for SPIDERS, the companion tree. The scheduler, source controller and
-readout taps use live native messages. Graph launch omits numerical warmup.
-The exact-owner gate uses `exact-owner-attach.jl` and `exact-owner-claim.jl`.
-The v3 source gate uses `v3-independent.py` and `start-managed-source.jl` to
-keep the separately started source running through both RTC activations.
+The fixture scripts rebuild staged applications from the retained exports and
+record each RTC source tree and its applicable companion tree. The scheduler,
+source controller and readout taps use live native messages. Graph launch
+omits numerical warmup. The scripts record functional results on the private
+cores. [Instrument fixture sources and selected checks](instrument-fixtures.tar.gz)
 
 GPI2 authoring commit `bb74679` in the instrument repository applies the
 opening and priming declarations to both the integrator and HEART modes.
