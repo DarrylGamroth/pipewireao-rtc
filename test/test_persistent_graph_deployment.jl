@@ -68,8 +68,9 @@ end
         "name" => "instrument", "source-owner" => "detector",
         "placement" => Dict("session" => Dict("leader-cpu" => 2)),
     )
+    activation = (; julia = "/opt/julia", project = "/opt/app", digest = repeat("a", 64))
     bindings = (; launcher = "/opt/launcher", package = "/opt/app", prefix = "/opt/pipewireao",
-                  executable = "/opt/app/rtc/bin/pipewireao-rtc")
+                  executable = "/opt/app/rtc/bin/pipewireao-rtc", activation)
     external = (; core = "core.service", socket = "/run/user/1000/core", source = "source.service")
     unit = Launch.graph_unit_name(spec["name"], "controller")
     persistent = (; digest = repeat("0", 64), units = [unit])
