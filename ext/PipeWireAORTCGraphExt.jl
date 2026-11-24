@@ -651,6 +651,13 @@ end
 
 owner_cancelled(::InterruptException, runtime) = Bootstrap.clean_cancel(runtime)
 owner_cancelled(::Bootstrap.RetiredSession, runtime) = runtime.persistent
+function owner_cancelled(error::PipeWireAO.PipeWireError, runtime::Bootstrap.Runtime)
+    runtime.persistent && error.operation === :pw_ndarray_filter_run &&
+        error.code == -Base.Libc.EPIPE || return false
+    # Route teardown can invalidate a retained buffer on the graph connection
+    # before the bootstrap connection observes removal of the session controller.
+    return Bootstrap.await_controller_revocation(runtime)
+end
 owner_cancelled(error, runtime) = false
 
 end

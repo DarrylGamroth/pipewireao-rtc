@@ -33,8 +33,11 @@ const Client = ControlClient
 const Endpoint = ControlEndpoint
 const Codec = OwnerBootstrapCodec
 const POLL_SECONDS = 0.005
+const CLEANUP_BUDGET_NS = Int64(5_000_000_000)
 
-struct RetiredSession <: Exception end
+struct RetiredSession <: Exception
+    controller_revoked::Bool
+end
 
 Base.showerror(io::IO, ::RetiredSession) = print(io, "persistent graph session ended")
 
@@ -45,7 +48,7 @@ function _poll_ready!(runtime::Endpoint.Transport; persistent::Bool = false)
         Endpoint.operational(runtime.endpoint)
         retained = runtime.endpoint.retained_controller
         if retained !== nothing && !Endpoint.controller_present(runtime.endpoint, retained)
-            persistent && throw(RetiredSession())
+            persistent && throw(RetiredSession(true))
             error("retained native bootstrap controller was revoked")
         end
         runtime.endpoint.pending !== nothing
@@ -314,6 +317,22 @@ Return whether the bootstrap runtime has recorded cancellation without a failure
 function clean_cancel(runtime::Runtime)
     status = _status(runtime)
     return status.cancelled && status.failure === nothing
+end
+
+"Wait briefly for the monitor to prove loss of the retained controller."
+function await_controller_revocation(runtime::Runtime)
+    clock = Clocks.SystemNanoClock()
+    deadline = Base.Checked.checked_add(Clocks.time_nanos(clock), CLEANUP_BUDGET_NS)
+    while true
+        status = _status(runtime)
+        failure = status.failure
+        if failure !== nothing
+            return failure isa RetiredSession && failure.controller_revoked
+        end
+        status.done && return false
+        Clocks.time_nanos(clock) < deadline || return false
+        sleep(POLL_SECONDS)
+    end
 end
 """
     preparation_check!(runtime)
@@ -818,7 +837,7 @@ end
     facts.finished && sm.active === nothing || return Hsm.EventHandled
     _publish!(sm, facts.error === nothing ? Codec.Stopped : Codec.Fault)
     Endpoint.flush_terminal!(
-        sm.runtime.transport, Base.Checked.checked_add(_now(sm), Int64(5_000_000_000))
+        sm.runtime.transport, Base.Checked.checked_add(_now(sm), CLEANUP_BUDGET_NS)
     )
     facts.error === nothing && return Hsm.transition!(sm, :Stopped)
     return Hsm.transition!(sm, :Done)
@@ -864,7 +883,7 @@ end
         sm.incoming = nothing
         # This budget is anchored to the beginning of the failed duty cycle;
         # subordinate native I/O retains its fresh trust-boundary deadline clock.
-        sm.cleanup_deadline = Base.Checked.checked_add(_now(sm), Int64(5_000_000_000))
+        sm.cleanup_deadline = Base.Checked.checked_add(_now(sm), CLEANUP_BUDGET_NS)
     catch cleanup
         _record_cleanup_failure!(sm, cleanup)
         return Hsm.transition!(sm, :Done)
@@ -947,7 +966,11 @@ function _ticket_effect(f, runtime::Runtime)
     try
         return f()
     catch error
-        runtime.persistent && Endpoint.ticket_unavailable(error) && throw(RetiredSession())
+        if runtime.persistent && Endpoint.ticket_unavailable(error)
+            controller_revoked = error === Endpoint.CONTROLLER_DISAPPEARED ||
+                                 error === Endpoint.TERMINAL_CONTROLLER_REVOKED
+            throw(RetiredSession(controller_revoked))
+        end
         rethrow()
     end
 end
