@@ -15,7 +15,11 @@ Systemd starts the installed MediaSession as its main process. The process
 checks the document digest, installed file identities, its exact command
 line and systemd invocation. It uses the new invocation to bind the private
 socket, owner identities and control endpoints. Existing deployments continue
-to run the service template shipped with their pinned RTC.
+to run the service template shipped with their pinned RTC. If a profile
+declares a session-only environment setting that differs from the manager
+environment, the RTC applies it after starting the owners and re-executes the
+pinned command under the same PID. This preserves settings that Julia reads
+at process entry and keeps them private to the session.
 
 For a managed source, MediaSession starts the private core, confirms its
 socket and retains its identity. It starts the remaining held owners through

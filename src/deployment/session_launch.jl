@@ -191,9 +191,15 @@ function owner_environment(paths, spec, bindings, runtime, role; ambient = ENV)
     env = Dict{String,String}(ambient)
     for key in (
         "NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID",
-        EXTERNAL_SERVICE_ENV..., GRAPH_MANIFEST_ENV, ADMISSION_UNIT_ENV, ACTIVATION_ENV, INSTALLATION_ENV,
+        EXTERNAL_SERVICE_ENV..., GRAPH_MANIFEST_ENV, ADMISSION_UNIT_ENV, ACTIVATION_ENV,
+        INSTALLATION_ENV,
     )
         delete!(env, key)
+    end
+    if haskey(ambient, ACTIVATION_ENV)
+        # These select the session launcher, never its graph or source runtime.
+        delete!(env, "PIPEWIREAORTC_JULIA")
+        delete!(env, "PIPEWIREAORTC_PROJECT")
     end
     merge!(
         env,
@@ -511,6 +517,19 @@ function render_fgn_host!(request, spec, session, env, runtime)
     names = String[graph["node.name"] for graph in graphs]
     length(unique(names)) == length(names) || fail("FGN graph names must be unique")
     return names
+end
+
+# Session-only variables must not reach graph or source owners. If a value
+# differs, apply it at process entry so native libraries and Julia see it too.
+function apply_session_environment!(values, declared, binding)
+    reexec = any(get(ENV, key, nothing) != values[key] for key in keys(declared))
+    merge!(ENV, values)
+    if reexec
+        delete!(ENV, ACTIVATION_ENV)
+        Base.systemerror("exec installed RTC", ccall(:execv, Cint, (Cstring, Ptr{Cstring}),
+            binding["julia"], binding["argv"]) == -1)
+    end
+    return nothing
 end
 
 function atomic_environment(path, values)
@@ -841,8 +860,7 @@ function prepare!(
             "PIPEWIREAORTC_JULIA" => julia,
             "PIPEWIREAORTC_PROJECT" => project,
         )
-        process_binding = Dict("julia" => julia, "project" => project, "config" => String(config),
-                               "argv" => E.rtc_arguments(julia, project, config))
+        process_binding = D.session_process_binding(julia, project, config)
         # Reserve the main process's activation budget before staging optional
         # jobs. Their condition permits execution only after RTC notifies systemd.
         clock = Clocks.SystemNanoClock()
@@ -866,20 +884,13 @@ function prepare!(
                 key in D.SESSION_PRIVATE_ENVIRONMENT ||
                 haskey(session_env, key)
             ) && fail("session runtime environment cannot override private binding $key")
-            session_env[key] = D.substitute(value, bindings)
+            resolved = D.substitute(value, bindings)
+            occursin(r"^[A-Za-z_][A-Za-z0-9_]*$", key) && !occursin(r"[\n\r\0]", resolved) ||
+                fail("invalid RTC environment declaration: $key")
+            session_env[key] = resolved
         end
         if main
-            # Most profiles have no invocation-dependent process environment.
-            # Preserve exec-time settings (e.g. JULIA_DEPOT_PATH) when one is declared.
-            reexec = any(get(ENV, key, nothing) != session_env[key]
-                         for key in keys(spec["session-runtime"]["environment"]))
-            merge!(ENV, session_env)
-            if reexec
-                delete!(ENV, ACTIVATION_ENV)
-                argv = process_binding["argv"]
-                Base.systemerror("exec installed RTC", ccall(:execv, Cint,
-                    (Cstring, Ptr{Cstring}), julia, argv) == -1)
-            end
+            apply_session_environment!(session_env, spec["session-runtime"]["environment"], process_binding)
         else
             atomic_environment(locator, session_env)
         end

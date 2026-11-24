@@ -480,11 +480,13 @@ function session_process_binding(
     launcher_project = application_environment(spec, package)
     isdir(launcher_project) || fail("selected Julia project environment is unavailable")
     julia = selected_julia_executable(Base.julia_cmd().exec[1])
+    return session_process_binding(julia, launcher_project, config)
+end
+
+function session_process_binding(julia::AbstractString, project::AbstractString, config::AbstractString)
     return Dict{String,Any}(
-        "julia" => julia,
-        "project" => launcher_project,
-        "config" => String(config),
-        "argv" => ScienceExport.rtc_arguments(julia, launcher_project, config),
+        "julia" => julia, "project" => project, "config" => String(config),
+        "argv" => ScienceExport.rtc_arguments(julia, project, config),
     )
 end
 

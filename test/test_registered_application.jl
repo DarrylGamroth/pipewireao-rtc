@@ -122,6 +122,7 @@ end
         "source-owner" => "simulator",
         "startup-timeout-ms" => 120000,
     )
+    spec["session-runtime"] = Dict("environment" => Dict("JULIA_DEPOT_PATH" => "/session-only"))
     original = deepcopy(spec)
     activation = (; julia = "/bin/julia", project = "/application/100%", digest = "a"^64)
     unit = I.installed_unit(
@@ -139,6 +140,7 @@ end
     @test occursin("ExecStart=\"/sdk/bin/rtc\" -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", unit)
     @test !occursin("ExecStartPre=", unit)
     @test !occursin("EnvironmentFile=", unit)
+    @test !occursin("/session-only", unit)
     @test occursin("PIPEWIREAORTC_INSTALLATION=/application/100%%", unit)
     @test occursin("--source-role simulator", unit)
     @test !occursin(r"@[A-Z_]+@", unit)
@@ -188,6 +190,24 @@ end
             package, prefix, realpath(Base.julia_cmd().exec[1]), package, launcher, spec, nothing
         )
     end
+end
+
+@testset "session environment is applied at exec under the original PID" begin
+    script = raw"""
+        using PipeWireAORTC
+        launch = PipeWireAORTC.SessionLaunch
+        key = "PIPEWIREAORTC_TEST_SESSION_VARIABLE"
+        haskey(ENV, key) && error("unexpected initial value")
+        ENV[launch.ACTIVATION_ENV] = "initial"
+        executable = "/bin/sh"
+        argv = [executable, "-c",
+                "test \"\$\$" = \"\$1\" && test \"\$PIPEWIREAORTC_TEST_SESSION_VARIABLE\" = declared && test -z \"\${PIPEWIREAORTC_ACTIVATION_SHA256+x}\"",
+                "session-environment", string(getpid())]
+        launch.apply_session_environment!(Dict(key => "declared"), Dict(key => "declared"),
+                                          Dict("julia" => executable, "argv" => argv))
+        error("expected exec")
+        """
+    @test success(`$(Base.julia_cmd()) --startup-file=no --project=$(dirname(Base.active_project())) -e $script`)
 end
 
 @testset "site bindings for independent core and source services" begin

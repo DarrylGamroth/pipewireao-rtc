@@ -117,13 +117,6 @@ function installed_unit(
         launch = PipeWireAORTC.SessionLaunch
         env = Dict(launch.ACTIVATION_ENV => activation.digest, launch.INSTALLATION_ENV => package,
                    "PIPEWIREAORTC_JULIA" => activation.julia, "PIPEWIREAORTC_PROJECT" => activation.project)
-        for (key, value) in get(get(spec, "session-runtime", Dict()), "environment", Dict())
-            occursin(r"^[A-Za-z_][A-Za-z0-9_]*$", key) && !occursin(r"[\r\n\0]", value) ||
-                throw(ArgumentError("invalid RTC environment declaration: $key"))
-            static = replace(value, "@PACKAGE@" => package, "@PREFIX@" => prefix)
-            # A value involving a new live identity becomes known only during activation.
-            occursin(r"@[A-Z_]+@", static) || (env[key] = static)
-        end
         append!(lines, ["Environment=" * quote_unit(key * "=" * env[key]) for key in sort!(collect(keys(env)))])
     end
     leader = spec["placement"]["session"]["leader-cpu"]
