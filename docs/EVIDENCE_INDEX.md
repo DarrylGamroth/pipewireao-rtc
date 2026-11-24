@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## CAL2 Link negotiation and application sysimage — 2026-11-24
+
+The [restart comparison](validation/cal2-link-negotiation-sysimage-20261124/README.md)
+covers registry and admission client compilation, concurrent native Links and
+installed RTC restarts with an independent CAL2 provider.
+
 ## CAL2 startup CPU and LLOWFS buffer ownership — 2026-11-24 UTC
 
 The [startup and buffer measurements](validation/cal2-ready-and-buffer-lifetime-20261124/README.md)

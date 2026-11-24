@@ -39,9 +39,14 @@ attributes 62% of main-thread user CPU samples to LLVM and Julia code
 generation. Building the session configuration methods into the package
 image saved 0.97 s in a fresh-process render/decode comparison. Two
 matched restart pairs did not establish a repeatable whole-service gain.
-The remaining opportunities are to compile registry binding and native
-Status client methods during the build, and to negotiate independent
-Links concurrently while preserving rollback and held-state checks.
+The RTC now compiles the registry and admission client methods into its
+package image. MediaSession requests independent native Links concurrently
+and preserves downstream ordering, shared-port ordering and fenced withdrawal.
+In the [CAL2 restart comparison](validation/cal2-link-negotiation-sysimage-20261124/README.md),
+two retained-source restarts with the distribution image reached held Ready in
+8.949 and 6.660 s. The optional pinned application image reached the same state
+in 4.769 and 4.764 s. The simulator kept publishing and both integrators
+remained open.
 
 ### Retain controller graph processes across RTC updates — 2026-11-24
 
