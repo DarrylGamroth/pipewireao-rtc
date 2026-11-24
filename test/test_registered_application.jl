@@ -201,7 +201,7 @@ end
         ENV[launch.ACTIVATION_ENV] = "initial"
         executable = "/bin/sh"
         argv = [executable, "-c",
-                "test \"\$\$" = \"\$1\" && test \"\$PIPEWIREAORTC_TEST_SESSION_VARIABLE\" = declared && test -z \"\${PIPEWIREAORTC_ACTIVATION_SHA256+x}\"",
+                raw"test $$ = $1 && test x$PIPEWIREAORTC_TEST_SESSION_VARIABLE = xdeclared && test x${PIPEWIREAORTC_ACTIVATION_SHA256+x} = x",
                 "session-environment", string(getpid())]
         launch.apply_session_environment!(Dict(key => "declared"), Dict(key => "declared"),
                                           Dict("julia" => executable, "argv" => argv))
