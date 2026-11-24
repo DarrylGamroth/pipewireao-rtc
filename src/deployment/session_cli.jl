@@ -217,13 +217,11 @@ end
 """
     verify_admission!(context, endpoint; deadline, clock)
 
-Verify the native endpoint, systemd invocation and owner placement before the
-session admits its declared Links. Retain the exact observed endpoint identity.
+Verify the native endpoint and systemd invocation before internal admission.
+Retain the exact observed endpoint identity for the Ready publication check.
 """
 function verify_admission!(context::InstalledAdmission, endpoint; deadline, clock)
     observed = _endpoint_identity(context, endpoint)
-    _verify_main(context; deadline, clock)
-    context.record["placement_snapshot"] = _placement_snapshot(context; deadline, clock)
     _verify_main(context; deadline, clock)
     context.endpoint = observed
     return nothing
@@ -232,9 +230,10 @@ end
 """
     publish_ready!(check, context, endpoint; deadline, clock)
 
-Retain the startup ledger and publish discovery after the session has proved
-native Ready. Run its readiness check immediately before and after publishing
-discovery. Withdraw the locator if the final check fails.
+After native Ready, prepare optional analysis and verify required owner and RTC
+placement before retaining startup evidence and publishing discovery. Run the
+session's readiness check immediately before and after publishing discovery.
+Withdraw the locator if the final check fails.
 """
 function publish_ready!(check, context::InstalledAdmission, endpoint; deadline, clock)
     observed = _endpoint_identity(context, endpoint)
