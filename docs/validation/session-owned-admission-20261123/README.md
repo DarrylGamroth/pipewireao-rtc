@@ -2,6 +2,10 @@
 
 The new MediaSession service reached Ready in **14.798 and 14.899 s**, inside the **13.743–15.200 s** range of the two former-helper restarts. Removing the additional Julia process reduced sampled startup CPU use, but these trials establish no elapsed-time improvement. [Per-run measurements](restarts.csv)
 
+The [follow-up startup profile](startup-profile.md) measures compilation inside
+the RTC, the time waiting for controller startup and the interval between
+live camera exposures.
+
 | Measured CPU build | Service request to Ready | Ready to first LLOWFS residual | Ready to first SCC pair residual | Startup leader CPU |
 | --- | ---: | ---: | ---: | ---: |
 | Former helper, optical run | 15.200 s | 4.267 s | 157.796 s | 11.978 s |

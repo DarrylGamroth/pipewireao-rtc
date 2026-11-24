@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## CAL2 startup time by operation — 2026-11-24 UTC
+
+The [RTC startup profile](validation/session-owned-admission-20261123/startup-profile.md)
+measures Julia compilation, time waiting for the two graph processes and
+the independent cameras' wall-clock cadence.
+
 ## MediaSession owns installed admission — 2026-11-23
 
 The [CAL2 restart and live frame measurements](validation/session-owned-admission-20261123/README.md)

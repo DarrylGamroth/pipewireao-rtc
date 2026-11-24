@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-23 UTC. This section is the current delivery summary. Later sections
+Updated 2026-11-24 UTC. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -22,7 +22,11 @@ process. New installations use the shared MediaSession path and signal systemd
 from the RTC main process after checking the held graph, exact owners, CPU
 placement and Links. The [installed CAL2 comparison](validation/session-owned-admission-20261123/README.md)
 measures service readiness separately from the first usable open-loop frame
-for each camera.
+for each camera. The [startup profile](validation/session-owned-admission-20261123/startup-profile.md)
+attributes 6.52 s to RTC compilation after package initialization and measures
+the wait for both controller processes to answer their connection requests.
+Precompiling five control operations brought CAL2 to Ready in 12.11–12.30 s
+across two subsequent untraced restarts.
 
 ### Native parameter NDArray transfer — 2026-11-23 UTC
 

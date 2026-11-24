@@ -716,6 +716,12 @@ function prepare_parameter_forward!(session_type, job, command)
 end
 
 function prepare_dispatch!(::Type{T}) where {T<:Session}
+    for event in (GlobalRemoved, RequestReceived, LinkUpdated)
+        Base.precompile(update!, (T, event))
+    end
+    status = Ingress.Ticket{RunnerCodec.RunnerCommand{:status,Tuple{}}}
+    Base.precompile(apply!, (T, Ingress.DispatchRequest{status}))
+    Base.precompile(PipeWireAORTC.Placement.snapshot, (Int64, Dict{String,Any}))
     Base.precompile(update!, (T, EffectCompleted{Nothing}))
     Base.precompile(update!, (T, EffectCompleted{SPA.Struct}))
     Base.precompile(update!, (T, EffectCompleted{Identity}))

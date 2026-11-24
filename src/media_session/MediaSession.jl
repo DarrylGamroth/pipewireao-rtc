@@ -13,6 +13,7 @@ import Clocks
 import Agent
 using PrecompileTools: @compile_workload
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
+import ..PipeWireAORTC
 import ..Common
 import ..RunnerCodec
 import ..SessionCLI
