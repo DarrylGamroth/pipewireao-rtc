@@ -215,9 +215,12 @@ end
 @testset "retained camera composition restores open controllers on a fresh attachment" begin
     mktempdir() do directory
         path = independent_camera_configuration(directory; closed = false)
-        document = G.persistent_graph_document(path)
-        files = PipeWireAORTC.GraphOwner.composition_files(document, path)
-        members = map(G.persistent_graph_document, files)
+        prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
+        document, files, members = withenv("PIPEWIREAO_PREFIX" => prefix) do
+            document = G.persistent_graph_document(path)
+            files = PipeWireAORTC.GraphOwner.composition_files(document, path)
+            return document, files, map(G.persistent_graph_document, files)
+        end
         algorithms = FGA.algorithms()
         properties = ("left-integrator:closed", "right-integrator:closed")
         first_attachment = G.prepare_persistent_graph(document, members, algorithms)
