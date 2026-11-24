@@ -36,7 +36,7 @@ end
 
 # Cold composition data exercises the warmup generator's input routing only;
 # numerical chopped processing is covered by calibration_chopped.jl.
-function independent_camera_configuration(directory; closed = true)
+function independent_camera_configuration(directory; closed)
     node(name, label, config) =
         Dict("name" => name, "type" => "ndarray", "label" => label, "config" => config)
     port(name, endpoint) = Dict("name" => name, "endpoint" => endpoint)
@@ -173,7 +173,7 @@ end
 @testset "composition warmup dispatch preserves independent and simultaneous arrivals" begin
     mktempdir() do directory
         composition = FilterGraphs.prepare_composition(
-            independent_camera_configuration(directory); algorithms = FGA.algorithms()
+            independent_camera_configuration(directory; closed = true); algorithms = FGA.algorithms()
         )
         try
             @test G.validate_owner_feedback(composition, nothing) === nothing
