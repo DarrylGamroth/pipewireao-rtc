@@ -237,6 +237,89 @@ end
     end
 end
 
+@testset "sysimage preloaded packages match the installed Manifest" begin
+    installer = PipeWireAORTC.SessionInstall
+    check = Base.include_string(
+        Module(gensym(:SysimageCheck)),
+        installer.SYSIMAGE_PACKAGE_CHECK * "\ncheck_sysimage_packages",
+    )
+    mktempdir() do root
+        depot = joinpath(root, "depot")
+        rtc = Base.PkgId(PipeWireAORTC)
+        dependency = Base.PkgId(Base.UUID("73e7db08-fa80-4c66-b159-217bdccb5d45"), "ImageDependency")
+        extension = Base.PkgId(Base.uuid5(dependency.uuid, "ImageDependencyExt"), "ImageDependencyExt")
+        stdlib = Base.PkgId(Base.UUID("6462fe0b-24de-5631-8697-dd941f90decc"), "Sockets")
+
+        function source(id, tree)
+            slug = Base.version_slug(id.uuid, Base.SHA1(tree))
+            path = joinpath(depot, "packages", id.name, slug, "src", id.name * ".jl")
+            mkpath(dirname(path))
+            write(path, "")
+            return path
+        end
+
+        rtc_tree, old_tree, new_tree = "1"^40, "2"^40, "3"^40
+        rtc_path = source(rtc, rtc_tree)
+        old_dependency = source(dependency, old_tree)
+        new_dependency = source(dependency, new_tree)
+        ext_path = joinpath(dirname(dirname(old_dependency)), "ext", extension.name * ".jl")
+        mkpath(dirname(ext_path))
+        write(ext_path, "")
+
+        function project(name, tree)
+            directory = mkdir(joinpath(root, name))
+            path = joinpath(directory, "Project.toml")
+            write(path, """
+                [deps]
+                PipeWireAORTC = "$(rtc.uuid)"
+                """)
+            write(joinpath(directory, "Manifest.toml"), """
+                manifest_format = "2.0"
+                [[deps.PipeWireAORTC]]
+                uuid = "$(rtc.uuid)"
+                version = "0.7.30"
+                git-tree-sha1 = "$rtc_tree"
+                deps = ["ImageDependency"]
+
+                [[deps.ImageDependency]]
+                uuid = "$(dependency.uuid)"
+                version = "1.0.0"
+                git-tree-sha1 = "$tree"
+                weakdeps = ["Sockets"]
+
+                [deps.ImageDependency.extensions]
+                ImageDependencyExt = "Sockets"
+                """)
+            return path
+        end
+
+        before = project("built", old_tree)
+        after = project("installed", new_tree)
+        preloaded = Dict(rtc => rtc_path, dependency => old_dependency,
+                         extension => ext_path, stdlib => Base.manifest_uuid_path(Sys.STDLIB, stdlib))
+        pushfirst!(DEPOT_PATH, depot)
+        try
+            @test Base.invokelatest(check, before, preloaded) === nothing
+            @test Base.explicit_manifest_uuid_path(after, rtc) == rtc_path
+            @test Base.explicit_manifest_uuid_path(after, dependency) == new_dependency
+            # Isolate the dependency mismatch from the corresponding extension.
+            delete!(preloaded, extension)
+            @test_throws r"different ImageDependency package source" Base.invokelatest(
+                check, after, preloaded,
+            )
+            undeclared = Base.PkgId(Base.UUID("73e7db08-fa80-4c66-b159-217bdccb5d46"), "OtherPackage")
+            @test_throws r"OtherPackage is unavailable" Base.invokelatest(
+                check, before, merge(preloaded, Dict(undeclared => old_dependency)),
+            )
+            @test_throws r"does not preload PipeWireAORTC" Base.invokelatest(
+                check, before, Dict(dependency => old_dependency),
+            )
+        finally
+            popfirst!(DEPOT_PATH)
+        end
+    end
+end
+
 @testset "session environment is applied at exec under the original PID" begin
     script = raw"""
         using PipeWireAORTC

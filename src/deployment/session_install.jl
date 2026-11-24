@@ -267,21 +267,42 @@ function selected_sysimage(path::AbstractString)
     return realpath(path)
 end
 
+# Run this check in the image process, against the installer-selected Project.
+# Manifest lookup selects the immutable source tree and resolves extensions
+# through their parent package. Only the selected Julia supplies stdlibs.
+const SYSIMAGE_PACKAGE_CHECK = raw"""
+    function check_sysimage_packages(project, sources)
+        rtc = Base.PkgId(Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6"), "PipeWireAORTC")
+        haskey(sources, rtc) || error("Julia sysimage does not preload PipeWireAORTC")
+        for (id, embedded) in sources
+            id.uuid === nothing && error("Julia sysimage preloads unregistered module $(id.name)")
+            selected = Base.explicit_manifest_uuid_path(project, id)
+            if selected === nothing
+                selected = Base.manifest_uuid_path(Sys.STDLIB, id)
+            end
+            selected isa String && isfile(selected) ||
+                error("Julia sysimage package $(id.name) is unavailable in the installed environment")
+            embedded isa String && isabspath(embedded) &&
+                normpath(embedded) == normpath(selected) ||
+                error("Julia sysimage uses a different $(id.name) package source")
+        end
+        return nothing
+    end
+    """
+
 function validate_sysimage(julia, project, sysimage)
-    code = raw"""
-        id = Base.PkgId(Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6"), "PipeWireAORTC")
-        rtc = get(Base.loaded_modules, id, nothing)
-        rtc !== nothing && Base.in_sysimage(id) ||
-            error("Julia sysimage does not preload PipeWireAORTC")
-        selected = Base.explicit_manifest_uuid_path(Base.active_project(), id)
-        selected isa AbstractString && realpath(pathof(rtc)) == realpath(selected) ||
-            error("Julia sysimage uses a different PipeWireAORTC package source")
-        realpath(unsafe_string(Base.JLOptions().image_file)) == only(ARGS) ||
+    code = SYSIMAGE_PACKAGE_CHECK * raw"""
+        project, image = ARGS
+        realpath(unsafe_string(Base.JLOptions().image_file)) == image ||
             error("Julia loaded a different sysimage")
+        sources = Dict(id => pathof(mod) for (id, mod) in Base.loaded_modules
+                       if Base.in_sysimage(id) && mod !== Core && mod !== Base && mod !== Main)
+        check_sysimage_packages(project, sources)
         """
     receipt = C.run_checked(
         [julia, "--startup-file=no", "--compiled-modules=existing", "--threads=1,0",
-         "--project=" * project, "--sysimage=" * sysimage, "-e", code, "--", sysimage];
+         "--project=" * project, "--sysimage=" * sysimage, "-e", code, "--",
+         joinpath(project, "Project.toml"), sysimage];
         timeout = 60, maximum_output_bytes = 64 * 1024,
     )
     receipt.returncode == 0 || throw(ArgumentError("cannot validate Julia sysimage: " * strip(receipt.stderr)))
