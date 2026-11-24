@@ -1,0 +1,187 @@
+{
+  "closed": {
+    "applied": true,
+    "correctors": {
+      "tiptilt": "Closed",
+      "tweeter": "Closed",
+      "woofer": "Closed"
+    },
+    "generation": 1,
+    "observed_ns": 371627014516192,
+    "owner_instance": 371558708507472,
+    "previous_generation": 0,
+    "requested": true
+  },
+  "early_close": {
+    "error": {
+      "field": "session",
+      "message": "ArgumentError: correction control requires a running session"
+    },
+    "ok": false,
+    "state": "Ready"
+  },
+  "edit": {
+    "channels": 97,
+    "duration_ms": 674.701391,
+    "sequence": 10
+  },
+  "first_detector": {
+    "first_header_sequence": 1,
+    "identity": {
+      "domain": "a0000000000000000000000000000000",
+      "generation": 1,
+      "sequence": 1
+    },
+    "observed_ns": 371620463506488
+  },
+  "first_observed_after_adoption": {
+    "closed_identity": {
+      "domain": "a0000000000000000000000000000000",
+      "generation": 1,
+      "sequence": 19
+    },
+    "closed_observation_ns": 371627484633894,
+    "closed_sequence_barrier": 18,
+    "commands": {
+      "tiptilt": {
+        "changed_channels": 2,
+        "channels": 2,
+        "l2_delta_m_opd": 6.317948367347949e-09,
+        "max_delta_m_opd": -4.243507323309359e-09,
+        "max_m_opd": -4.243507323309359e-09,
+        "min_delta_m_opd": -4.680717591298844e-09,
+        "min_m_opd": -4.680717591298844e-09
+      },
+      "tweeter": {
+        "changed_channels": 1716,
+        "channels": 2304,
+        "l2_delta_m_opd": 4.071916281674246e-06,
+        "max_delta_m_opd": 3.264433985350479e-07,
+        "max_m_opd": 3.264433985350479e-07,
+        "min_delta_m_opd": -2.978438260470284e-07,
+        "min_m_opd": -2.978438260470284e-07
+      },
+      "woofer": {
+        "changed_channels": 97,
+        "channels": 97,
+        "l2_delta_m_opd": 9.025213641909347e-07,
+        "max_delta_m_opd": 2.2839188318357628e-07,
+        "max_m_opd": 2.2839188318357628e-07,
+        "min_delta_m_opd": -2.0128697997279232e-07,
+        "min_m_opd": -2.0128697997279232e-07
+      }
+    },
+    "open_identity": {
+      "domain": "a0000000000000000000000000000000",
+      "generation": 1,
+      "sequence": 14
+    }
+  },
+  "flow_pass": true,
+  "open_evidence": [
+    {
+      "correctors": {
+        "tiptilt": "Open",
+        "tweeter": "Open",
+        "woofer": "Open"
+      },
+      "generation": 0,
+      "owner_instance": 371558708507472,
+      "primed": false
+    },
+    {
+      "correctors": {
+        "tiptilt": "Open",
+        "tweeter": "Open",
+        "woofer": "Open"
+      },
+      "generation": 0,
+      "owner_instance": 371558708507472,
+      "primed": true
+    },
+    {
+      "correctors": {
+        "tiptilt": "Open",
+        "tweeter": "Open",
+        "woofer": "Open"
+      },
+      "generation": 0,
+      "owner_instance": 371558708507472,
+      "primed": true
+    },
+    {
+      "correctors": {
+        "tiptilt": "Open",
+        "tweeter": "Open",
+        "woofer": "Open"
+      },
+      "generation": 0,
+      "owner_instance": 371558708507472,
+      "primed": true
+    },
+    {
+      "correctors": {
+        "tiptilt": "Open",
+        "tweeter": "Open",
+        "woofer": "Open"
+      },
+      "generation": 0,
+      "owner_instance": 371558708507472,
+      "primed": true
+    },
+    {
+      "correctors": {
+        "tiptilt": "Open",
+        "tweeter": "Open",
+        "woofer": "Open"
+      },
+      "generation": 0,
+      "owner_instance": 371558708507472,
+      "primed": true
+    },
+    {
+      "correctors": {
+        "tiptilt": "Open",
+        "tweeter": "Open",
+        "woofer": "Open"
+      },
+      "generation": 0,
+      "owner_instance": 371558708507472,
+      "primed": false
+    }
+  ],
+  "original_processes_alive": 0,
+  "quit_pass": true,
+  "quit_s": 8.875,
+  "ready_s": 49.149,
+  "reopened": {
+    "applied": false,
+    "correctors": {
+      "tiptilt": "Open",
+      "tweeter": "Open",
+      "woofer": "Open"
+    },
+    "generation": 2,
+    "observed_ns": 371628493920012,
+    "owner_instance": 371558708507472,
+    "previous_generation": 1,
+    "requested": false
+  },
+  "restore": {
+    "channels": 97,
+    "duration_ms": 67.379377,
+    "sequence": 13
+  },
+  "science_graph_images": [
+    "/home/dgamroth/.julia/artifacts/77da251765f3124df77322c562e67a7c7742ab1d/lib/libpipewire-ao-0.3.so.0.4008.0",
+    "/var/tmp/rtc-gpi2-live-open.IFNfkV/depot/compiled/v1.13/FilterGraphAlgorithms/MZNko_Gdrlk.so",
+    "/var/tmp/rtc-gpi2-live-open.IFNfkV/depot/compiled/v1.13/FilterGraphPipeWire/CV9m4_Gdrlk.so",
+    "/var/tmp/rtc-gpi2-live-open.IFNfkV/depot/compiled/v1.13/FilterGraphs/WlPBd_Gdrlk.so",
+    "/var/tmp/rtc-gpi2-live-open.IFNfkV/depot/compiled/v1.13/PipeWireAORTC/j1cKT_DsYvZ.so",
+    "/var/tmp/rtc-gpi2-live-open.IFNfkV/depot/compiled/v1.13/PipeWireAORTCGraphExt/tLrkB_Gdrlk.so",
+    "/var/tmp/rtc-gpi2-live-open.IFNfkV/installed/graph-startup/julia/depot/compiled/v1.13/ExportedGraphWarmup.so"
+  ],
+  "science_graph_sha256": "21edaf0f4342315413a431d69f859c3cb06f5e95e82457eed0714986275822b4",
+  "science_manifest_sha256": "96b77b4d8f8b8e4724c1483ef63e8ce016a2b982ddb6aa80d8245b4fd64c0044",
+  "unit": "pipewireao-session@69a9b7c25bc6.service"
+}

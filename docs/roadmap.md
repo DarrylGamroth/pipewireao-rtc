@@ -12,6 +12,15 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### RTC startup with correction open — 2026-11-23
+
+The shared control package image handles common operator commands and admission.
+The [installed CAL2 measurements](validation/open-loop-startup-20261123/README.md)
+show 13.40 and 13.44 s to confirmed Ready, followed by live open-loop priming
+and explicit closure. The remaining service cost includes a separate Julia
+discovery and admission helper. Keep exact process, placement and Link
+verification when consolidating it.
+
 ### Native parameter NDArray transfer — 2026-11-23 UTC
 
 Session operation 17 accepts declared runtime parameters as a native NDArray

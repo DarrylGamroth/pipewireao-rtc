@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Open-loop startup and first live correction — 2026-11-23
+
+The [paired CAL2 restarts](validation/open-loop-startup-20261123/README.md)
+record service-to-Ready time, the control-plane compiler trace, rejection of
+early closure and both signed first corrections on independent live streams.
+
 ## Integrated Quit, native parameter and instrument checks — 2026-11-23
 
 The [instrument verification](validation/rtc-ndarray-integration-20261123/README.md)
