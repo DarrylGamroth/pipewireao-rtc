@@ -246,7 +246,7 @@ function drain!(session::Session)
     if cancellation !== nothing &&
         job !== nothing &&
         cancellation.serial == job.ticket.serial
-        job.cancelled = true
+        cancel_job!(job)
     end
     cancellation === nothing || after_retirement!(session, cancellation.effect)
     session.ingress.lifecycle == session.machine.lifecycle ||
@@ -324,6 +324,12 @@ function Agent.do_work(session::Session)
         observe_controllers!(session)
         drain!(session)
         work += 1
+    end
+    # Registry visibility can change even when no application event was staged.
+    # Wake the Link effect after applying this dispatch's observations.
+    job = session.active_job
+    if work > 0 && job !== nothing && job.link_progress !== nothing
+        notify(job.link_progress)
     end
     # The owner coroutine has one result slot, separate from native ingress.
     # Observation overflow must not drop the emergency teardown acknowledgement.
@@ -1035,7 +1041,7 @@ end
 
 function Base.close(session::Session)
     current_task() === session.owner || error("session belongs to another task")
-    session.active_job === nothing || (session.active_job.cancelled = true)
+    session.active_job === nothing || cancel_job!(session.active_job)
     session.done = true
     failures = Exception[]
     if session.active_task !== nothing
@@ -1124,6 +1130,31 @@ function precompile_ingress()
     return nothing
 end
 
+function precompile_registry(::Type{T}) where {T<:Session}
+    registry = fieldtype(T, :registry)
+    callbacks = Core.Compiler.return_type(object_callbacks, Tuple{EventQueue,UInt32,UInt64})
+    for (interface, info) in ((Node, NodeInfo), (Port, PortInfo), (Client, ClientInfo),
+                              (Factory, FactoryInfo))
+        precompile(_bind_object!, (T, Global, Type{interface}, Type{info}))
+        arguments = (registry, Global, Type{interface}, callbacks, EventQueue, UInt32)
+        precompile(_bind_object, arguments)
+        proxy = Core.Compiler.return_type(_bind_object, Tuple{arguments...})
+        isconcretetype(proxy) || continue
+        precompile(close, (proxy,))
+        precompile(update!, (T, ObjectUpdated{info}))
+        if interface === Node || interface === Port
+            precompile(_enumerate_object!, (T, Job, Object{proxy,info}, UInt32))
+        end
+        if interface === Node
+            precompile(controller_fact, (T, Object{proxy,info}, NodeInfo))
+        end
+    end
+    for event in (ObjectBound, ObjectError, ParamReceived)
+        precompile(update!, (T, event))
+    end
+    return nothing
+end
+
 # Infer the same concrete wrappers as live construction without opening a core.
 @compile_workload begin
     precompile_ingress()
@@ -1138,6 +1169,8 @@ end
     if all(isconcretetype, types)
         session_type = Session{types...,clock}
         prepare_dispatch!(session_type)
+        precompile_registry(session_type)
+        precompile_admission(session_type)
         for rank in RunnerCodec.PARAMETER_NDARRAY_PRECOMPILE_RANKS
             prepare_parameter_ndarray!(session_type, rank)
         end

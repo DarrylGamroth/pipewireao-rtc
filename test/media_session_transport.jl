@@ -81,6 +81,38 @@ end
     @test barrier.error == "sync refused" && r.transport_error === nothing
 end
 
+@testset "Link negotiation wakes on native progress and cancellation" begin
+    r = runtime()
+    first = something(r.machine.effect)
+    ticket = S.EffectTicket(
+        first.session, first.epoch, first.serial, first.operation, first.origin,
+        first.deadline, S.ConnectLinks(), nothing,
+    )
+    for cancel in (false, true)
+        job = S.Job(ticket, false)
+        checked = Ref(0)
+        waiting = @async try
+            S.await_condition!(r, job) do
+                checked[] += 1
+                checked[] == 2
+            end
+        catch err
+            err
+        end
+        yield()
+        @test checked[] == 1 && !istaskdone(waiting)
+        if cancel
+            S.cancel_job!(job)
+            @test fetch(waiting) isa S.Cancelled
+            @test checked[] == 1
+        else
+            notify(job.link_progress)
+            @test fetch(waiting) === true
+            @test checked[] == 2
+        end
+    end
+end
+
 @testset "Transport sends validate fresh signed time and cancellation" begin
     r = runtime()
     ticket = something(r.machine.effect)

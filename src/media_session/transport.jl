@@ -97,6 +97,16 @@ Base.showerror(io::IO, ::Cancelled) = print(io, "retired session operation")
 mutable struct Job
     ticket::EffectTicket
     cancelled::Bool
+    # A Link effect and its owner run as cooperative tasks on the same thread.
+    link_progress::Union{Nothing,Condition}
+end
+Job(ticket::EffectTicket, cancelled::Bool) =
+    Job(ticket, cancelled, ticket.effect isa ConnectLinks ? Condition() : nothing)
+
+function cancel_job!(job::Job)
+    job.cancelled = true
+    job.link_progress === nothing || notify(job.link_progress)
+    return nothing
 end
 # Only Quit needs to retain per-target progress across effect cancellation.
 # Other jobs and effect-test adapters need no diagnostic state.
@@ -157,7 +167,11 @@ function await_condition!(f, runtime, job)
         check_job(runtime, job)
         result = f()
         result === nothing || result === false || return result
-        sleep(0.001)
+        if job.link_progress === nothing
+            sleep(0.001)
+        else
+            wait(job.link_progress)
+        end
     end
 end
 function parameter_error!(runtime, id::UInt32, sequence::Cint, message::AbstractString)

@@ -14,6 +14,8 @@ function admission_endpoint(session)
     end
 end
 
+admission_check(session, job) = () -> check_job(session, job)
+
 function perform!(session::Session, job, ::VerifyAdmission)
     admission = something(session.admission)
     config = session.configuration
@@ -23,7 +25,7 @@ function perform!(session::Session, job, ::VerifyAdmission)
         SessionProfile.Profile(), admission.remote, config["node.name"], getpid(),
         session.machine.session; deadline, clock,
         controller_instance = parse(Int64, config["admission.controller-instance"]),
-        check = () -> check_job(session, job),
+        check = admission_check(session, job),
     )
     admission.client = client
     endpoint = admission_endpoint(session)
@@ -49,9 +51,11 @@ function check_publication(session, deadline)
     return nothing
 end
 
+publication_check(session, deadline) = () -> check_publication(session, deadline)
+
 function confirm_installed_ready!(session, admission, deadline)
     try
-        check = () -> check_publication(session, deadline)
+        check = publication_check(session, deadline)
         client = something(admission.client)
         clock = session.source_clock
         completion = ControlClient.request!(
@@ -141,6 +145,68 @@ function after_completion!(session::Session, ::ConfirmReady)
         session.admission.notified = true
     catch error
         required_lost!(session.machine, sprint(showerror, error))
+    end
+    return nothing
+end
+
+# Infer the native resource types from their actual constructors. Package
+# compilation must never acquire a core connection or a proof client.
+function precompile_admission(::Type{T}) where {T<:Session}
+    clock = fieldtype(T, :source_clock)
+    profile = SessionProfile.Profile()
+    observation = ControlClient.Observation{
+        typeof(profile), ControlClient.lifecycle_type(profile),
+        ControlClient.completion_type(profile), ControlClient.rejection_type(profile),
+    }
+    client = ControlClient.Client{observation,clock}
+    check = Core.Compiler.return_type(admission_check, Tuple{T,Job})
+    status_check = Core.Compiler.return_type(publication_check, Tuple{T,Int64})
+    status = typeof(SessionCodec.RunnerCommand(:status))
+    precompile(
+        Core.kwcall,
+        (
+            NamedTuple{(:deadline, :clock, :controller_instance, :check),
+                Tuple{Int64,clock,Int64,check}},
+            typeof(ControlClient.connect), typeof(profile), String, String, Int32, UInt64,
+        ),
+    )
+    precompile(
+        Core.kwcall,
+        (
+            NamedTuple{(:deadline, :check),Tuple{Int64,status_check}},
+            typeof(ControlClient.request!), client, status,
+        ),
+    )
+    precompile(admission_endpoint, (T,))
+    precompile(close, (client,))
+    connection = (Context{ThreadLoop}, String, client)
+    precompile(ControlClient.client_core, connection)
+    core = Core.Compiler.return_type(ControlClient.client_core, Tuple{connection...})
+    isconcretetype(core) || return nothing
+    precompile(Registry, (core,))
+    precompile(close, (core,))
+    registry = Core.Compiler.return_type(Registry, Tuple{core})
+    isconcretetype(registry) || return nothing
+    precompile(close, (registry,))
+    listener = (registry, client)
+    precompile(ControlClient.listen_registry!, listener)
+    listener_type = Core.Compiler.return_type(ControlClient.listen_registry!, Tuple{listener...})
+    isconcretetype(listener_type) && precompile(close, (listener_type,))
+    for (bind_node, arguments) in (
+        (ControlClient.bind_marker, (registry, Global, client)),
+        (ControlClient.bind_owner, (registry, Global, client, observation)),
+    )
+        precompile(bind_node, arguments)
+        node = Core.Compiler.return_type(bind_node, Tuple{arguments...})
+        isconcretetype(node) || continue
+        precompile(close, (node,))
+        if bind_node === ControlClient.bind_owner
+            precompile(subscribe_params!, (node, Tuple{UInt32}))
+            precompile(
+                Core.kwcall,
+                (NamedTuple{(:count,),Tuple{UInt32}}, typeof(enum_params!), node, UInt32),
+            )
+        end
     end
     return nothing
 end

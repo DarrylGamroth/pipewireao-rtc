@@ -126,10 +126,30 @@ the Lua session policy and libwireplumber dependency with the Julia
 single application authority remains unchanged. An independently configured
 WirePlumber process may provide declared site/device policy, but is not an RTC
 dependency and must not own RTC admission, lifecycle or declared application
-links. This migration is underway and is not yet ready or qualified; see the
+links. For the implemented scope and instrument qualification, see the
 [current roadmap](roadmap.md#current-work) and
 [migration record](SESSION_POLICY_MIGRATION.md). Previous WirePlumber results
 remain evidence for their original provider and scope.
+
+WirePlumber’s standard linking policy coalesces graph changes into a rescan
+and selects a target for each linkable session item. An explicit target,
+a configured default or device priority can determine that choice. Within a
+standard link between two session items, the implementation requests the
+matched port Links from PipeWire’s `link-factory` and asynchronously tracks
+their activation. It reports success when all have activated and clears the
+group on activation failure. [Linking hooks](https://pipewire.pages.freedesktop.org/wireplumber/scripting/existing_scripts/linking.html)
+· [Target selection](https://pipewire.pages.freedesktop.org/wireplumber/policies/linking.html)
+· [Standard Link creation](https://github.com/PipeWire/wireplumber/blob/0.5.19/modules/module-si-standard-link.c#L339-L350)
+· [Activation completion](https://github.com/PipeWire/wireplumber/blob/0.5.19/modules/module-si-standard-link.c#L187-L208)
+
+MediaSession uses the same native Link factory. Its unit of admission is
+the instrument’s declared topology. The session verifies each endpoint’s
+process, incarnation and port, requests independent Links, then advances
+dependent Links as their prerequisites negotiate. It validates NDArray
+formats, confirms the held controllers and obtains a fresh public Status
+before publishing Ready. Required loss revokes admission and cleanup fences
+the exact session-owned Links. An independent WirePlumber instance can manage
+site devices outside these routes. [Exact topology and cleanup](operations.md#rtc-dev-003--exact-topology-realization-and-cleanup)
 
 | Component | Selected responsibility |
 | --- | --- |
