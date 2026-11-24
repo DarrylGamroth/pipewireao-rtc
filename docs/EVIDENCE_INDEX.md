@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## CAL2 LLOWFS frame latency and independent CUDA simulator — 2026-11-24
+
+The [frame and restart measurements](validation/cal2-open-frame-latency-20261124/README.md)
+time the controller call, both native telemetry queues and the observer on
+matching live acquisitions. They also measure repeated RTC attachment to a
+continuously publishing CUDA simulator with correction open.
+
 ## CAL2 Link negotiation and application sysimage — 2026-11-24
 
 The [restart comparison](validation/cal2-link-negotiation-sysimage-20261124/README.md)

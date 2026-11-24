@@ -48,6 +48,12 @@ two retained-source restarts with the distribution image reached held Ready in
 in 4.769 and 4.764 s. The simulator kept publishing and both integrators
 remained open.
 
+With the [independently publishing CUDA simulator](validation/cal2-open-frame-latency-20261124/README.md),
+three distribution-image RTC restarts reached held Ready in 6.23–7.58 s.
+The first live LLOWFS controller call took 0.23–0.31 ms. Its telemetry waited
+9.66–19.43 ms for playback on a driver with a 21.33 ms cycle. Both controllers
+remained open across Start and Quit.
+
 ### Retain controller graph processes across RTC updates — 2026-11-24
 
 An opt-in installed deployment keeps eligible complete-frame CPU graph services
