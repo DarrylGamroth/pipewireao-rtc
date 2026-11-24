@@ -76,7 +76,10 @@ function session_assets(spec, package, prefix)
     return nothing
 end
 
-function installed_unit(template, spec; launcher, package, prefix, executable, external = nothing)
+function installed_unit(
+    template, spec; launcher, package, prefix, executable, external = nothing,
+    persistent = nothing,
+)
     quote_unit(value) = String(JSON.json(replace(String(value), "%" => "%%")))
     leader = spec["placement"]["session"]["leader-cpu"]
     unit = replace(
@@ -98,6 +101,15 @@ function installed_unit(template, spec; launcher, package, prefix, executable, e
             unit *= "Environment=" * quote_unit(key * "=" * value) * "\n"
         end
     end
+    if persistent !== nothing
+        units = join(persistent.units, " ")
+        unit = replace(
+            unit, "[Unit]\n" => "[Unit]\nWants=$units\nAfter=$units $(external.core) $(external.source)\n";
+            count = 1,
+        )
+        key = PipeWireAORTC.SessionLaunch.GRAPH_MANIFEST_ENV
+        unit *= "Environment=" * quote_unit(key * "=" * persistent.digest) * "\n"
+    end
     return unit
 end
 
@@ -109,6 +121,8 @@ Supply absolute `package` and `pipewire_prefix` paths; optional `julia_executabl
 selects the Julia client executable. Supply `git_repository` (the Git directory)
 and `git_commit` (the full export commit ID) to select an explicit Git snapshot.
 Otherwise use the sibling `<package>.git` repository when Git is available.
+Optionally select `persistent_graph_owners = true` with the independent core
+and source bindings to generate separately supervised graph units.
 Return the installation path. Service activation remains a separate operator action.
 """
 function install(options)
@@ -127,51 +141,59 @@ function install(options)
     julia = D.selected_julia_executable(
         get(options, :julia_executable, Base.julia_cmd().exec[1])
     )
+    persistent_graph_owners = get(options, :persistent_graph_owners, false)
     for name in (".git", GitExport.DIRECTORY)
         entry = joinpath(source, name)
         !(ispath(entry) || islink(entry)) ||
             throw(ArgumentError("install requires an exported application without $name"))
     end
-    if repository === nothing
+    follow_symlinks = repository === nothing
+    if follow_symlinks
         source_spec = session_spec(source, prefix)
         haskey(source_spec["artifacts"], "systemd/pipewireao-session@.service") &&
             throw(ArgumentError("export must not seal an installation-specific session unit"))
         session_assets(source_spec, source, prefix)
-        cp(source, destination; force = false, follow_symlinks = true)
-        return finish_install(destination, prefix, julia, commit)
+        # Copying entries into a reserved directory needs the same containment
+        # check as copying the whole tree with cp.
+        target = joinpath(realpath(dirname(destination)), basename(destination))
+        startswith(target, joinpath(source, "")) &&
+            throw(ArgumentError("install destination cannot be inside the exported application"))
     end
-    # Check the files the installed runtime will actually consume.
-    files = PipeWireAORTC.InstrumentExport.application_files(source)
+    files = follow_symlinks ? readdir(source) : PipeWireAORTC.InstrumentExport.application_files(source)
+    # Exclusive creation leaves a competing install or a preexisting link alone.
     mkdir(destination)
+    created = lstat(destination)
     try
         for file in files
             output = joinpath(destination, file)
             mkpath(dirname(output))
-            cp(joinpath(source, file), output; follow_symlinks = false)
-            isfile(output) && !islink(output) ||
+            cp(joinpath(source, file), output; follow_symlinks)
+            follow_symlinks || (isfile(output) && !islink(output)) ||
                 throw(ArgumentError("installed export asset must be a regular file: $file"))
         end
-        GitExport.verify_install!(destination, realpath(repository), commit)
-        return finish_install(destination, prefix, julia, commit)
+        follow_symlinks || GitExport.verify_install!(destination, realpath(repository), commit)
+        return finish_install(destination, prefix, julia, commit; persistent_graph_owners)
     catch
-        rm(destination; recursive = true)
+        Base.samefile(created, lstat(destination)) && rm(destination; recursive = true)
         rethrow()
     end
 end
 
-function resolved_unit_template(environment)
+function resolved_package(environment)
     entry = Base.explicit_manifest_uuid_path(
         joinpath(environment, "Project.toml"), Base.PkgId(PipeWireAORTC)
     )
     entry isa AbstractString && isfile(entry) ||
         throw(ArgumentError("pinned RTC package is unavailable in the application environment"))
-    return read(
-        joinpath(dirname(dirname(entry)), "assets", "deployment", "pipewireao-session@.service.in"),
-        String,
-    )
+    return dirname(dirname(entry))
 end
 
-function finish_install(destination, prefix, julia, commit)
+resolved_unit_template(environment) = read(
+    joinpath(resolved_package(environment), "assets", "deployment", "pipewireao-session@.service.in"),
+    String,
+)
+
+function finish_install(destination, prefix, julia, commit; persistent_graph_owners = false)
     installed_spec = session_spec(destination, prefix)
     haskey(installed_spec["artifacts"], "systemd/pipewireao-session@.service") &&
         throw(ArgumentError("export must not seal an installation-specific session unit"))
@@ -184,6 +206,13 @@ function finish_install(destination, prefix, julia, commit)
     launcher = joinpath(bin, "pipewireao-rtc-session")
     environment = D.application_environment(installed_spec, destination)
     template = resolved_unit_template(environment)
+    external = PipeWireAORTC.SessionLaunch.external_services()
+    if persistent_graph_owners
+        external === nothing &&
+            throw(ArgumentError("persistent graph owners require independent core and source bindings"))
+        isfile(joinpath(resolved_package(environment), "src", "deployment", "persistent_graphs.jl")) ||
+            throw(ArgumentError("pinned RTC package does not support persistent graph owners"))
+    end
     historical_publish = occursin(r"(?m)^ExecStartPost=.*\bpublish\b", template)
     script = installed_launcher(julia; environment, commit, historical_publish)
     if haskey(installed_spec["artifacts"], "bin/pipewireao-rtc-session")
@@ -206,16 +235,19 @@ function finish_install(destination, prefix, julia, commit)
     chmod(launcher, 0o755)
     # Graph preparation validates controller recovery before the optical image build.
     PipeWireAORTC.GraphStartup.precompile!(julia, destination, environment, installed_spec["owners"])
-    external = PipeWireAORTC.SessionLaunch.external_services()
     if external === nothing
         owners = filter(!D.uses_external_stream, installed_spec["owners"])
         PipeWireAORTC.HILStartup.install!(environment, destination, owners, prefix)
     end
-    unit = installed_unit(
-        template, installed_spec; launcher, package = destination, prefix, executable, external
-    )
     systemd = joinpath(destination, "systemd")
     mkpath(systemd)
+    persistent = persistent_graph_owners ? PipeWireAORTC.SessionLaunch.install_persistent_graphs!(
+        destination, prefix, installed_spec, external
+    ) : nothing
+    unit = installed_unit(
+        template, installed_spec;
+        launcher, package = destination, prefix, executable, external, persistent,
+    )
     write(joinpath(systemd, "pipewireao-session@.service"), unit)
     return destination
 end
@@ -224,13 +256,15 @@ end
     main(argv=ARGS)
 
 Parse installer arguments and return the installed package path. Required flags
-are `--package`, `--destination` and `--pipewire-prefix`; validation errors throw.
+are `--package`, `--destination` and `--pipewire-prefix`. The optional
+`--persistent-graph-owners` flag selects separately supervised graph units.
 """
 function main(argv = ARGS)
     args = C.cli_arguments(
         argv;
         required = ["package", "destination", "pipewire-prefix"],
         allowed = ["julia-executable", "git-repository", "git-commit"],
+        flags = ["persistent-graph-owners"],
     )
     return install(args)
 end

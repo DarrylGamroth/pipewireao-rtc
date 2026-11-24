@@ -34,15 +34,20 @@ const Endpoint = ControlEndpoint
 const Codec = OwnerBootstrapCodec
 const POLL_SECONDS = 0.005
 
+struct RetiredSession <: Exception end
+
+Base.showerror(io::IO, ::RetiredSession) = print(io, "persistent graph session ended")
+
 "Check quiet transport health without registry traversal; consume only the old wake."
-function _poll_ready!(runtime::Endpoint.Transport)
+function _poll_ready!(runtime::Endpoint.Transport; persistent::Bool = false)
     wake = Base.Threads.atomic_xchg!(runtime.wake, false)
     pending = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
         retained = runtime.endpoint.retained_controller
-        retained === nothing ||
-            Endpoint.controller_present(runtime.endpoint, retained) ||
+        if retained !== nothing && !Endpoint.controller_present(runtime.endpoint, retained)
+            persistent && throw(RetiredSession())
             error("retained native bootstrap controller was revoked")
+        end
         runtime.endpoint.pending !== nothing
     end
     if wake || pending
@@ -143,12 +148,14 @@ senders/readers. No public operation retries an accepted message.
 mutable struct Runtime{T}
     const transport::T
     const mailbox::Mailbox
+    const persistent::Bool
     @atomic status::Status
     # ThreadPinning does not promise a concrete, version-stable task handle type.
     # Only the owner uses this cold handle; it never enters science.
     monitor::Any
 end
-Runtime(transport) = Runtime(transport, Mailbox(), Status(), nothing)
+Runtime(transport; persistent::Bool = false) =
+    Runtime(transport, Mailbox(), persistent, Status(), nothing)
 _status(runtime::Runtime) = @atomic :acquire runtime.status
 Base.getproperty(runtime::Runtime, name::Symbol) =
     name in (:failure, :main_error, :connect_ticket) ? getproperty(_status(runtime), name) :
@@ -181,6 +188,7 @@ function Runtime(
     instance::Int64;
     application_name::AbstractString = name,
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    persistent::Bool = false,
 )
     validate_threads()
     transport = Endpoint.Transport(
@@ -193,7 +201,7 @@ function Runtime(
         clock,
         loop_name = "rtc-bootstrap",
     )
-    runtime = Runtime(transport)
+    runtime = Runtime(transport; persistent)
     try
         _precompile_runtime!(typeof(runtime), typeof(clock))
         runtime.monitor = ThreadPinning.@spawnat 2 serve!(runtime; clock)
@@ -660,7 +668,9 @@ end
 end
 
 @on_event function (sm::Monitor{R}, ::Monitoring, ::PollTransport, arg) where {R}
-    sm.ingress = _poll_ready!(sm.runtime.transport)
+    transport = sm.runtime.transport
+    sm.ingress = sm.runtime.persistent ? _poll_ready!(transport; persistent = true) :
+                 _poll_ready!(transport)
     return Hsm.EventHandled
 end
 @on_event function (sm::Monitor{R}, ::Monitoring, ::TakeIngress, arg) where {R}
@@ -684,10 +694,25 @@ end
     return Hsm.EventHandled
 end
 @on_event function (sm::Monitor{R}, ::Prepared, ::ConnectRequested, ticket) where {R}
+    sm.active = ticket
+    runtime = sm.runtime
+    if runtime.persistent
+        _ticket_effect(runtime) do
+            with_thread_loop_lock(runtime.transport.loop) do _
+                _retain_controller!(runtime, ticket)
+                Endpoint.publish!(runtime.transport.endpoint)
+            end
+        end
+    end
     sm.connect_ticket = ticket
     _observe!(sm)
-    sm.active = ticket
     return Hsm.transition!(sm, :ConnectPending)
+end
+
+function _retain_controller!(runtime::Runtime, ticket)
+    close(runtime.transport.registry_listener)
+    Endpoint.retain_controller!(runtime.transport.endpoint, ticket)
+    return nothing
 end
 
 function _quit!(sm::Monitor, ticket)
@@ -714,7 +739,7 @@ end
 
 @on_event function (sm::Monitor{R}, ::ConnectPending, ::TicketObserved, facts) where {R}
     ticket = something(sm.active)
-    Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
+    _check_ticket(sm.runtime, ticket)
     if facts.finished
         Endpoint.complete!(
             sm.runtime.transport,
@@ -728,13 +753,14 @@ end
     elseif _ready(sm)
         # Seal registry discovery before publishing Connected, and complete the
         # exact accepted ticket before main may enter scientific execution.
-        with_thread_loop_lock(sm.runtime.transport.loop) do _
-            Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
-            close(sm.runtime.transport.registry_listener)
-            Endpoint.retain_controller!(sm.runtime.transport.endpoint, ticket)
+        _ticket_effect(sm.runtime) do
+            with_thread_loop_lock(sm.runtime.transport.loop) do _
+                Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
+                sm.runtime.persistent || _retain_controller!(sm.runtime, ticket)
+                _publish!(sm, Codec.Connected)
+                Endpoint.complete!(sm.runtime.transport, ticket, sm.lifecycle)
+            end
         end
-        _publish!(sm, Codec.Connected)
-        Endpoint.complete!(sm.runtime.transport, ticket, sm.lifecycle)
         sm.active = nothing
         _observe!(sm)
         return Hsm.transition!(sm, :Connected)
@@ -745,7 +771,7 @@ end
     sm::Monitor{R}, ::FaultConnectPending, ::TicketObserved, facts
 ) where {R}
     ticket = something(sm.active)
-    Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
+    _check_ticket(sm.runtime, ticket)
     Endpoint.complete!(
         sm.runtime.transport,
         ticket,
@@ -759,22 +785,26 @@ end
 @on_event function (sm::Monitor{R}, ::QuitPending, ::TicketObserved, facts) where {R}
     runtime = sm.runtime
     ticket = something(sm.active)
-    Endpoint.check_ticket(runtime.transport.endpoint, ticket)
+    _check_ticket(runtime, ticket)
     if facts.finished
         result = facts.error === nothing ? Int32(0) : Int32(-Base.Libc.EIO)
         lifecycle = result == 0 ? Codec.Stopped : Codec.Fault
-        _publish!(sm, lifecycle)
-        result == 0 && Endpoint.retain_controller!(runtime.transport.endpoint, ticket)
-        Endpoint.complete!(
-            runtime.transport,
-            ticket,
-            lifecycle;
-            result,
-            message = facts.error === nothing ? "" : _message(facts.error),
-            terminal = result == 0,
-        )
-        Endpoint.flush_terminal!(runtime.transport, ticket.deadline)
-        result == 0 && Endpoint.wait_terminal_release!(runtime.transport.endpoint, ticket)
+        _ticket_effect(runtime) do
+            with_thread_loop_lock(runtime.transport.loop) do _
+                result == 0 && Endpoint.retain_controller!(runtime.transport.endpoint, ticket)
+                _publish!(sm, lifecycle)
+                Endpoint.complete!(
+                    runtime.transport,
+                    ticket,
+                    lifecycle;
+                    result,
+                    message = facts.error === nothing ? "" : _message(facts.error),
+                    terminal = result == 0,
+                )
+            end
+            Endpoint.flush_terminal!(runtime.transport, ticket.deadline)
+            result == 0 && Endpoint.wait_terminal_release!(runtime.transport.endpoint, ticket)
+        end
         sm.active = nothing
         result == 0 && return Hsm.transition!(sm, :Stopped)
         return Hsm.transition!(sm, :Done)
@@ -880,8 +910,17 @@ _dispatch_request!(sm, ticket, ::Codec.Command{:status}) =
     Hsm.dispatch!(sm, :StatusRequested, ticket)
 _dispatch_request!(sm, ticket, ::Codec.Command{:connect}) =
     Hsm.dispatch!(sm, :ConnectRequested, ticket)
-_dispatch_request!(sm, ticket, ::Codec.Command{:quit}) =
-    Hsm.dispatch!(sm, :QuitRequested, ticket)
+function _dispatch_request!(sm, ticket, ::Codec.Command{:quit})
+    if sm.runtime.persistent &&
+            sm.runtime.transport.endpoint.retained_controller != ticket.header.controller
+        Endpoint.complete!(
+            sm.runtime.transport, ticket, sm.lifecycle;
+            result = Int32(-Base.Libc.EPERM), message = "Quit requires this graph's attached controller",
+        )
+        return nothing
+    end
+    return Hsm.dispatch!(sm, :QuitRequested, ticket)
+end
 
 function _health(sm::Monitor)
     sm.failure === nothing || throw(sm.failure)
@@ -895,8 +934,22 @@ function _health(sm::Monitor)
 end
 function _connection_health(sm::Monitor, ticket)
     _health(sm)
-    Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
+    _check_ticket(sm.runtime, ticket)
     return nothing
+end
+function _check_ticket(runtime::Runtime, ticket::Endpoint.Ticket)
+    _ticket_effect(runtime) do
+        Endpoint.check_ticket(runtime.transport.endpoint, ticket)
+    end
+    return nothing
+end
+function _ticket_effect(f, runtime::Runtime)
+    try
+        return f()
+    catch error
+        runtime.persistent && Endpoint.ticket_unavailable(error) && throw(RetiredSession())
+        rethrow()
+    end
 end
 function _reply!(
     sm::Monitor, message::AbstractOwnerMessage; ticket = nothing, error = nothing
@@ -1155,7 +1208,8 @@ treat an interrupt after accepted cancellation as clean owner shutdown.
 """
 function with_owner(f, options; application_name::AbstractString = options.bootstrap_node)
     runtime = Runtime(
-        options.remote, options.bootstrap_node, options.bootstrap_instance; application_name
+        options.remote, options.bootstrap_node, options.bootstrap_instance;
+        application_name, persistent = get(options, :persistent, false),
     )
     return _with_owner(f, options, runtime)
 end
@@ -1167,6 +1221,12 @@ function _record_owner_failure!(failures, runtime, error)
 end
 function _record_owner_failure!(failures, runtime, error::InterruptException)
     cancelled(runtime) && return nothing
+    push!(failures, error)
+    fault!(runtime, error)
+    return nothing
+end
+function _record_owner_failure!(failures, runtime::Runtime, error::RetiredSession)
+    runtime.persistent && return nothing
     push!(failures, error)
     fault!(runtime, error)
     return nothing
@@ -1186,7 +1246,8 @@ function _with_owner(f, options, runtime)
         try
             finish!(runtime)
         catch error
-            push!(failures, error)
+            (error isa RetiredSession && runtime isa Runtime && runtime.persistent) ||
+                push!(failures, error)
         end
         try
             close(runtime)

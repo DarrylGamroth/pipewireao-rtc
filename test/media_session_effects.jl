@@ -563,6 +563,36 @@ end
     ]
 end
 
+S.available_bootstrap!(runtime::Runtime, job, name, pid, instance) =
+    node!(runtime, job, name, pid)
+
+@testset "Persistent graph retirement requires this session's Connect acknowledgement" begin
+    runtime = Runtime()
+    runtime.configuration["node.pids"] = Dict("left" => 2001)
+    # Runtime uses narrowed dictionaries for its ordinary owner fixtures.
+    runtime.configuration["owners"] = [Dict{String,Any}(d) for d in runtime.configuration["owners"]]
+    runtime.configuration["owners"][1]["persistent"] = true
+    S.perform!(runtime, job(), S.CaptureOwners())
+    empty!(runtime.trace)
+    S.perform!(runtime, job(), S.ShutdownGraphOwners())
+    S.perform!(runtime, job(), S.ShutdownOwners())
+    @test (:shutdown_owner, UInt64(11)) ∉ runtime.trace
+    @test !runtime.owners[1].retired
+
+    runtime = Runtime()
+    runtime.configuration["node.pids"] = Dict("left" => 2001)
+    runtime.configuration["owners"] = [Dict{String,Any}(d) for d in runtime.configuration["owners"]]
+    runtime.configuration["owners"][1]["persistent"] = true
+    S.perform!(runtime, job(), S.CaptureOwners())
+    ticket = S.EffectTicket(UInt64(1), UInt64(1), UInt64(1), UInt32(0),
+        S.ConfiguringOrigin(), Int64(5_000_000_000), S.ConnectOwners(), nothing)
+    S.perform!(runtime, S.Job(ticket, false), S.ConnectOwners())
+    empty!(runtime.trace)
+    S.perform!(runtime, job(), S.ShutdownGraphOwners())
+    @test (:shutdown_owner, UInt64(11)) in runtime.trace
+    @test runtime.owners[1].retired
+end
+
 function S.publish_parameter_source!(runtime::Runtime, _job, _handle, properties)
     push!(runtime.trace, (
         :parameter_source_id, parse(UInt64, properties["pipewireao.rtc-control.parameter-source.id"]),

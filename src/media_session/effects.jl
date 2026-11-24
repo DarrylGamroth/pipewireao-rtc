@@ -29,6 +29,32 @@ function _declared_instance(declaration, key)
     return instance
 end
 
+# A previous session's terminal bootstrap can still be visible after an unclean
+# exit. Inspect its bounded native capability before taking a required binding.
+function available_bootstrap!(runtime, job, name, pid, instance)
+    observation = ControlClient.Observation(OwnerBootstrapCodec.PROFILE, instance, UInt32(pid))
+    key = first(ControlClient.capability_names(observation.profile))
+    return await_condition!(runtime, job) do
+        object = find_object(runtime, name, pid)
+        object === nothing && return nothing
+        records = _enumerate_object!(runtime, job, object, SPA.PARAM_PROPS)
+        records === nothing && return nothing
+        capabilities = filter(pod -> haskey(named_values(pod), key), records)
+        isempty(capabilities) && return nothing
+        capability = ControlClient.capability(only(capabilities), observation)
+        if capability.lifecycle in (OwnerBootstrapCodec.Connected, OwnerBootstrapCodec.Stopped,
+                                    OwnerBootstrapCodec.Fault)
+            await_condition!(runtime, job) do
+                object.removed || registry_serial(runtime, object.id) != object.serial
+            end
+            return nothing
+        end
+        capability.lifecycle === OwnerBootstrapCodec.Prepared &&
+            runtime.controller in capability.controllers || return nothing
+        return UInt64(object.id)
+    end
+end
+
 function perform!(runtime, job, ::CaptureOwners)
     isempty(runtime.owners) || throw(ArgumentError("bootstrap owners are already captured"))
     await_condition!(runtime, job) do
@@ -55,7 +81,11 @@ function perform!(runtime, job, ::CaptureOwners)
         name = String(declaration["bootstrap-node"])
         name in names && throw(ArgumentError("duplicate bootstrap control node"))
         push!(names, name)
-        handle = node!(runtime, job, name, declaration["pid"])
+        instance = _declared_instance(declaration, "bootstrap-instance")
+        pid = declaration["pid"]
+        persistent = get(declaration, "persistent", false)::Bool
+        handle = persistent ? available_bootstrap!(runtime, job, name, pid, instance) :
+                 node!(runtime, job, name, pid)
         handle in handles && throw(ArgumentError("duplicate bootstrap owner incarnation"))
         push!(handles, handle)
         capture!(runtime, handle; core)
@@ -63,9 +93,12 @@ function perform!(runtime, job, ::CaptureOwners)
             runtime,
             handle,
             OwnerBootstrapCodec.PROFILE,
-            _declared_instance(declaration, "bootstrap-instance"),
-            declaration["pid"],
+            instance,
+            pid,
         )
+        # Session-scoped owners also accept Quit during preparation. A reusable
+        # owner grants retirement only to the controller whose Connect succeeded.
+        owner.quit_authorized = !persistent
         push!(runtime.owners, owner)
     end
     return nothing
@@ -78,6 +111,7 @@ function perform!(runtime, job, ::ConnectOwners)
     @sync for owner in runtime.owners
         @async try
             connect_owner!(runtime, job, owner)
+            owner.quit_authorized = true
         catch error
             if !job.cancelled
                 push!(failures, error)
@@ -363,7 +397,7 @@ function perform!(runtime, job, ::ShutdownOwners)
     return nothing
 end
 function _shutdown_bootstrap!(runtime, job, owner::Owner{OwnerBootstrapCodec.Profile})
-    owner.retired && return nothing
+    owner.quit_authorized && !owner.retired || return nothing
     name = property(runtime, owner.handle, "node.name")
     quit_target!(
         runtime, job, :bootstrap, something(name, ControlClient.profile_name(owner.profile)),

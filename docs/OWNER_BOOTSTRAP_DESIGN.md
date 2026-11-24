@@ -80,9 +80,55 @@ Reuse the common `ControlCodec` envelope, exact endpoint/controller identity, on
 
 There is no acquisition cursor, instrument, held/restored field, run window or fabricated science snapshot. The caller performs mandatory fresh native PID/incarnation/profile/controller proof. Names and process launch hints locate an endpoint; they do not confer authority. A fresh Status requires a newly processed matching request token, including in Preparing. No rebind, retry, marker fallback or saved-report readiness fallback follows uncertainty.
 
-Status has no scientific effect and reports the most recently serialized phase. Connect is accepted only from Prepared; it stages one intent for main and completes only after actual connection/registration. A premature Connect is a healthy negative result and does not wait for preparation or acquire persistent authority. A second Connect from Connected is rejected without reconnecting. Quit from Preparing, Prepared, Connected or Fault stages cancellation/stop; successful Quit requires actual main cleanup, Stopped publication and terminal native flush. Stopped is terminal.
+For a session-scoped owner, Status has no scientific effect and reports the most recently serialized phase. Connect is accepted only from Prepared; it stages one intent for main and completes only after actual connection/registration. A premature Connect is a healthy negative result and does not wait for preparation or acquire persistent authority. A second Connect from Connected is rejected without reconnecting. Quit from Preparing, Prepared, Connected or Fault stages cancellation/stop; successful Quit requires actual main cleanup, Stopped publication and terminal native flush. Stopped is terminal.
 
 The endpoint's pending ticket is also the only accepted main-effect slot: do not create a second request queue or clear the accepted ticket before completion. Status or other callers during an accepted long Connect/Quit receive the common busy rejection. After successful Connect, the ordinary-owner bootstrap retains only the exact accepted controller. Before publishing Connected, it closes its independent registry listener and stops the SDK registry global tracking; the registry and the bound controller proxy remain open. The supervisor retains this same bootstrap client across resets through Quit. Bound NodeInfo proof changes, node removal and connection errors still revoke authority and initiate cleanup. New independent bootstrap controllers cannot obtain authority after Connected; normal operator clients continue using the dynamic public deployment supervisor. This restriction applies only to the ordinary-owner bootstrap profile; other native endpoints retain dynamic discovery. Foreign stale/removal/busy requests preserve lifecycle and the accepted owner's scientific state. Removal/expiry of the controller for an accepted Connect or Quit stops further effect progress and initiates cleanup; expiry of a Status has no scientific effect.
+
+## Graph service lifetime across RTC sessions
+
+An installed graph service can outlive the MediaSession that claims it. The
+existing native `pipewireao.rtc.owner-bootstrap/1` records describe one
+attachment. The table above defines the wire types and operation IDs for any
+implementation. The session and graph can use different languages and state
+machine libraries. The current installed graph adapter uses Julia. The
+[Connect request and reply](../test/data/native-owner-bootstrap/README.md)
+are binary fixtures for testing another codec.
+
+| Event | What a graph process must do |
+| --- | --- |
+| Service starts | Load its installed graph configuration and calibration. Create a bootstrap Node for an unclaimed attachment. Publish Prepared only when the graph is ready to connect, with correction open. |
+| A session attaches | Verify the caller's native controller identity. Accept Connect once and acknowledge Connected after the graph's public Node is registered. Retain the exact claimant for this attachment. |
+| The graph is held | MediaSession creates and verifies the declared non-lingering Links, obtains the Hold acknowledgements and completes public admission. Start releases processing. Only qualifying live measurements may prime a correction loop, and closure requires an explicit operator command. |
+| The claimant sends Quit | Stop this attachment, close the graph and acknowledge Stopped on the old bootstrap before withdrawing it. A different controller cannot request its retirement. |
+| The claimant disappears | Revoke its authority, release its graph and control endpoints and discard its buffered data, pending edits, priming and integrator state. No acknowledgement to the lost claimant is possible. |
+| The next session attaches | Advertise a new bootstrap Node under the configured name with a fresh PipeWire object serial. Begin with the installed parameter values and open integrators. Require fresh Connect, Links, Hold and admission. |
+| The process or core changes | The previous binding expires. Service identity, native object incarnations and placement must all be verified for a new admission. |
+
+The unit invocation, PID and process start time identify the retained service.
+The bootstrap instance can stay fixed over that process's lifetime. The
+PipeWire core and object serial distinguish successive attachments even when
+a name or numeric object ID is reused. A replacement session can observe the
+previous attachment retiring. It waits within its startup deadline for a
+Prepared endpoint from the expected process that advertises its controller.
+Observing the previous endpoint gives the replacement no right to send it
+Quit. A deadline expiry leaves the new session unadmitted. If two controllers
+attempt to claim the same available graph concurrently, only one can acquire
+it. A controller that loses that race may need a new admission attempt.
+
+The reference graph adapter retains loaded packages, graph declarations and
+decoded calibration arrays. It creates fresh execution plans, mutable buffers
+and native control endpoints per attachment. A process replacement reloads the
+installed calibration.
+
+A second implementation needs an installer adapter to select and verify its
+executable and sealed calibration inputs. The current installer recognizes the
+Julia graph launcher. A native executable can derive the bootstrap instance as
+one plus the unsigned value of the first 15 hexadecimal digits of the systemd
+invocation ID. The installer and admission checks retain the full invocation
+ID. Compatibility requires demonstrating correlated Connect and Quit, claimant
+loss during Connect and while running, fresh serials, open-loop live priming
+and cleanup on the private core. The choice of an internal HSM is local to the
+implementation. See the [installed service procedure](SYSTEMD_SESSION_STARTUP.md#keep-controller-graph-services-running-across-an-rtc-restart).
 
 ## Preparation and finite effects
 

@@ -114,6 +114,7 @@ struct UnknownOutcome <: Exception
 end
 Base.showerror(io::IO, error::UnknownOutcome) =
     print(io, "native control outcome unknown: ", error.message)
+const DEADLINE_EXPIRED = UnknownOutcome("absolute deadline expired")
 
 struct Capability{L}
     lifecycle::L
@@ -511,7 +512,7 @@ end
 
 function deadline_check(deadline::Int64, check, current::Int64)
     _supervise(check)
-    current < deadline || throw(UnknownOutcome("absolute deadline expired"))
+    current < deadline || throw(DEADLINE_EXPIRED)
     return nothing
 end
 

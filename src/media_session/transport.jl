@@ -234,7 +234,15 @@ function enumerate!(runtime, job, handle::UInt64, name::AbstractString)
     check_job(runtime, job)
     assert_identity!(runtime, handle)
     object = something(find_object(runtime, handle))
-    param = parameter_id(Val(Symbol(name)))
+    records = _enumerate_object!(runtime, job, object, parameter_id(Val(Symbol(name))))
+    assert_identity!(runtime, handle)
+    records === nothing && throw(ArgumentError("enumerated object incarnation disappeared"))
+    return records
+end
+
+# A read-only candidate can disappear while its enumeration is in flight.
+# Callers which already depend on this object recheck their captured identity.
+function _enumerate_object!(runtime, job, object, param)
     sequence = Ref(Cint(0))
     check_job(runtime, job)
     PipeWireAO.enum_params!(
@@ -250,6 +258,8 @@ function enumerate!(runtime, job, handle::UInt64, name::AbstractString)
     runtime.parameters_io[key] = pending
     try
         synchronize!(runtime, job)
+        (object.removed || find_object(runtime, object.id) !== object ||
+            registry_serial(runtime, object.id) != object.serial) && return nothing
         if pending.error !== nothing
             # The server may refuse a read-only enum while keeping its global
             # alive. PipeWireAO correctly retains the failed proxy's error;
@@ -257,7 +267,6 @@ function enumerate!(runtime, job, handle::UInt64, name::AbstractString)
             refresh_object!(runtime, object.id)
             throw(ArgumentError(pending.error))
         end
-        assert_identity!(runtime, handle)
         return pending.records
     finally
         delete!(runtime.parameters_io, key)

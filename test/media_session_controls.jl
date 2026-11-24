@@ -14,6 +14,7 @@ import PipeWireAORTC:
     SourceControl,
     ParameterSource,
     DeploymentConfiguration
+import PipeWireAORTC.MediaSession as Session
 import PipeWireAORTC.MediaSession: AbstractOrigin, ReadyOrigin, RunningOrigin, ParameterRefusal
 include(joinpath(@__DIR__, "..", "src", "media_session", "controls.jl"))
 include(joinpath(@__DIR__, "..", "src", "media_session", "correction.jl"))
@@ -142,6 +143,49 @@ function capability(
         PipeWireAO.props_param(SPA.Props([names[i] => values[i] for i in eachindex(names)]))
     )
 end
+# The same numeric Node ID can be assigned to the successor before admission.
+mutable struct BootstrapRegistry
+    controller::CC.ControllerIdentity
+    serials::Vector{UInt64}
+    records::Vector{Vector{Pod}}
+    reads::Int
+end
+function Session.find_object(registry::BootstrapRegistry, name::AbstractString, pid::Integer)
+    serial = registry.serials[min(registry.reads + 1, end)]
+    return (; id = UInt32(8), serial, removed = false)
+end
+function Session._enumerate_object!(registry::BootstrapRegistry, job, object, param)
+    registry.reads += 1
+    return registry.records[min(registry.reads, end)]
+end
+Session.registry_serial(registry::BootstrapRegistry, id) =
+    registry.serials[min(registry.reads + 1, end)]
+function Session.await_condition!(f, ::BootstrapRegistry, job)
+    for _ in 1:4
+        ready = f()
+        (ready === nothing || ready === false) || return ready
+    end
+    throw(ControlClient.UnknownOutcome("attachment discovery deadline expired"))
+end
+
+@testset "A replacement session can only capture its fresh prepared bootstrap" begin
+    retired = [capability(; state = UInt32(BC.Connected), registered = false)]
+    registering = [capability(; registered = false)]
+    prepared = [capability()]
+    registry = BootstrapRegistry(IDENTITY, [41, 42, 42], [retired, registering, prepared], 0)
+    @test Session.available_bootstrap!(registry, nothing, "graph", 19, 17) == 8
+    @test registry.reads == 3
+
+    registry = BootstrapRegistry(IDENTITY, [41], [retired], 0)
+    @test_throws ControlClient.UnknownOutcome Session.available_bootstrap!(
+        registry, nothing, "graph", 19, 17
+    )
+    @test registry.reads == 1
+
+    registry = BootstrapRegistry(IDENTITY, [42], [prepared], 0)
+    @test_throws ArgumentError Session.available_bootstrap!(registry, nothing, "graph", 19, 18)
+end
+
 bootstrap_reply(token = Int64(1)) = ControlClient.encode_completion(
     BC.PROFILE,
     CC.ReplyHeader(IDENTITY, Int64(17), token, UInt32(2), Int32(0)),

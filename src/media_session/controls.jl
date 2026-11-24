@@ -85,10 +85,11 @@ mutable struct Owner{P<:ControlClient.AbstractProfile,O<:ControlClient.Observati
     instance::Int64
     retired::Bool
     connected_observed::Bool
+    quit_authorized::Bool
 end
 Owner(
     profile::P, observation::O, handle::UInt64, pid::UInt32, instance::Int64, retired::Bool
-) where {P,O} = Owner{P,O}(profile, observation, handle, pid, instance, retired, false)
+) where {P,O} = Owner{P,O}(profile, observation, handle, pid, instance, retired, false, true)
 function check_owner!(runtime, owner::Owner)
     owner.retired && throw(ArgumentError("owner is retired"))
     assert_identity!(runtime, owner.handle)

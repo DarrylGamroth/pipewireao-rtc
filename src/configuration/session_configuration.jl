@@ -197,6 +197,7 @@ function owner_record(role, declaration, records, bindings)
         parsed !== nothing && parsed > 0 || fail("invalid owner control incarnation")
         record["control-instance"] = string(parsed)
     end
+    get(records[role], "persistent", false) === true && (record["persistent"] = true)
     return record
 end
 

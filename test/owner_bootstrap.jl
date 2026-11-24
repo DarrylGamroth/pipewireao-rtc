@@ -157,11 +157,11 @@ function fault_status_proof(remote, directory, daemon)
         close(runtime)
     end
 end
-function accepted_loss_proof(remote, directory, daemon; remove = false)
+function accepted_loss_proof(remote, directory, daemon; remove = false, persistent = false)
     name = remove ? "test.bootstrap.remove" : "test.bootstrap.expire"
     instance = remove ? 45 : 44
     chmod(dirname(remote), 0o700)
-    runtime = R.Runtime(remote, name, Int64(instance))
+    runtime = R.Runtime(remote, name, Int64(instance); persistent)
     client = observer = nothing
     quit_threads = Int[]
     try
@@ -190,6 +190,15 @@ function accepted_loss_proof(remote, directory, daemon; remove = false)
             ready = () -> hooks.ready(),
             quit = () -> push!(quit_threads, Threads.threadid()),
         )
+        if persistent
+            candidate = try
+                B.connect(remote, name, getpid(), instance; deadline = Client.monotonic() + 0.3)
+            catch error
+                error
+            end
+            @test candidate isa Client.UnknownOutcome
+            candidate isa B.Connection && close(candidate)
+        end
         if remove
             with_thread_loop_lock(client.client.loop) do _
                 close(something(client.client.marker))
@@ -197,6 +206,7 @@ function accepted_loss_proof(remote, directory, daemon; remove = false)
         end
         wait_proof(() -> R.cancelled(runtime), 5, "accepted loss cancellation")
         @test runtime.failure !== nothing
+        @test (runtime.failure isa R.RetiredSession) == persistent
         @test with_thread_loop_lock(runtime.transport.loop) do _
             runtime.transport.endpoint.lifecycle === C.Fault
         end
@@ -210,7 +220,7 @@ function accepted_loss_proof(remote, directory, daemon; remove = false)
             "failed effect retired",
         )
         # Main cleanup has not finished, so a fresh Fault query remains serviced.
-        @test B.status(observer; deadline = remaining()).lifecycle === C.Fault
+        persistent || @test B.status(observer; deadline = remaining()).lifecycle === C.Fault
         R.finishing!(runtime)
         @test !isempty(quit_threads) && all(==(2), quit_threads)
         @test_throws Exception R.finish!(runtime)
@@ -228,9 +238,164 @@ function accepted_loss_proof(remote, directory, daemon; remove = false)
         close(runtime)
     end
 end
+
+struct BootstrapFenceClock <: Clocks.AbstractNanoClock
+    at::Threads.Atomic{Int64}
+    target::Threads.Atomic{Int64}
+    reads::Threads.Atomic{Int}
+end
+BootstrapFenceClock() = BootstrapFenceClock(Threads.Atomic{Int64}(0), Threads.Atomic{Int64}(0), Threads.Atomic{Int}(0))
+
+function Clocks.time_nanos(clock::BootstrapFenceClock)
+    target = clock.target[]
+    if Threads.threadid() == 2 && target != 0 && Threads.atomic_add!(clock.reads, -1) == 0
+        clock.at[] = target
+        clock.target[] = 0
+    end
+    return max(clock.at[], Clocks.time_nanos(Clocks.SystemNanoClock()))
+end
+
+function expire_bootstrap_after!(clock, ticket, reads)
+    clock.reads[] = reads
+    clock.target[] = ticket.deadline
+    return nothing
+end
+
+function persistent_late_fence_proof(remote, directory, daemon; operation)
+    chmod(dirname(remote), 0o700)
+    name = "test.bootstrap.late.$operation"
+    clock = BootstrapFenceClock()
+    runtime = R.Runtime(remote, name, Int64(47); persistent = true, clock)
+    client = nothing
+    release = Channel{Nothing}(1)
+    try
+        client = B.connect(remote, name, getpid(), 47; deadline = remaining())
+        R.prepared!(runtime)
+        wait_proof(() -> B.status(client; deadline = remaining()).lifecycle === C.Prepared, 5, "late fence Prepared")
+        applying = @async try
+            B.request!(client, :connect; deadline = Client.monotonic() + 3)
+        catch error
+            error
+        end
+        ticket = R.take_connect!(runtime)
+        if operation === :connect
+            R.connecting!(runtime, ticket; ready = () -> begin
+                # Validate Connect once after readiness. Expire on Completed's
+                # internal recheck after the monitor has published Connected.
+                expire_bootstrap_after!(clock, ticket, 1)
+                true
+            end, quit = () -> nothing)
+            wait_proof(() -> R.cancelled(runtime), 5, "late Connect retirement")
+            outcome = fetch(applying)
+            @test outcome isa Client.UnknownOutcome || outcome.header.result < 0
+        else
+            entered = Channel{Nothing}(1)
+            woke = Threads.Atomic{Bool}(false)
+            R.connecting!(runtime, ticket; ready = () -> true, quit = () -> begin
+                if !Threads.atomic_xchg!(woke, true)
+                    put!(entered, nothing)
+                    take!(release)
+                end
+            end)
+            @test fetch(applying).header.result == 0
+            quitting = @async try
+                B.request!(client, :quit; deadline = Client.monotonic() + 3)
+            catch error
+                error
+            end
+            wait_proof(() -> isready(entered), 5, "late Quit accepted")
+            take!(entered)
+            pending = with_thread_loop_lock(runtime.transport.loop) do _
+                something(runtime.transport.endpoint.pending)
+            end
+            # Queue finished facts before the next duty cycle. Let the current
+            # pending check, next cycle's clock, pending, retain and completion
+            # checks pass. Expire at the terminal native synchronization.
+            R._enqueue!(runtime.mailbox, R.HooksExcluded(Channel{R.OwnerReply}(1)); cleanup = true)
+            R._enqueue!(runtime.mailbox, R.OwnerFinished(Channel{R.OwnerReply}(1)); cleanup = true)
+            expire_bootstrap_after!(clock, pending, 5)
+            put!(release, nothing)
+            wait_proof(() -> R._status(runtime).done, 5, "late Quit retirement")
+            @test runtime.transport.endpoint.terminal
+            @test fetch(quitting) isa Union{Client.UnknownOutcome,C.Completion}
+        end
+        @test runtime.failure isa R.RetiredSession
+        @test clock.at[] > 0
+        @test_throws R.RetiredSession R.finish!(runtime)
+    finally
+        isready(release) || put!(release, nothing)
+        client === nothing || close(client)
+        close(runtime)
+    end
+end
+
+function persistent_attachment_proof(remote, directory, daemon)
+    chmod(dirname(remote), 0o700)
+    binding = (; remote, bootstrap_node = "test.bootstrap.persistent", bootstrap_instance = 46,
+        persistent = true)
+    previous_serial = nothing
+    for lost_controller in (true, false)
+        R.with_owner(binding) do admitted
+            runtime = admitted.bootstrap_runtime
+            client = B.connect(
+                remote, binding.bootstrap_node, getpid(), binding.bootstrap_instance;
+                deadline = remaining(),
+            )
+            foreign = nothing
+            try
+                @test client.client.serial != previous_serial
+                previous_serial = client.client.serial
+                @test B.request!(client, :quit; deadline = remaining()).header.result == -Base.Libc.EPERM
+                @test !R.cancelled(runtime)
+                foreign = B.connect(
+                    remote, binding.bootstrap_node, getpid(), binding.bootstrap_instance;
+                    deadline = remaining(),
+                )
+
+                R.prepared!(runtime)
+                applying = @async B.connect_owner!(client; deadline = remaining())
+                ticket = R.take_connect!(runtime)
+                woke = Threads.Atomic{Bool}(false)
+                R.connecting!(runtime, ticket; ready = () -> true, quit = () -> (woke[] = true))
+                @test fetch(applying).lifecycle === C.Connected
+                @test B.status(client; deadline = remaining()).lifecycle === C.Connected
+                foreign_outcome = try
+                    B.request!(foreign, :quit; deadline = Client.monotonic() + 0.5)
+                catch error
+                    error
+                end
+                @test foreign_outcome isa Client.UnknownOutcome || foreign_outcome.header.result < 0
+                @test !R.cancelled(runtime)
+
+                if lost_controller
+                    close(client)
+                    wait_proof(() -> woke[], 5, "persistent controller loss")
+                    @test runtime.failure isa R.RetiredSession
+                else
+                    quitting = @async try
+                        B.quit!(client; deadline = remaining())
+                    finally
+                        close(client)
+                    end
+                    wait_proof(() -> woke[], 5, "persistent attached Quit")
+                    R.finish!(runtime)
+                    @test fetch(quitting).lifecycle === C.Stopped
+                end
+            finally
+                foreign === nothing || close(foreign)
+                close(client)
+            end
+        end
+    end
+end
+
 @testset "native ordinary bootstrap actual core" begin
     with_control_private_core(bootstrap_proof)
     with_control_private_core(fault_status_proof)
     with_control_private_core((args...) -> accepted_loss_proof(args...))
     with_control_private_core((args...) -> accepted_loss_proof(args...; remove = true))
+    with_control_private_core((args...) -> accepted_loss_proof(args...; remove = true, persistent = true))
+    with_control_private_core((args...) -> persistent_late_fence_proof(args...; operation = :connect))
+    with_control_private_core((args...) -> persistent_late_fence_proof(args...; operation = :quit))
+    with_control_private_core(persistent_attachment_proof)
 end

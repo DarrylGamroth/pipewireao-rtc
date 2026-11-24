@@ -73,13 +73,7 @@ function service_unit(
     env,
     cwd,
     placement;
-    after = String[],
-    binds_to = String[],
-    part_of = String[],
-    requisite = String[],
-    condition = String[],
-    ordinary = false,
-    stop_signal = "SIGTERM",
+    kwargs...,
 )
     service.state == :pending || fail("owner unit rendering requires a pending handle")
     unit = _unit_name(service.unit, "owner")
@@ -89,6 +83,23 @@ function service_unit(
     "-" *
     service.role *
     ".service" || fail("owner service name differs from its invocation and role")
+    return owner_service_unit(service.role, argv, env, cwd, placement; kwargs...)
+end
+
+function owner_service_unit(
+    role,
+    argv,
+    env,
+    cwd,
+    placement;
+    after = String[],
+    binds_to = String[],
+    part_of = String[],
+    requisite = String[],
+    condition = String[],
+    ordinary = false,
+    stop_signal = "SIGTERM",
+)
     _owner_command(argv)
     isabspath(String(argv[1])) || fail("owner executable must be absolute")
     isabspath(String(cwd)) && isdir(cwd) ||
@@ -112,7 +123,7 @@ function service_unit(
     environment["HSA_OVERRIDE_CPU_AFFINITY_DEBUG"] = "0"
     dependencies = _after_units(after)
 
-    lines = String["[Unit]", "Description=PipeWireAO owner $(service.role)"]
+    lines = String["[Unit]", "Description=PipeWireAO owner $role"]
     isempty(dependencies) || push!(lines, "After=" * join(dependencies, " "))
     for (key, units) in
         (("BindsTo", binds_to), ("PartOf", part_of), ("Requisite", requisite))

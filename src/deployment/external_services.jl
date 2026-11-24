@@ -38,7 +38,7 @@ function external_source!(spec, source)
     return nothing
 end
 
-function record_external_service!(coordinator, record, role, unit, placement)
+function external_service(coordinator, role, unit)
     service = S.Service(coordinator, role)
     service.unit = external_unit(unit)
     values = S.properties(service.unit)
@@ -46,10 +46,19 @@ function record_external_service!(coordinator, record, role, unit, placement)
         fail("external service $(service.unit) is not active")
     S.retain!(service, values)
     S.verify!(service)
-    record["owners"][role] = merge(
-        S.record(service), Dict("role" => role, "external" => true, "placement" => deepcopy(placement))
+    return service
+end
+
+function record_external_service!(record, service, placement)
+    record["owners"][service.role] = merge(
+        S.record(service),
+        Dict("role" => service.role, "external" => true, "placement" => deepcopy(placement)),
     )
     return service
+end
+
+function record_external_service!(coordinator, record, role, unit, placement)
+    return record_external_service!(record, external_service(coordinator, role, unit), placement)
 end
 
 # Check the native Core before any RTC-owned graph or bootstrap node is published.

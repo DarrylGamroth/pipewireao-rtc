@@ -584,13 +584,16 @@ staged under `rtc/bin`; authored RTC files are preserved. Installation and start
 use the registered application environment without a copied-source fallback.
 Existing sealed SDKs retain their matching old tools rather than being converted.
 
-Startup loads the stopped session, prepares and warms owners without consuming
-recorded science input, verifies effective thread placement and requested
-resource rights, then explicitly starts the session. An external source must
-provide its own hold/release interface; graph READY alone cannot gate it.
-Required-dependency loss fails the whole deployment and revokes ingress. An
-explicit restart rebuilds and revalidates all owned processes; no mutation or
-RUNNING state is replayed automatically.
+Startup loads the stopped session, verifies the required owners, effective
+thread placement and requested resource rights, and admits the held graph.
+Start releases processing with correction open. An independently publishing
+source retains its own acquisition clock. Required-dependency loss faults the
+session and revokes ingress. On restart, MediaSession verifies fresh native
+endpoints and Links. Session-scoped owners restart with it. Graph services
+installed for [independent operation](OWNER_BOOTSTRAP_DESIGN.md#graph-service-lifetime-across-rtc-sessions)
+retain their loaded code and calibration and discard the previous session's
+mutable state. Each new session requires live priming and explicit closure
+for its declared correction loops.
 
 The private native PipeWire control endpoint and console share one typed command executor.
 Reader/preparation/writer work stays outside the sole owner. Requests, clients,

@@ -94,4 +94,26 @@ id(value) = Pod(SPA.Id(UInt32(value)))
     @test_throws ArgumentError B.Binding("/tmp/core", "owner", 0, 1)
     @test_throws ArgumentError B.Binding("/tmp/core", "owner", 1, 0)
 end
+
+@testset "Native bootstrap Connect exchange" begin
+    directory = joinpath(@__DIR__, "data", "native-owner-bootstrap")
+    connect = C.Command(:connect)
+    request_header = request(2)
+    reply_header = reply(2)
+    request_bytes = Client.encode_request(C.PROFILE, request_header, connect).data
+    reply_bytes = Client.encode_completion(C.PROFILE, reply_header, C.Connected, "").data
+    if ARGS == ["--write-golden"]
+        write(joinpath(directory, "connect.pod"), request_bytes)
+        write(joinpath(directory, "connected.pod"), reply_bytes)
+    end
+    wire_request = read(joinpath(directory, "connect.pod"))
+    wire_reply = read(joinpath(directory, "connected.pod"))
+    @test request_bytes == wire_request
+    @test reply_bytes == wire_reply
+    @test Client.decode_request(C.PROFILE, wire_request) == (request_header, connect)
+    completion = Client.decode_completion(C.PROFILE, wire_reply)
+    @test completion.header == reply_header
+    @test completion.lifecycle === C.Connected
+    @test isempty(completion.message)
+end
 end

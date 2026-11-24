@@ -39,6 +39,39 @@ or lost owner prevents successful startup. The installed service has no
 post-start admission process. Direct private-core sessions may still use the
 native inspection and admission commands.
 
+## Keep controller graph services running across an RTC restart
+
+Set the three [independent core and source bindings](HIL_CONFIGURATION.md#attach-an-rtc-to-an-already-publishing-source) in the installer environment
+and pass `--persistent-graph-owners` when installing the RTC. The installer
+writes a service named `pipewireao-graph-<application>-<role>.service` for each
+selected graph alongside the session template. Link the generated graph unit
+files into the same user manager as the session. With `app` set to the absolute
+installation path, run the following before starting the RTC.
+
+```sh
+systemctl --user link "$app"/systemd/pipewireao-graph-*.service
+systemctl --user daemon-reload
+```
+
+Start the independent core and publishing source. Starting the RTC pulls in any
+stopped graph units. You can also start those units ahead of the RTC to load
+their calibration before the first session. Every RTC activation checks the
+loaded unit and process identity, installed inputs, actual placement and fresh
+native endpoints. A changed installation requires a matching graph service
+deployment and fresh admission.
+
+Stopping the RTC or sending it native Quit withdraws that session's Links and
+releases its graph attachments. The graph services stay active and prepare
+fresh held attachments with correction open. To take the entire instrument
+offline, stop the RTC first, then stop the graph units explicitly and stop the
+independent source and core under their respective service owners.
+
+This option currently supports ordinary complete-frame CPU graph services with
+session run control. Graphs with correction require live priming. Composition,
+row-block processing, accelerator capture, an offset receiver and recovery
+owners require their existing deployment mode. The [bootstrap contract](OWNER_BOOTSTRAP_DESIGN.md#graph-service-lifetime-across-rtc-sessions)
+defines the observable behaviour for another implementation.
+
 ## First live correction
 
 Graph owners connect without executing the offline synthetic qualification

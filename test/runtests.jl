@@ -114,6 +114,7 @@ for name in (
     "calibration_action_client",
     "runner_commands",
     "installed_session_runtime",
+    "persistent_graph_deployment",
     "package",
 )
     suite = Module(Symbol("Suite_", name))

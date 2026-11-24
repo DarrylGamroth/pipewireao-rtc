@@ -95,6 +95,8 @@ filter.graph = {
         FilterGraphs.prepare_graph(path; algorithms = FilterGraphAlgorithms.algorithms())
     end
     try
+        @test extension.check_persistent_corrections(graph, ["correction:closed"]) === nothing
+        @test_throws ArgumentError extension.check_persistent_corrections(graph, [])
         options = (;
             prime_on_output = :offset, session_run_control = true,
             capture_backend = nothing, execution = "complete-frame",

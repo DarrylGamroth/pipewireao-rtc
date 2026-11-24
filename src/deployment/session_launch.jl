@@ -17,6 +17,7 @@ import PipeWireAO: LibPipeWire
 import PipeWireAOQueue_jll
 
 import ..PipeWireAORTC
+using SHA: sha256
 using Sockets
 using UUIDs
 
@@ -46,6 +47,7 @@ Base.showerror(io::IO, error::LaunchError) = print(io, error.message)
 fail(message) = throw(LaunchError(message))
 
 include("external_services.jl")
+include("persistent_graphs.jl")
 
 struct Request
     package::String
@@ -179,10 +181,11 @@ function private_remote_environment(env, runtime, bindings)
     return env
 end
 
-function owner_environment(paths, spec, bindings, runtime, role)
-    env = Dict{String,String}(ENV)
+function owner_environment(paths, spec, bindings, runtime, role; ambient = ENV)
+    env = Dict{String,String}(ambient)
     for key in (
-        "NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID", EXTERNAL_SERVICE_ENV...
+        "NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID",
+        EXTERNAL_SERVICE_ENV..., GRAPH_MANIFEST_ENV,
     )
         delete!(env, key)
     end
@@ -210,7 +213,7 @@ function owner_environment(paths, spec, bindings, runtime, role)
         env["JULIA_DEPOT_PATH"] =
             joinpath(runtime, "julia-depot") *
             ":" *
-            get(ENV, "JULIA_DEPOT_PATH", joinpath(homedir(), ".julia") * ":")
+            get(ambient, "JULIA_DEPOT_PATH", joinpath(homedir(), ".julia") * ":")
     end
     return env
 end
@@ -553,6 +556,14 @@ function prepare!(
         fail("external stream requires independent core and source service bindings")
     external === nothing || external_source!(spec, source)
     coordinator, _ = preparation_identity(request, source_role)
+    persistent = installed_graphs(package, prefix, spec, external)
+    persistent_entries = persistent === nothing ? Dict{String,Any}() : persistent["owners"]
+    persistent_services = Dict{String,S.Service}()
+    for (role, item) in persistent_entries
+        service = external_service(coordinator, role, item["unit"])
+        verify_persistent_service!(service, item)
+        persistent_services[role] = service
+    end
     invocation = coordinator.invocation
     root = request.runtime_root
     isdir(root) && !islink(root) || fail("private runtime root is unavailable")
@@ -581,7 +592,10 @@ function prepare!(
     )
     for owner in spec["owners"]
         D.uses_bootstrap_protocol(owner) || continue
-        bindings[D.bootstrap_instance_key(owner["role"])] = string(N.next_instance())
+        role = owner["role"]
+        service = get(persistent_services, role, nothing)
+        bindings[D.bootstrap_instance_key(role)] = service === nothing ?
+            string(N.next_instance()) : graph_bootstrap_instance(service.invocation)
     end
     if any(D.uses_heart_protocol, spec["owners"])
         heart = only(filter(D.uses_heart_protocol, spec["owners"]))
@@ -635,7 +649,8 @@ function prepare!(
     launch_record!(runtime, record)
     try
         contracts = [contract for (role, contract) in spec["placement"]
-                     if external === nothing || !(role in ("core", source_role))]
+                     if !(haskey(persistent_services, role) ||
+                          (external !== nothing && role in ("core", source_role)))]
         priority = maximum(contract["rt-priority"] for contract in contracts)
         locked = maximum(contract["locked-bytes"] for contract in contracts)
         record["credentials"] = P.credentials(priority, locked, spec["cpu-latency-us"])
@@ -651,6 +666,10 @@ function prepare!(
             role = owner["role"]
             services[role] = if external !== nothing && role == source_role
                 record_external_service!(coordinator, record, role, external.source, spec["placement"][role])
+            elseif haskey(persistent_services, role)
+                service = record_external_service!(record, persistent_services[role], spec["placement"][role])
+                owner_records[role]["persistent"] = true
+                service
             else
                 reserve_owner!(coordinator, role, spec["placement"][role], record)
             end
@@ -741,6 +760,7 @@ function prepare!(
         # necessary stage; ordinary FGN/FilterGraphPipeWire owners start together below.
         staged_roles = Set(["core"])
         external === nothing || push!(staged_roles, source_role)
+        union!(staged_roles, keys(persistent_services))
         for owner in filter(D.uses_heart_protocol, spec["owners"])
             install_owner!(owner)
             service = services[owner["role"]]
@@ -831,6 +851,9 @@ function prepare!(
             "launcher" => request.launcher,
             "placement" => spec["placement"]["session"],
         )
+        if persistent !== nothing
+            record["admission"]["graph_manifest_sha256"] = ENV[GRAPH_MANIFEST_ENV]
+        end
         record["session_process"] = process_binding
         record["config"] = String(config)
         record["phase"] = "prepared"
@@ -901,7 +924,12 @@ function cleanup_role!(
     validate_ledger(record)
     item = get(record["owners"], role, nothing)
     if item !== nothing && get(item, "external", false)
-        role in ("core", record["source_role"]) || fail("unexpected external owner role")
+        if get(item, "persistent", false)
+            item["unit"] == graph_unit_name(record["name"], role) ||
+                fail("unexpected persistent graph unit")
+        else
+            role in ("core", record["source_role"]) || fail("unexpected external owner role")
+        end
         external_unit(item["unit"])
         return nothing
     end

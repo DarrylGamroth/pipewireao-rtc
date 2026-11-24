@@ -199,6 +199,16 @@ function _placement_snapshot(context::InstalledAdmission; deadline, clock)
     record = context.record
     pid, _, group = context.process
     owner = S.Coordinator(request.unit, context.invocation, group, request.launcher)
+    manifest = get(record["admission"], "graph_manifest_sha256", nothing)
+    persistent = if manifest === nothing
+        nothing
+    else
+        data = SessionLaunch.sealed_graph_document(
+            joinpath(request.package, "systemd", SessionLaunch.GRAPH_MANIFEST), manifest
+        )
+        SessionLaunch.verify_graph_assets!(data["assets"], data["asset-sha256"])
+        data["owners"]
+    end
     snapshots = Dict{String,Any}()
     for (role, item) in record["owners"]
         SessionLaunch.optional_role(record, role) && continue
@@ -208,6 +218,13 @@ function _placement_snapshot(context::InstalledAdmission; deadline, clock)
         S.verify!(service; deadline, clock)
         snapshots[role] = P.snapshot(service.main_pid, item["placement"])
         S.verify!(service; deadline, clock)
+        if get(item, "persistent", false)
+            persistent === nothing &&
+                throw(ArgumentError("persistent owner lacks an installed graph manifest"))
+            SessionLaunch.verify_persistent_service!(
+                service, persistent[role]; deadline, clock, attached = true
+            )
+        end
     end
     snapshots["session"] = P.snapshot(pid, record["admission"]["placement"])
     _startup_deadline(deadline, clock)

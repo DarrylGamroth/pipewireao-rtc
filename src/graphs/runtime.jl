@@ -59,6 +59,7 @@ function arguments(arguments)
     local_output = nothing
     display_sink = nothing
     qualify_at_install = false
+    persistent = false
     forbidden = (
         "--prepared-event",
         "--connect-request",
@@ -78,6 +79,10 @@ function arguments(arguments)
             length(terms) == 1 && !qualify_at_install ||
                 throw(ArgumentError("$key is a single flag without a value"))
             qualify_at_install = true
+        elseif key == "--persistent"
+            length(terms) == 1 && !persistent ||
+                throw(ArgumentError("$key is a single flag without a value"))
+            persistent = true
         elseif key in ("--latest-output", "--unpublished-output", "--latest-output-sink")
             count = key == "--latest-output" ? 3 : key == "--latest-output-sink" ? 2 : 1
             length(terms) == 1 && index + count <= length(arguments) || throw(
@@ -188,6 +193,8 @@ function arguments(arguments)
         length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
     prime_on_output = priming_properties(priming_outputs, correction_properties)
+    persistent && !isempty(correction_properties) && prime_on_output === nothing &&
+        throw(ArgumentError("persistent correction requires a live priming output"))
     display_sink === nothing || (local_output !== nothing && local_output.node !== nothing) ||
         throw(ArgumentError("--latest-output-sink requires --latest-output"))
     local_output === nothing || (local_output = merge(local_output, (; sink = display_sink)))
@@ -200,6 +207,7 @@ function arguments(arguments)
         ) : (;)
     return (;
         remote, bootstrap_node = node, bootstrap_instance = instance, clock_policy...,
+        (persistent ? (; persistent) : (;))...,
         (prime_on_output === nothing ? (;) : (; prime_on_output))...,
     ),
     graph,
@@ -339,6 +347,8 @@ end
 function precompile_graph_warmup end
 
 function run_owner end
+function prepare_persistent_owner end
+function run_persistent_owner end
 
 "Return RTC metadata profiles for the optional graph integration's public data ports."
 function metadata_profiles end
@@ -395,7 +405,7 @@ function _main(
     binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, qualification, local_output = arguments(
         args
     )
-    with_owner(binding) do admitted
+    function options_for(admitted)
         admitted.owner_check()
         filter_graph_pipewire = Common.startup_phase(
             load_science, binding.bootstrap_node, "load FilterGraphPipeWire"
@@ -409,7 +419,25 @@ function _main(
         )
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
-        Base.invokelatest(run, options, admitted.bootstrap_runtime, entries)
+        return options, entries
+    end
+    if get(binding, :persistent, false)
+        retained = nothing
+        while true
+            with_owner(binding) do admitted
+                runtime = admitted.bootstrap_runtime
+                if retained === nothing
+                    options, entries = options_for(admitted)
+                    retained = Base.invokelatest(prepare_persistent_owner, options, runtime, entries)
+                end
+                Base.invokelatest(run_persistent_owner, retained, runtime)
+            end
+        end
+    else
+        with_owner(binding) do admitted
+            options, entries = options_for(admitted)
+            Base.invokelatest(run, options, admitted.bootstrap_runtime, entries)
+        end
     end
     return 0
 end
@@ -425,6 +453,10 @@ containing `port`, `path`, optional one-based `hdu` and FITS `axes`. The graph's
 typed Parameter Ports define element types and shapes. Paths resolve relative to
 the manifest. Multidimensional images require explicit
 axes. FITS startup does not change legacy raw `--parameter` file semantics.
+`--persistent` keeps the service process, graph configuration, and typed FITS
+startup arrays across RTC sessions. Each attachment gets a fresh held, open
+workspace and native endpoint identities. This mode requires an ordinary
+complete-frame CPU graph with session run control.
 `--correction-property NODE:PROPERTY` declares a Boolean correction-loop property
 for RTC-owned adoption tracking; repeat it for independent declared loops.
 This does not change startup closure, lifecycle, or the scientific controller.

@@ -237,6 +237,72 @@ function Owner.run_owner(options, runtime, entries)
     return nothing
 end
 
+function Owner.prepare_persistent_owner(options, runtime, entries)
+    Owner.supports_offline_qualification(options) && options.session_run_control && !options.check &&
+        options.matrix_layout === :shared && isempty(options.recovery_nodes) &&
+        isempty(options.parameters) || throw(ArgumentError(
+            "persistent graph owners require ordinary complete-frame CPU execution with session run control. Bind startup parameters with FITS and omit recovery and offsets.",
+        ))
+    FilterGraphPipeWire.configure_threads(options)
+    algorithms = FilterGraphPipeWire.algorithm_declarations(;
+        packages = options.packages, algorithms = options.algorithms, builtins = options.builtins,
+    )
+    prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+    document = PipeWireAORTC.DeploymentConfiguration.decode(options.graph, prefix)
+    haskey(document, "filter.composition") &&
+        throw(ArgumentError("persistent graph owners require an ordinary complete-frame graph"))
+    Bootstrap.preparation_check!(runtime)
+    options = merge(options, (; persistent = true))
+    parameters = Ref{Union{Nothing,Vector{Pair{Symbol,Array}}}}(nothing)
+    return (; options, algorithms, document, entries, parameters)
+end
+
+function check_persistent_corrections(graph, declared)
+    corrections = Set{String}()
+    for node in graph.nodes
+        plan = node.prepared.plan
+        plan isa FilterGraphAlgorithms.AbstractAlgorithmPlan || continue
+        for info in FilterGraphAlgorithms.property_infos(plan)
+            info.name === :closed || continue
+            info.update isa FilterGraphAlgorithms.RuntimeProperty &&
+                FilterGraphAlgorithms.property_value(plan, info.id) === false || throw(ArgumentError(
+                    "persistent correction $(node.name) requires runtime closure control and must start open",
+                ))
+            push!(corrections, "$(node.name):closed")
+        end
+    end
+    Set(declared) == corrections ||
+        throw(ArgumentError("declare each persistent correction as NODE:closed"))
+    return nothing
+end
+
+function Owner.run_persistent_owner(retained, runtime)
+    (; options, algorithms, document, entries, parameters) = retained
+    Bootstrap.preparation_check!(runtime)
+    # Each attachment gets fresh Plans and Workspaces. The retained configuration
+    # and calibration never participate in runtime property or NDArray adoption.
+    graph = Common.startup_phase(options.name, "prepare graph") do
+        FilterGraphs.prepare_graph(deepcopy(document); algorithms)
+    end
+    try
+        check_persistent_corrections(graph, options.correction_properties)
+        if parameters[] === nothing
+            parameters[] = Owner.prepare_bindings(
+                entries, FilterGraphs.parameter_formats(graph);
+                check = () -> Bootstrap.preparation_check!(runtime),
+            )
+        end
+        startup = something(parameters[])
+        isempty(startup) || FilterGraphs.replace_parameters!(
+            graph, (port => copy(data) for (port, data) in startup)...,
+        )
+        run_prepared(options, runtime, graph, nothing)
+    finally
+        FilterGraphPipeWire.close_execution(graph)
+    end
+    return nothing
+end
+
 validate_owner_feedback(graph, feedback) = nothing
 function validate_owner_feedback(::FilterGraphs.PreparedComposition, feedback)
     feedback === nothing || throw(ArgumentError("composition owns its private feedback"))
@@ -444,6 +510,10 @@ Base.@nospecializeinfer function run_prepared(
                 FilterGraphPipeWire.run!(node)
             end
         end
+        if get(options, :persistent, false)
+            Bootstrap.preparation_check!(runtime)
+            error("persistent graph stopped before its controller was released")
+        end
     catch error
         Common.startup_phase_end!(timing; interrupted = true)
         owner_cancelled(error, runtime) && return nothing
@@ -580,6 +650,7 @@ function chopped_warmup_samples(
 end
 
 owner_cancelled(::InterruptException, runtime) = Bootstrap.clean_cancel(runtime)
+owner_cancelled(::Bootstrap.RetiredSession, runtime) = runtime.persistent
 owner_cancelled(error, runtime) = false
 
 end

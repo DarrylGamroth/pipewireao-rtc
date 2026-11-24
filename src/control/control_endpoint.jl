@@ -13,6 +13,13 @@ const Client = ControlClient
 const SPA = PipeWireAO.SPA
 const MAX_CONTROLLERS = 32
 const REPLAY_REQUEST = Int32(1)
+const CONTROLLER_DISAPPEARED = ErrorException("native controller disappeared")
+const TICKET_EXPIRED = ErrorException("native owner request deadline expired")
+const TERMINAL_CONTROLLER_REVOKED = ErrorException("native terminal controller proof was revoked")
+
+"Recognize loss of the exact ticket or terminal proof without hiding transport failures."
+ticket_unavailable(error) = error === CONTROLLER_DISAPPEARED || error === TICKET_EXPIRED ||
+    error === TERMINAL_CONTROLLER_REVOKED || error === Client.DEADLINE_EXPIRED
 
 "One actual registry incarnation, verified using full NodeInfo."
 mutable struct Controller
@@ -485,8 +492,7 @@ function terminal_release(endpoint::Endpoint, ticket::Ticket)
         controller.identity == ticket.header.controller ||
             error("native terminal controller incarnation changed")
         controller.removed && return :removed
-        controller.verified && !controller.retired ||
-            error("native terminal controller proof was revoked")
+        controller.verified && !controller.retired || throw(TERMINAL_CONTROLLER_REVOKED)
         return _now!(endpoint) < ticket.deadline ? :waiting : :expired
     end
 end
@@ -720,9 +726,8 @@ end
 function _check_ticket(endpoint::Endpoint, ticket::Ticket)
     endpoint.pending === ticket || error("native owner ticket is not applying")
     refresh_controllers!(endpoint)
-    controller_present(endpoint, ticket.header.controller) ||
-        error("native controller disappeared")
-    _now!(endpoint) < ticket.deadline || error("native owner request deadline expired")
+    controller_present(endpoint, ticket.header.controller) || throw(CONTROLLER_DISAPPEARED)
+    _now!(endpoint) < ticket.deadline || throw(TICKET_EXPIRED)
     return nothing
 end
 

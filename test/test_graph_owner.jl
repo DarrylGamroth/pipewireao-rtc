@@ -79,6 +79,11 @@ end
         bootstrap_node = "rtc.bootstrap.graph",
         bootstrap_instance = 7,
     )
+    persistent, persistent_args = GraphOwner.arguments([argv; "--persistent"])
+    @test persistent.persistent
+    @test persistent_args == graph
+    @test_throws ArgumentError GraphOwner.arguments([argv; "--persistent=true"])
+    @test_throws ArgumentError GraphOwner.arguments([argv; "--persistent"; "--persistent"])
     @test graph ==
         ["--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control"]
     @test fits == "bindings.conf"
@@ -106,6 +111,8 @@ end
     priming = ["--prime-on-output", "modal-residual"]
     @test_throws ArgumentError GraphOwner.arguments([argv; priming])
     open_loop = [argv; "--correction-property"; "controller:closed"]
+    @test_throws ArgumentError GraphOwner.arguments([open_loop; "--persistent"])
+    @test first(GraphOwner.arguments([open_loop; priming; "--persistent"])).persistent
     selected = GraphOwner.arguments([open_loop; priming])
     @test first(selected).prime_on_output === Symbol("modal-residual")
     @test selected[2] == graph && last(selected) === nothing

@@ -217,11 +217,39 @@ end
                 write(io, "\n# additional comment\n")
             end
         end
-        before = file_hashes(source)
         destination = joinpath(directory, "installed")
-        @test P.SessionInstall.install((;
-            package = source, destination, pipewire_prefix = prefix
-        )) == destination
+        options = (; package = source, destination, pipewire_prefix = prefix)
+        dangling = joinpath(source, "unavailable")
+        incomplete = joinpath(directory, "incomplete")
+        symlink("missing", dangling)
+        @test_throws Base.IOError P.SessionInstall.install((; options..., destination = incomplete))
+        @test !ispath(incomplete) && !islink(incomplete)
+        rm(dangling)
+
+        before = file_hashes(source)
+        manual = joinpath(source, "manual.md")
+        symlink("README.md", manual)
+        nested = joinpath(source, "nested-install")
+        @test_throws "inside" P.SessionInstall.install((; options..., destination = nested))
+        @test !ispath(nested)
+        occupied = joinpath(directory, "occupied")
+        symlink(source, occupied)
+        @test_throws "install destination must be new" P.SessionInstall.install((
+            ; options..., destination = occupied,
+        ))
+        @test islink(occupied) && realpath(occupied) == source
+        independent_service_env = P.SessionLaunch.EXTERNAL_SERVICE_ENV
+        withenv((key => nothing for key in independent_service_env)...) do
+            @test_throws "persistent graph owners require independent core and source bindings" (
+                P.SessionInstall.install((; options..., persistent_graph_owners = true))
+            )
+            @test !ispath(destination) && !islink(destination)
+            @test P.SessionInstall.install(options) == destination
+        end
+        @test !islink(joinpath(destination, "manual.md"))
+        @test read(joinpath(destination, "manual.md")) == read(joinpath(source, "README.md"))
+        @test islink(manual)
+        rm(manual)
         @test file_hashes(source) == before
         @test !ispath(joinpath(destination, "julia"))
         @test !ispath(joinpath(destination, "test"))

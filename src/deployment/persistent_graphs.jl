@@ -1,0 +1,337 @@
+# The installed graph services have a systemd lifetime independent of the RTC.
+# Their launcher and each RTC activation use the same sealed deployment inputs.
+const GRAPH_MANIFEST_ENV = "PIPEWIREAORTC_GRAPH_MANIFEST_SHA256"
+const GRAPH_MANIFEST = "graph-owners.json"
+const GRAPH_ASSETS = "graph-owner-assets.json"
+
+function graph_unit_name(name, role)
+    occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name) && occursin(S.ROLE, role) ||
+        fail("invalid persistent graph service name")
+    return "pipewireao-graph-$name-$role.service"
+end
+
+graph_bootstrap_instance(invocation) =
+    string(parse(Int64, first(S.valid_invocation(invocation), 15); base = 16) + 1)
+
+function graph_owners(spec)
+    startup = PipeWireAORTC.GraphStartup
+    owners = filter(spec["owners"]) do owner
+        owner["role"] != spec["source-owner"] &&
+            startup.owner_arguments(owner) !== nothing
+    end
+    isempty(owners) && fail("persistent graph mode requires a declared graph owner")
+    for owner in owners
+        role = owner["role"]
+        arguments = startup.owner_arguments(owner)
+        D.uses_bootstrap_protocol(owner) ||
+            fail("persistent graph mode requires native bootstrap for $role")
+        "--session-run-control" in arguments ||
+            fail("persistent graph owner $role requires session run control")
+        flags = Set(first(split(arg, '='; limit = 2)) for arg in arguments)
+        unsupported = (
+            "--physical-offsets", "--recovery-node", "--row-workers", "--capture-backend",
+            "--matrix-layout", "--persistent", "--parameter", "--check",
+        )
+        any(in(flags), unsupported) &&
+            fail("persistent graph owner $role requires complete-frame CPU execution and FITS startup parameters")
+        choices = findall(arg -> first(split(arg, '='; limit = 2)) == "--execution", arguments)
+        if !isempty(choices)
+            length(choices) == 1 || fail("persistent graph owner $role has ambiguous execution")
+            index = only(choices)
+            complete = arguments[index] == "--execution=complete-frame" ||
+                (arguments[index] == "--execution" && index < length(arguments) &&
+                 arguments[index + 1] == "complete-frame")
+            complete || fail("persistent graph owner $role requires complete-frame execution")
+        end
+        !("--correction-property" in flags) || "--prime-on-output" in flags ||
+            fail("persistent correction owner $role requires live priming")
+    end
+    return owners
+end
+
+function graph_file_identity(path)
+    value = stat(path)
+    isfile(value) || fail("persistent graph input is not a file: $path")
+    return Dict(
+        "device" => value.device, "inode" => value.inode, "size" => value.size,
+        "mtime" => value.mtime, "ctime" => value.ctime,
+    )
+end
+
+function graph_asset_inventory(package, spec, project, executables, paths, generated)
+    files = [
+        [D.relative_asset(package, file) for file in keys(spec["artifacts"])];
+        joinpath(package, "deployment.conf");
+        joinpath(project, "Project.toml");
+        joinpath(project, "Manifest.toml");
+        executables;
+        paths["daemon"];
+        joinpath(paths["library"], "libpipewire-ao-0.3.so");
+        generated;
+    ]
+    return Dict(
+        path => merge(graph_file_identity(path), Dict("sha256" => C.sha256_file(path)))
+        for path in unique(files)
+    )
+end
+
+function graph_argument_files(arguments, directory, inventory, prefix; check_graph = false)
+    files = Set{String}()
+    function input(path)
+        selected = realpath(joinpath(directory, path))
+        haskey(inventory, selected) ||
+            fail("persistent graph input is outside the installed asset inventory: $selected")
+        push!(files, selected)
+        return selected
+    end
+    for (index, argument) in pairs(arguments)
+        terms = split(argument, '='; limit = 2)
+        first(terms) in ("--graph", "--fits-bindings", "--supervision", "--chopped-warmup") ||
+            continue
+        path = input(length(terms) == 2 ? last(terms) : arguments[index + 1])
+        if first(terms) == "--graph" && check_graph
+            document = D.decode(path, prefix)
+            document isa AbstractDict && !haskey(document, "filter.composition") ||
+                fail("persistent graph mode requires an ordinary complete-frame graph: $path")
+        elseif first(terms) == "--fits-bindings"
+            entries = PipeWireAORTC.GraphOwner.bindings(path, D.decode(path, prefix))
+            foreach(entry -> input(entry.source.path), entries)
+        end
+    end
+    return files
+end
+
+function sealed_graph_document(path, digest)
+    isfile(path) && !islink(path) && filesize(path) <= D.MAX_CONFIG_BYTES ||
+        fail("persistent graph document is missing or invalid: $path")
+    bytes = open(io -> read(io, D.MAX_CONFIG_BYTES + 1), path)
+    length(bytes) <= D.MAX_CONFIG_BYTES &&
+        occursin(r"^[0-9a-f]{64}$", digest) && bytes2hex(sha256(bytes)) == digest ||
+        fail("persistent graph document changed: $path")
+    data = C.parse_json(String(bytes))
+    data isa AbstractDict && get(data, "version", nothing) === 1 ||
+        fail("unsupported persistent graph document: $path")
+    return data
+end
+
+function verify_graph_assets!(path, digest)
+    data = sealed_graph_document(path, digest)
+    for (file, expected) in data["files"]
+        observed = graph_file_identity(file)
+        all(expected[key] == value for (key, value) in observed) ||
+            fail("persistent graph input changed: $file")
+    end
+    return data["files"]
+end
+
+# Run in the final Julia MainPID. The process argv keeps the asset digest, so
+# a service launched for an older installation cannot attest to the new files.
+function bind_persistent_graph!(arguments)
+    path, digest = popfirst!(arguments), popfirst!(arguments)
+    inventory = verify_graph_assets!(path, digest)
+    for file in graph_argument_files(arguments, pwd(), inventory, ENV["PIPEWIREAO_PREFIX"])
+        inventory[file]["sha256"] == C.sha256_file(file) ||
+            fail("persistent graph input content changed: $file")
+    end
+    instance = findfirst(==("--bootstrap-instance"), arguments)
+    instance === nothing && fail("persistent graph launcher lacks a bootstrap instance")
+    arguments[instance + 1] = graph_bootstrap_instance(get(ENV, "INVOCATION_ID", ""))
+    push!(arguments, "--persistent")
+    return nothing
+end
+
+function install_persistent_graphs!(package, prefix, spec, external)
+    external === nothing &&
+        fail("persistent graph mode requires an independent core and publishing source")
+    package = realpath(package)
+    prefix = realpath(prefix)
+    source = only(owner for owner in spec["owners"] if owner["role"] == spec["source-owner"])
+    external_source!(spec, deepcopy(source))
+    owners = graph_owners(spec)
+    paths = D.installed_paths(prefix)
+    project = D.application_environment(spec, package)
+    systemd = joinpath(package, "systemd")
+    runtime = joinpath(systemd, "graph-owners")
+    mkdir(runtime; mode = 0o700)
+    assets = joinpath(systemd, GRAPH_ASSETS)
+    manifest = joinpath(systemd, GRAPH_MANIFEST)
+    all(path -> !(ispath(path) || islink(path)), (assets, manifest)) ||
+        fail("persistent graph manifest paths are reserved for installation")
+    generated = String[]
+    bindings = Dict(
+        "PACKAGE" => package, "PREFIX" => prefix, "RUNTIME" => runtime,
+        "REMOTE" => external.socket,
+    )
+    request = (; package, prefix)
+    prepare_julia_overlay!(request, paths, spec, runtime)
+    overrides = joinpath(runtime, "julia-depot", "artifacts", "Overrides.toml")
+    isfile(overrides) && push!(generated, overrides)
+    graphs = joinpath(package, "graphs")
+    if isdir(graphs)
+        for name in readdir(graphs)
+            endswith(name, ".conf.in") || continue
+            source_graph = D.relative_asset(package, joinpath("graphs", name))
+            graph = joinpath(runtime, name[1:(end-3)])
+            write(graph, D.substitute(read(source_graph, String), bindings; quoted = true))
+            push!(generated, graph)
+        end
+    end
+    for owner in owners
+        role = owner["role"]
+        directory = joinpath(runtime, role)
+        mkdir(directory; mode = 0o700)
+        client = D.relative_asset(package, spec["client"][role])
+        output = joinpath(directory, "client.conf")
+        write(output, D.substitute(read(client, String), bindings; quoted = true))
+        push!(generated, output)
+    end
+    executables = Dict(
+        owner["role"] => D.selected_julia_executable(
+            realpath(D.substitute(first(owner["argv"]), bindings))
+        ) for owner in owners
+    )
+    inventory = graph_asset_inventory(package, spec, project, collect(values(executables)), paths, generated)
+    C.write_json(assets, Dict("version" => 1, "files" => inventory); atomic = true)
+    digest = C.sha256_file(assets)
+    entries = Dict{String,Any}()
+    for owner in owners
+        role = owner["role"]
+        unit = graph_unit_name(spec["name"], role)
+        unit in (external.core, external.source) &&
+            fail("persistent graph service conflicts with an independent provider")
+        placement = spec["placement"][role]
+        local_bindings = merge(bindings, Dict(D.bootstrap_instance_key(role) => "1"))
+        # Install captures only the Julia depot selection from the installer.
+        # Deployment and role declarations provide any other owner environment.
+        ambient = Dict{String,String}()
+        haskey(ENV, "JULIA_DEPOT_PATH") &&
+            (ambient["JULIA_DEPOT_PATH"] = ENV["JULIA_DEPOT_PATH"])
+        env = owner_environment(paths, spec, local_bindings, runtime, role; ambient)
+        env["PIPEWIREAO_PREFIX"] = prefix
+        for (key, value) in owner["environment"]
+            env[key] = D.substitute(value, local_bindings)
+        end
+        private_remote_environment(env, runtime, bindings)
+        get(env, "LD_LIBRARY_PATH", "") == paths["library"] &&
+            !haskey(env, "JULIA_LOAD_PATH") &&
+            !haskey(env, "JULIA_FILTER_GRAPH_QUIT_REQUEST") &&
+            env["PIPEWIREAO_PREFIX"] == prefix &&
+            get(env, "PIPEWIREAO_CONFIG_DIR", "") == joinpath(runtime, role) ||
+            fail("persistent graph owner $role overrides its private environment")
+        env["JULIA_LOAD_PATH"] = "@:@stdlib"
+        argv = String[D.substitute(arg, local_bindings) for arg in owner["argv"]]
+        argv[1] = executables[role]
+        split_arg = findfirst(==("-e"), argv)
+        split_arg !== nothing && argv[split_arg+1] == PipeWireAORTC.GraphStartup.ENTRY ||
+            fail("persistent graph owner $role does not use the package Julia entry")
+        julia_arguments = argv[2:(split_arg-1)]
+        projects = filter(arg -> startswith(arg, "--project="), julia_arguments)
+        length(projects) == 1 && realpath(only(projects)[11:end]) == project ||
+            fail("persistent graph owner $role uses a different Julia project")
+        "--startup-file=no" in julia_arguments &&
+            all(arg -> occursin(r"^(?:--(?:project|threads)=.+|--startup-file=no|-O[0-3])$", arg), julia_arguments) ||
+            fail("persistent graph owner $role has unsupported Julia launch arguments")
+        directory = joinpath(runtime, role)
+        graph_argument_files(
+            argv[(split_arg + 3):end], directory, inventory, prefix; check_graph = true
+        )
+        (isfile(overrides) && first(split(env["JULIA_DEPOT_PATH"], ':')) !=
+            joinpath(runtime, "julia-depot")) &&
+            fail("persistent graph owner $role overrides its native depot binding")
+        PipeWireAORTC.GraphStartup.configure_owner!(argv, package, owner)
+        code_index = findfirst(==("-e"), argv) + 1
+        entry = PipeWireAORTC.GraphStartup.ENTRY
+        launch = "using PipeWireAORTC; PipeWireAORTC.SessionLaunch.bind_persistent_graph!(ARGS); " *
+                 "PipeWireAORTC.GraphOwner.main(ARGS)"
+        argv[code_index] = replace(argv[code_index], entry => launch)
+        insert!(argv, code_index + 2, assets)
+        insert!(argv, code_index + 3, digest)
+        path = joinpath(systemd, unit)
+        ispath(path) || islink(path) ? fail("persistent graph service already exists: $unit") : nothing
+        unit_text = S.owner_service_unit(
+            role, argv, env, directory, placement;
+            after = [external.core], requisite = [external.core],
+            stop_signal = get(owner, "stop-signal", "SIGTERM"),
+        )
+        write(path, "# Generated by PipeWireAORTC.SessionInstall. Reinstall to change this unit.\n" * unit_text)
+        entries[role] = Dict(
+            "unit" => unit, "fragment" => path, "sha256" => C.sha256_file(path),
+            "argv" => argv, "placement" => placement,
+            "environment" => Dict(key => env[key] for key in (
+                "LD_LIBRARY_PATH", "PIPEWIREAO_CONFIG_DIR", "PIPEWIREAO_PREFIX",
+                "JULIA_DEPOT_PATH", "JULIA_LOAD_PATH",
+                "PIPEWIREAO_REMOTE", "PIPEWIRE_REMOTE", "PIPEWIREAO_RUNTIME_DIR",
+                "PIPEWIRE_RUNTIME_DIR",
+            )),
+            "pipewire-library" => realpath(joinpath(paths["library"], "libpipewire-ao-0.3.so")),
+        )
+    end
+    C.write_json(manifest, Dict(
+        "version" => 1, "package" => package, "prefix" => prefix, "assets" => assets,
+        "asset-sha256" => digest, "core" => external.core, "source" => external.source,
+        "socket" => external.socket, "owners" => entries,
+    ); atomic = true)
+    return (; digest = C.sha256_file(manifest), units = sort([item["unit"] for item in values(entries)]))
+end
+
+function installed_graphs(package, prefix, spec, external)
+    digest = get(ENV, GRAPH_MANIFEST_ENV, nothing)
+    digest === nothing && return nothing
+    external === nothing && fail("persistent graph mode requires independent core and source")
+    manifest = sealed_graph_document(joinpath(package, "systemd", GRAPH_MANIFEST), digest)
+    (manifest["package"], manifest["prefix"], manifest["core"], manifest["source"],
+        manifest["socket"]) == (package, prefix, external.core, external.source, external.socket) ||
+        fail("persistent graph installation differs from the selected deployment")
+    entries = manifest["owners"]
+    roles = Set(owner["role"] for owner in graph_owners(spec))
+    Set(keys(entries)) == roles || fail("persistent graph service roles differ from the deployment")
+    for (role, item) in entries
+        unit = graph_unit_name(spec["name"], role)
+        item["unit"] == unit && item["fragment"] == joinpath(package, "systemd", unit) &&
+            item["placement"] == spec["placement"][role] ||
+            fail("persistent graph service differs from the deployment: $role")
+    end
+    verify_graph_assets!(manifest["assets"], manifest["asset-sha256"])
+    return manifest
+end
+
+function graph_library_mapping(line, library, inode)
+    fields = split(line; limit = 6)
+    return length(fields) == 6 && lstrip(fields[6]) == library &&
+           tryparse(UInt64, fields[5]) == inode
+end
+
+function verify_persistent_service!(
+    service, item; deadline = nothing, clock = Clocks.SystemNanoClock(),
+    attached = false,
+)
+    values = S.properties(
+        service.unit; extra = "FragmentPath,DropInPaths,NeedDaemonReload,Type,Restart,KillMode",
+        deadline, clock,
+    )
+    S.same_incarnation(service, values) && values["LoadState"] == "loaded" &&
+        values["ActiveState"] == "active" && tryparse(Int, values["MainPID"]) == S.pid(service) &&
+        values["Type"] == "exec" && values["Restart"] == "no" &&
+        values["KillMode"] == "control-group" && isempty(values["DropInPaths"]) &&
+        values["NeedDaemonReload"] == "no" && isfile(values["FragmentPath"]) &&
+        realpath(values["FragmentPath"]) == item["fragment"] &&
+        C.sha256_file(item["fragment"]) == item["sha256"] && S.alive(service) ||
+        fail("persistent graph unit differs from its installed service: $(service.unit)")
+    pid = S.pid(service)
+    argv = item["argv"]
+    graph_file_identity("/proc/$pid/exe") == graph_file_identity(first(argv)) &&
+        split(read("/proc/$pid/cmdline", String), '\0'; keepempty = false) == argv ||
+        fail("persistent graph process differs from the installed command: $(service.unit)")
+    env = split(read("/proc/$pid/environ", String), '\0'; keepempty = false)
+    all(("$key=$value" in env) for (key, value) in item["environment"]) &&
+        "INVOCATION_ID=$(service.invocation)" in env && S.alive(service) ||
+        fail("persistent graph process differs from the installed environment: $(service.unit)")
+    if attached
+        library = item["pipewire-library"]
+        inode = stat(library).inode
+        open("/proc/$pid/maps", "r") do maps
+            any(line -> graph_library_mapping(line, library, inode), eachline(maps))
+        end || fail("persistent graph process is using a different PipeWireAO library")
+    end
+    return nothing
+end
