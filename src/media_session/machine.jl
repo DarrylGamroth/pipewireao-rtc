@@ -298,14 +298,14 @@ send that can fail. Cancellation fences delivery; it does not imply rollback.
 The target may be absent for a bounded cohort effect, whose adapter retains the
 exact identities of all its component transactions.
 """
-struct EffectTicket{E<:AbstractEffect,O<:AbstractOrigin}
+struct EffectTicket
     session::UInt64
     epoch::UInt64
     serial::UInt64
     operation::UInt32
-    origin::O
+    origin::AbstractOrigin
     deadline::Int64
-    effect::E
+    effect::AbstractEffect
     target::Union{Nothing,Identity}
 end
 

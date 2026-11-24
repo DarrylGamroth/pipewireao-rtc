@@ -84,7 +84,7 @@ end
     @test_throws UndefKeywordError SessionInstall.installed_launcher("/sdk/bin/julia")
 end
 
-@testset "installed startup commands select -O0" begin
+@testset "installed session launcher uses minimal compilation only for preparation" begin
     mktempdir() do directory
         julia = joinpath(mkpath(joinpath(directory, "sdk path")), "julia")
         write(julia, raw"""
@@ -103,7 +103,8 @@ end
         entry = "Base.exit_on_sigint(false); using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))"
         for command in ("prepare", "publish", "stop", "cleanup", "control", "restart", "sessions", "")
             args = isempty(command) ? String[] : [command, "--runtime-root", "path with spaces", ""]
-            optimization = command in ("prepare", "publish") ? ["-O0"] : String[]
+            optimization = get(Dict("prepare" => ["-O0", "--compile=min"],
+                                    "publish" => ["-O0"]), command, String[])
             open(`$launcher $args`, "r+") do process
                 pid = getpid(process)
                 println(process, "ready")

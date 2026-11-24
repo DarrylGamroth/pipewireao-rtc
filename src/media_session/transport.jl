@@ -92,8 +92,10 @@ param_callback(queue::EventQueue, object::UInt32) =
 
 struct Cancelled <: Exception end
 Base.showerror(io::IO, ::Cancelled) = print(io, "retired session operation")
-mutable struct Job{T<:EffectTicket}
-    ticket::T
+# Transport waits and owner transactions share one cancellation handle across
+# lifecycle states. The ticket retains the original effect and origin.
+mutable struct Job
+    ticket::EffectTicket
     cancelled::Bool
 end
 # Only Quit needs to retain per-target progress across effect cancellation.

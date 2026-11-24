@@ -618,19 +618,15 @@ session_endpoint(core, properties, queue, clock) =
 
 const MAX_DISPATCH_PREPARATION_EFFECTS = 32
 
-"""Prepare cold control dispatch before the public endpoint accepts requests.
-
-An unpublished machine with a private cached clock exercises cleanup events.
-RTC requests and backend methods compile without executing, so no native
-mutation or readiness observation is produced.
-"""
-function prepare_dispatch!(session::Session)
-    prepare_dispatch!(typeof(session))
+# The package image covers ordinary controls, including vector and matrix
+# edits. Prepare only extra ranks declared by this installation.
+function prepare_parameter_ranks!(session::Session)
     sources = get(session.configuration["session"], "sources", [])
     ranks = Set{Int}()
     for source in sources
         get(source, "factory", nothing) == "pipewireao.runtime-parameter" || continue
-        push!(ranks, length(only(source["ports"])["shape"]))
+        rank = length(only(source["ports"])["shape"])
+        rank in RunnerCodec.PARAMETER_NDARRAY_PRECOMPILE_RANKS || push!(ranks, rank)
     end
     for rank in sort!(collect(ranks))
         prepare_parameter_ndarray!(typeof(session), rank)
@@ -672,13 +668,8 @@ function prepare_parameter_ndarray!(::Type{T}, rank) where {T<:Session}
         machine = fieldtype(T, :machine)
         Base.precompile(submit!, (machine, typeof(request)))
         Base.precompile(_reply!, (machine, typeof(request), Symbol, typeof(details)))
-        for origin in (ReadyOrigin, RunningOrigin)
-            Base.precompile(EffectTicket, (UInt64, UInt64, UInt64, UInt32, origin, Int64, effect, Nothing))
-            job = Job{EffectTicket{effect,origin}}
-            Base.precompile(perform!, (T, job, effect))
-            Base.precompile(execute_effect!, (T, job))
-            prepare_parameter_forward!(T, job, forwarded)
-        end
+        Base.precompile(perform!, (T, Job, effect))
+        prepare_parameter_forward!(T, Job, forwarded)
         reply = Reply(
             request.token, header.operation, RunnerCodec.Running, :Updated, details, nothing, false,
         )
@@ -726,38 +717,28 @@ function prepare_dispatch!(::Type{T}) where {T<:Session}
     )
     for (command, payload, effect) in controls
         Base.precompile(submit!, (fieldtype(T, :machine), Request{command,payload}))
-        for origin in (ReadyOrigin, RunningOrigin)
-            job = Job{EffectTicket{effect,origin}}
-            Base.precompile(perform!, (T, job, effect))
-        end
+        Base.precompile(perform!, (T, Job, effect))
     end
     # Prepare the native restart sequence before its first live request.
     # Each command's effects share its deadline.
     Base.precompile(submit!, (fieldtype(T, :machine), Request{Start,Tuple{}}))
     for effect in (RunGraphs{Nothing}, RunSources)
-        job = Job{EffectTicket{effect,ReadyOrigin}}
-        Base.precompile(perform!, (T, job, effect))
+        Base.precompile(perform!, (T, Job, effect))
     end
-    for (command, operation, origins, effects) in (
-        (Stop, :session_stop, (ReadyOrigin, RunningOrigin), (HoldSources, HoldGraphs)),
-        (Reset, :reset, (ReadyOrigin,), (HoldSources, HoldGraphs, ResetSources, ResetGraphs)),
+    for (command, operation, effects) in (
+        (Stop, :session_stop, (HoldSources, HoldGraphs)),
+        (Reset, :reset, (HoldSources, HoldGraphs, ResetSources, ResetGraphs)),
     )
         Base.precompile(submit!, (fieldtype(T, :machine), Request{command,Tuple{}}))
         ticket = Ingress.Ticket{RunnerCodec.RunnerCommand{operation,Tuple{}}}
         Base.precompile(reply_pod, (ticket, Reply{Nothing}))
         Base.precompile(Ingress._finish!, (fieldtype(T, :ingress), ticket, Pod))
-        for origin in origins, effect in effects
-            job = Job{EffectTicket{effect,origin}}
-            Base.precompile(perform!, (T, job, effect))
-            Base.precompile(execute_effect!, (T, job))
+        for effect in effects
+            Base.precompile(perform!, (T, Job, effect))
         end
     end
     parameter_command = RunnerCodec.RunnerCommand{:parameter,ParameterSource.Arguments}
-    parameter_effect = SubmitParameter{ParameterSource.Arguments}
-    for origin in (ReadyOrigin, RunningOrigin)
-        job = Job{EffectTicket{parameter_effect,origin}}
-        prepare_parameter_forward!(T, job, parameter_command)
-    end
+    prepare_parameter_forward!(T, Job, parameter_command)
     bootstrap = OwnerBootstrapCodec.PROFILE
     bootstrap_owner = Owner{
         typeof(bootstrap),
@@ -766,12 +747,15 @@ function prepare_dispatch!(::Type{T}) where {T<:Session}
             ControlClient.completion_type(bootstrap),ControlClient.rejection_type(bootstrap)
         }
     }
-    for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin, FaultOrigin)
-        for effect in (ShutdownGraphOwners, ShutdownOwners)
-            job = Job{EffectTicket{effect,origin}}
-            Base.precompile(perform!, (T, job, effect))
-            Base.precompile(_shutdown_bootstrap!, (T, job, bootstrap_owner))
-        end
+    Base.precompile(execute_effect!, (T, Job))
+    Base.precompile(_shutdown_bootstrap!, (T, Job, bootstrap_owner))
+    for effect in (CaptureOwners, ConnectOwners, CaptureParameters, CaptureSources,
+                   PrepareSources, DiscoverGraphs, ConnectLinks, Disconnect)
+        Base.precompile(perform!, (T, Job, effect))
+    end
+    Base.precompile(_hold_graphs!, (T, Job, FaultOrigin))
+    for command in (InspectWarmup, Admit)
+        Base.precompile(submit!, (T, Request{command,Nothing}))
     end
     quit_ticket = Ingress.Ticket{RunnerCodec.RunnerCommand{:quit,Tuple{}}}
     Base.precompile(reply_pod, (quit_ticket, Reply{Bool}))
@@ -785,17 +769,14 @@ function prepare_dispatch!(::Type{T}) where {T<:Session}
         machine = Machine(1; clock = Clocks.CachedNanoClock(0))
         submit!(machine, Request(Quit(); payload))
         take_cancelled!(machine)
+        target = QuitTarget(:controller, "controller", nothing, nothing, nothing, nothing)
         for _ in 1:MAX_DISPATCH_PREPARATION_EFFECTS
             ticket = machine.effect
             ticket === nothing && break
-            # The simulated Quit discovers the effect sequence while Configuring.
-            # Real Ready and Running requests use distinct backend job types.
-            effect = typeof(ticket.effect)
-            for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin, FaultOrigin)
-                job = Job{EffectTicket{effect,origin}}
-                Base.precompile(execute_effect!, (T, job))
-            end
+            Base.precompile(perform!, (T, Job, typeof(ticket.effect)))
+            Hsm.dispatch!(machine, :QuitTargetStarted, (; ticket, target))
             submitted!(machine, ticket)
+            Hsm.dispatch!(machine, :QuitTargetAcknowledged, ticket)
             complete!(machine, ticket)
             take_replies!(machine)
         end
@@ -944,7 +925,7 @@ function Session(
             1,
         )
         Common.startup_phase("RTC", "prepare control dispatch") do
-            prepare_dispatch!(session)
+            prepare_parameter_ranks!(session)
         end
         # The real startup budget begins after offline code preparation. No
         # public Filter has connected yet, so no caller's receipt is deferred.
@@ -1106,7 +1087,6 @@ end
     types = (core, registry, endpoint, controller)
     if all(isconcretetype, types)
         session_type = Session{types...,clock}
-        Base.precompile(prepare_dispatch!, (session_type,))
         prepare_dispatch!(session_type)
         for rank in RunnerCodec.PARAMETER_NDARRAY_PRECOMPILE_RANKS
             prepare_parameter_ndarray!(session_type, rank)
