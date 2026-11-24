@@ -51,7 +51,9 @@ KillMode=control-group
 # separate behavior from retaining authority through the native request.
 KillSignal=SIGKILL
 CPUAffinity=12 13
-TimeoutStartSec=30
+# The stand-in reports ready after Julia loads the package. Leave time
+# for cold precompilation without changing the tested stop deadline.
+TimeoutStartSec=180
 TimeoutStopSec=300
 Restart=no
 $environment
