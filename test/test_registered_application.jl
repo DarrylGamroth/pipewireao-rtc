@@ -177,6 +177,10 @@ end
         )
         read_activation(digest) = PipeWireAORTC.SessionCLI.activation_document(package, digest)
         @test read_activation(activation.digest)["profile"] == spec
+        mkdir(joinpath(package, "graphs"))
+        write(joinpath(package, "graphs", "late.conf.in"), "{}")
+        @test isempty(read_activation(activation.digest)["graph-templates"])
+
         @test_throws PipeWireAORTC.SessionLaunch.LaunchError read_activation("0"^64)
         alternate = joinpath(package, "Manifest-v1.13.toml")
         write(alternate, "")

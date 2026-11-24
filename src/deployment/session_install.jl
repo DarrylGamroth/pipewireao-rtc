@@ -87,9 +87,11 @@ function install_activation!(package, prefix, julia, project, launcher, spec, co
     names = Set{String}([keys(spec["artifacts"])...; values(spec["client"])...;
                           spec["core"]; spec["session"]; "deployment.conf"])
     tracked === nothing || union!(names, tracked)
-    graphs = joinpath(package, "graphs")
-    if isdir(graphs)
-        union!(names, (joinpath("graphs", file) for file in readdir(graphs) if endswith(file, ".conf.in")))
+    graphs = launch.graph_templates(package)
+    for file in graphs
+        relative = joinpath("graphs", file)
+        D.relative_asset(package, relative)
+        push!(names, relative)
     end
     files = [joinpath(package, name) for name in names]
     append!(files, [julia, joinpath(project, "Project.toml"), joinpath(project, "Manifest.toml"),
@@ -99,7 +101,7 @@ function install_activation!(package, prefix, julia, project, launcher, spec, co
         "version" => 1, "package" => package, "prefix" => prefix, "launcher" => launcher,
         "project" => project, "julia" => julia, "paths" => paths, "profile" => spec,
         "files" => Dict(file => launch.graph_file_identity(file) for file in unique(files)),
-        "export-commit" => commit,
+        "export-commit" => commit, "graph-templates" => graphs,
     )
     C.write_json(path, document; atomic = true)
     filesize(path) <= D.MAX_CONFIG_BYTES || throw(ArgumentError("installed activation exceeds size bound"))

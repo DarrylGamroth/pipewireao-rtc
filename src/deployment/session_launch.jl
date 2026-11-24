@@ -230,32 +230,28 @@ function owner_environment(paths, spec, bindings, runtime, role; ambient = ENV)
     return env
 end
 
-function render_inputs!(request, spec, bindings, runtime)
-    roles = collect(keys(spec["placement"]))
-    for role in roles
-        directory = joinpath(runtime, role)
-        mkdir(directory; mode = 0o700)
-        for (key, output) in (
-            ("client", "client.conf"), ("core", "daemon.conf"), ("session", "session.conf")
-        )
-            relative = key == "client" ? spec["client"][role] : spec[key]
+function graph_templates(package)
+    directory = joinpath(package, "graphs")
+    return isdir(directory) ? filter(name -> endswith(name, ".conf.in"), readdir(directory)) : String[]
+end
+
+function render_inputs!(request, spec, bindings, runtime; graphs = graph_templates(request.package))
+    rendered = Dict{String,String}()
+    function configuration(relative)
+        return get!(rendered, relative) do
             source = D.relative_asset(request.package, relative)
-            write(
-                joinpath(directory, output),
-                D.substitute(read(source, String), bindings; quoted = true),
-            )
+            D.substitute(read(source, String), bindings; quoted = true)
         end
     end
-    graphs = joinpath(request.package, "graphs")
-    if isdir(graphs)
-        for name in readdir(graphs)
-            endswith(name, ".conf.in") || continue
-            source = D.relative_asset(request.package, joinpath("graphs", name))
-            write(
-                joinpath(runtime, name[1:(end-3)]),
-                D.substitute(read(source, String), bindings; quoted = true),
-            )
-        end
+    for role in keys(spec["placement"])
+        directory = joinpath(runtime, role)
+        mkdir(directory; mode = 0o700)
+        write(joinpath(directory, "client.conf"), configuration(spec["client"][role]))
+        write(joinpath(directory, "daemon.conf"), configuration(spec["core"]))
+        write(joinpath(directory, "session.conf"), configuration(spec["session"]))
+    end
+    for name in graphs
+        write(joinpath(runtime, name[1:(end-3)]), configuration(joinpath("graphs", name)))
     end
     return D.decode(joinpath(runtime, "core", "session.conf"), request.prefix)
 end
@@ -638,7 +634,8 @@ function prepare!(
     D.uses_acquisition_protocol(source) &&
         (bindings["SOURCE_OWNER_INSTANCE"] = string(N.next_instance()))
     paths = main ? activation["paths"] : D.installed_paths(prefix)
-    session = render_inputs!(request, spec, bindings, runtime)
+    graphs = main ? activation["graph-templates"] : graph_templates(package)
+    session = render_inputs!(request, spec, bindings, runtime; graphs)
     declared_links = D.session_links(session)
     parameters = parameter_owner!(request, spec, session, declared_links, bindings, runtime; project)
     if parameters !== nothing
