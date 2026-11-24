@@ -71,6 +71,36 @@ function pixel_to_image(shape)
     return [1 / columns, 1 / rows]
 end
 
+const PDM_COMMAND_SCHEMAS = Dict(
+    "m OPD" => "actuator_command_opd_m",
+    "native command" => "native_pdm_command",
+    "µm OPD" => "demanded_pdm_command",
+)
+
+function mirror_limiter_configuration(config, context)
+    InstrumentConfiguration.fields(
+        config, ("mirror", "slew_limit", "initial_current"), ("mirror",), "mirror limiter"
+    )
+    name = config["mirror"]
+    mirrors = context["rtc"]["deformable_mirrors"]
+    geometry = context["instrument"]["deformable_mirrors"]
+    name isa String && haskey(mirrors, name) && haskey(geometry, name) ||
+        throw(ArgumentError("pdm-command-f32 requires a declared mirror: $name"))
+    control = mirrors[name]
+    units = get(control, "units", nothing)
+    schema = get(PDM_COMMAND_SCHEMAS, units, nothing)
+    isnothing(schema) &&
+        throw(ArgumentError("unsupported PDM command units for $name: $units"))
+    limiter = control["limiter"]
+    return Dict{String,Any}(
+        "actuator_count" => geometry[name]["actuator_count"],
+        "command_limits" => Any[deepcopy(limiter["lower"]), deepcopy(limiter["upper"])],
+        "demanded_schema" => Schemas.identifier(schema),
+        "slew_limit" => get(config, "slew_limit", nothing),
+        "initial_current" => get(config, "initial_current", nothing),
+    )
+end
+
 """
     resolve_graph_configuration(graph, context)
 
@@ -88,7 +118,12 @@ function resolve_graph_configuration(graph::AbstractDict, context::AbstractDict)
     end
     for node in result["filter.graph"]["nodes"]
         haskey(node, "config") || continue
-        node["config"] = graph_configuration_value(node["config"], context)
+        config = graph_configuration_value(node["config"], context)
+        if get(node, "label", nothing) == "pdm-command-f32" && config isa AbstractDict &&
+            haskey(config, "mirror")
+            config = mirror_limiter_configuration(config, context)
+        end
+        node["config"] = config
     end
     return result
 end

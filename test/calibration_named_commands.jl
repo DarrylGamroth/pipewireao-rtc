@@ -1,30 +1,31 @@
 # Cold CPU contracts and locked named-slot state; no daemon, devices or GPU.
 module CalibrationNamedCommandTests
-using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 using PipeWireAORTC.InstrumentCalibration: calibration_port
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 
-function prepare_command(count, schema)
+function prepare_command(count; demanded_schema = DEMANDED_PDM_COMMAND_V1)
+    config = Dict{String,Any}(
+        "actuator_count" => count,
+        "command_limits" => [-1, 1],
+        "slew_limit" => nothing,
+        "initial_current" => nothing,
+        "quantization_origin" => nothing,
+        "quantization_step" => nothing,
+        "dither_seed" => nothing,
+    )
+    if demanded_schema != DEMANDED_PDM_COMMAND_V1
+        config["demanded_schema"] = demanded_schema
+    end
     declaration = Dict(
         "filter.graph" => Dict(
             "nodes" => [
                 Dict(
                     "name" => "command",
                     "type" => "ndarray",
-                    "label" => "vector-conditioning-f32",
-                    "config" => Dict(
-                        "count" => count,
-                        "requested_schema" => "test.requested/1",
-                        "demanded_schema" => schema,
-                        "feedback_schema" => "test.feedback/1",
-                        "command_limits" => [-1, 1],
-                        "slew_limit" => nothing,
-                        "initial_current" => nothing,
-                        "quantization_origin" => nothing,
-                        "quantization_step" => nothing,
-                        "dither_seed" => nothing,
-                    ),
+                    "label" => "pdm-command-f32",
+                    "config" => config,
                 ),
             ],
             "inputs" => ["command:requested"],
@@ -177,14 +178,19 @@ end
 end
 
 @testset "named commands bind exact names, dimensions, schemas and selected probe" begin
-    woofer = prepare_command(2, "test.woofer/1")
-    tiptilt = prepare_command(3, "test.tiptilt/1")
+    woofer_schema = if pkgversion(FilterGraphAlgorithms) >= v"0.13"
+        NATIVE_PDM_COMMAND_V1
+    else
+        DEMANDED_PDM_COMMAND_V1
+    end
+    woofer = prepare_command(2; demanded_schema = woofer_schema)
+    tiptilt = prepare_command(3)
     try
         commands = (; woofer, tiptilt)
         options = (
             command_input = (:tiptilt, :woofer),
             command_count = (tiptilt = 3, woofer = 2),
-            command_schema = (woofer = "test.woofer/1", tiptilt = "test.tiptilt/1"),
+            command_schema = (woofer = woofer_schema, tiptilt = DEMANDED_PDM_COMMAND_V1),
         )
         reference = (tiptilt = Float32[0.1, 0.2, 0.3], woofer = Float32[0, 0])
         held = Ext.calibration_commands(commands, reference, :woofer, options)
@@ -213,11 +219,11 @@ end
             :woofer,
             merge(
                 options,
-                (command_schema = (woofer = "wrong/1", tiptilt = "test.tiptilt/1"),),
+                (command_schema = (woofer = "wrong/1", tiptilt = DEMANDED_PDM_COMMAND_V1),),
             ),
         )
         scalar = (
-            command_input = :woofer, command_count = 2, command_schema = "test.woofer/1"
+            command_input = :woofer, command_count = 2, command_schema = woofer_schema
         )
         @test Ext.calibration_commands(woofer, Float32[0, 0], nothing, scalar) === nothing
         @test_throws ArgumentError Ext.calibration_commands(

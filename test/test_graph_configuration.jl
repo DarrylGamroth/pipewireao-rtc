@@ -84,6 +84,51 @@ end
 
 end
 
+@testset "physical mirror selects the limiter output units and limits" begin
+    control = Dict{String,Any}("limiter" => Dict("lower" => [-1, -2, -3], "upper" => 4))
+    config = Dict{String,Any}(
+        "mirror" => "mirror-one", "slew_limit" => 0.25, "initial_current" => nothing
+    )
+    node = Dict("label" => "pdm-command-f32", "config" => config)
+    graph = Dict("filter.graph" => Dict("nodes" => [node]))
+    function resolve()
+        controls = Dict("mirror-one" => control)
+        context = E.graph_context(instrument(); mirror_controls = controls)
+        resolved = E.resolve_graph_configuration(graph, context)
+        return only(resolved["filter.graph"]["nodes"])["config"]
+    end
+    for (units, schema) in (
+        ("m OPD", "pipewireao/actuator-command-opd-m-f32/1"),
+        ("native command", "pipewireao/demanded-pdm-command-f32/1"),
+        ("µm OPD", "pipewireao/dm-command-opd-um-f32/1"),
+    )
+        control["units"] = units
+        @test resolve() == Dict(
+            "actuator_count" => 3,
+            "command_limits" => [[-1, -2, -3], 4],
+            "demanded_schema" => schema,
+            "slew_limit" => 0.25,
+            "initial_current" => nothing,
+        )
+    end
+    control["units"] = "m surface"
+    @test_throws ArgumentError resolve()
+    control["units"] = "m OPD"
+    for key in ("demanded_schema", "actuator_count", "command_limits")
+        config[key] = 1
+        @test_throws ArgumentError resolve()
+        delete!(config, key)
+    end
+    delete!(config, "slew_limit")
+    delete!(config, "initial_current")
+    @test resolve()["slew_limit"] === nothing
+    @test resolve()["initial_current"] === nothing
+    resolve()["command_limits"][1][1] = -100
+    @test control["limiter"]["lower"][1] == -1
+    config["mirror"] = "absent"
+    @test_throws ArgumentError resolve()
+end
+
 @testset "selected-pixel validity uses the selected extent" begin
     context = E.graph_context(instrument(); dimensions = Dict("selected_pixel_count" => 3))
     @test E.graph_pointer(context, "/rtc/selected_pixel_mask") == trues(3)

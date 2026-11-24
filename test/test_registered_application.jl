@@ -30,6 +30,18 @@ git-tree-sha1 = "0000000000000000000000000000000000000000"
         @test_throws D.DeploymentError D.application_environment(Dict(), directory)
         project_path = joinpath(directory, "Project.toml")
         original_project = read(project_path, String)
+        write(project_path, original_project * "\n[compat]\nPipeWireAORTC = \"0.1.1\"\n")
+        @test D.application_environment(spec, directory) == realpath(directory)
+        write(project_path, original_project * "\n[compat]\nPipeWireAORTC = \"=0.1.1\"\n")
+        @test_throws r"locked version 0.1.2 does not satisfy" D.application_environment(
+            spec, directory
+        )
+        alternate = joinpath(directory, "override.toml")
+        cp(manifest, alternate)
+        write(project_path, "manifest = \"override.toml\"\n" * original_project)
+        @test_throws r"runtime environment must use Manifest.toml" D.application_environment(
+            spec, directory
+        )
         project = TOML.parse(original_project)
         project["workspace"] = Dict("projects" => ["test"])
         open(project_path, "w") do io

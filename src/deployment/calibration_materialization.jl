@@ -1,5 +1,4 @@
-# Compare localized mirror description paths by their exact bytes while keeping
-# every other physical instrument field in the identity.
+# Compare localized descriptions by content and mirror units by their published label.
 function calibration_physical_instrument(directory)
     document = Common.read_yaml(joinpath(directory, "instrument.yaml"))
     for mirror in values(document["deformable_mirrors"])
@@ -7,6 +6,7 @@ function calibration_physical_instrument(directory)
             directory, mirror["description"]
         )
         mirror["description"] = Common.sha256_file(path)
+        mirror["units"] = InstrumentConfiguration.mirror_unit_label(mirror["units"])
     end
     return document
 end

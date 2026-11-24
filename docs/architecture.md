@@ -860,6 +860,14 @@ scientific APIs; the integration adapter checks compatibility before execution.
 GUI operator-view files select sources/components and presentation, rather than
 carrying copies of instrument or calibration arrays.
 
+A physical DM can declare `units: opd_m` for metres of wavefront optical
+path difference or `units: native` for device command values. Published
+instrument metadata and calibration products use the labels `m OPD` and
+`native command`. A `pdm-command-f32` template can use
+`config = { mirror = woofer }`. Export resolves that mirror's actuator count,
+stroke limits and demanded output schema. Optional `slew_limit` and
+`initial_current` values use the same command units.
+
 The first implementation uses existing read-only properties on the freshly
 verified native public session endpoint. `pipewireao.rtc.session.instrument`
 contains one bounded JSON document (maximum 1 MiB), and the companion

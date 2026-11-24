@@ -147,19 +147,22 @@ end
     FGA.replace_parameter!(reverse, "full-to-active", result.feedback)
     FGA.replace_parameter!(reverse, "pdm-to-vdm", identity)
     limit = 1.0f-6
+    limiter_schema = if pkgversion(FGA) >= v"0.13"
+        (; demanded_schema = FGA.ACTUATOR_COMMAND_OPD_M_V1)
+    else
+        (;)
+    end
     conditioner = FGA.prepare_algorithm(
-        FGA.VectorConditioningF32,
-        FGA.VectorConditioningF32Configuration(
-            count = 2304,
-            requested_schema = "test/requested-opd-m/1",
-            demanded_schema = "test/demanded-opd-m/1",
-            feedback_schema = "test/constraint-feedback-opd-m/1",
+        FGA.PdmCommandF32,
+        FGA.PdmCommandF32Configuration(;
+            actuator_count = 2304,
             command_limits = (-limit, limit),
             slew_limit = nothing,
             initial_current = nothing,
             quantization_origin = nothing,
             quantization_step = nothing,
             dither_seed = nothing,
+            limiter_schema...,
         ),
     )
     direct_x = Float32.(coordinates[1, result.controlled])
