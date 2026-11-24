@@ -93,10 +93,10 @@ function precompile!(julia, package, environment, owners)
         code = "pushfirst!(LOAD_PATH, popfirst!(ARGS)); using ExportedGraphWarmup"
         # A cached image may bypass compilation. Qualify the installed owner's
         # final arguments explicitly, independently of the compile workload.
-        at_install && (code *= "; ExportedGraphWarmup.qualify(ARGS)")
+        code *= "; ExportedGraphWarmup.qualify(ARGS)"
         command_args = [julia, flags..., "--startup-file=no", "--project=" * environment,
                         "-e", code, "--", root]
-        at_install && append!(command_args, args)
+        append!(command_args, args)
         command = Cmd(command_args)
         depots = join([cache_depot(root); DEPOT_PATH], ':')
         run(addenv(command, "JULIA_DEPOT_PATH" => depots))

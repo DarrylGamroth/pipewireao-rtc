@@ -55,6 +55,7 @@ function arguments(arguments)
     graph = String[]
     correction_properties = String[]
     recovery_nodes = String[]
+    priming_outputs = String[]
     local_output = nothing
     display_sink = nothing
     qualify_at_install = false
@@ -109,7 +110,7 @@ function arguments(arguments)
             "--reference-clock",
             "--prime-on-output",
         )
-            key in ("--correction-property", "--recovery-node") ||
+            key in ("--correction-property", "--recovery-node", "--prime-on-output") ||
                 !haskey(values, key) ||
                 throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
@@ -133,6 +134,8 @@ function arguments(arguments)
                 value in correction_properties &&
                     throw(ArgumentError("duplicate correction property $value"))
                 push!(correction_properties, value)
+            elseif key == "--prime-on-output"
+                push!(priming_outputs, value)
             else
                 values[key] = value
                 key == "--remote" && append!(graph, [key, value])
@@ -184,16 +187,7 @@ function arguments(arguments)
     supervision === nothing ||
         length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
-    prime_on_output = get(values, "--prime-on-output", nothing)
-    if prime_on_output !== nothing
-        occursin(r"^[a-zA-Z0-9_.-]{1,128}$", prime_on_output) ||
-            throw(ArgumentError("--prime-on-output requires a Graph output name"))
-        length(correction_properties) == 1 &&
-            endswith(only(correction_properties), ":closed") ||
-            throw(ArgumentError("--prime-on-output requires one correction property ending in :closed"))
-        supervision === nothing && isempty(recovery_nodes) ||
-            throw(ArgumentError("--prime-on-output cannot be combined with recovery or supervision"))
-    end
+    prime_on_output = priming_properties(priming_outputs, correction_properties)
     display_sink === nothing || (local_output !== nothing && local_output.node !== nothing) ||
         throw(ArgumentError("--latest-output-sink requires --latest-output"))
     local_output === nothing || (local_output = merge(local_output, (; sink = display_sink)))
@@ -206,7 +200,7 @@ function arguments(arguments)
         ) : (;)
     return (;
         remote, bootstrap_node = node, bootstrap_instance = instance, clock_policy...,
-        (prime_on_output === nothing ? (;) : (; prime_on_output = Symbol(prime_on_output)))...,
+        (prime_on_output === nothing ? (;) : (; prime_on_output))...,
     ),
     graph,
     bindings,
@@ -217,6 +211,30 @@ function arguments(arguments)
     get(values, "--physical-offsets", nothing),
     (; path = get(values, "--chopped-warmup", nothing), at_install = qualify_at_install),
     local_output
+end
+
+function priming_properties(outputs, correction_properties)
+    isempty(outputs) && return nothing
+    length(outputs) == length(correction_properties) &&
+        all(endswith(":closed"), correction_properties) ||
+        throw(ArgumentError("--prime-on-output requires one output for each declared NODE:closed"))
+    selected = Pair{String,Union{Symbol,Tuple{Symbol,Symbol}}}[]
+    for value in outputs
+        terms = split(value, '='; limit = 2)
+        ports = split(last(terms), ','; limit = 2)
+        all(port -> occursin(r"^[a-zA-Z0-9_.-]{1,128}$", port), ports) ||
+            throw(ArgumentError("--prime-on-output requires a Graph output name"))
+        output = length(ports) == 1 ? Symbol(only(ports)) : Tuple(Symbol.(ports))
+        if length(terms) == 1
+            length(outputs) == 1 || throw(ArgumentError("use NODE:closed=PORT for multiple corrections"))
+            return output isa Symbol ? output : (only(correction_properties) => output,)
+        end
+        property = first(terms)
+        property in correction_properties && !any(pair -> first(pair) == property, selected) ||
+            throw(ArgumentError("--prime-on-output requires a unique declared NODE:closed"))
+        push!(selected, String(property) => output)
+    end
+    return Tuple(selected)
 end
 
 """
@@ -351,7 +369,7 @@ function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
                           read_supervision(supervision_path),
             qualify_at_install = qualification.at_install,
             prime_on_output,
-            chopped_warmup = qualification.path !== nothing && (offline || !qualification.at_install) ?
+            chopped_warmup = offline && qualification.path !== nothing ?
                              read_chopped_warmup(qualification.path) : nothing,
             local_output,
         ),
@@ -360,6 +378,10 @@ function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
         throw(ArgumentError(
             "install qualification requires a complete-frame CPU graph without row workers or an offset receiver",
         ))
+    end
+    if prime_on_output !== nothing &&
+            (options.capture_backend !== nothing || options.execution != "complete-frame")
+        throw(ArgumentError("correction priming requires a complete-frame CPU graph"))
     end
     return options
 end
@@ -408,9 +430,13 @@ for RTC-owned adoption tracking; repeat it for independent declared loops.
 This does not change startup closure, lifecycle, or the scientific controller.
 `--prime-on-output PORT` holds closure admission until the owner observes a valid
 live measurement on the declared output of a complete-frame CPU graph.
-Declare one initially open correction loop and a published, acquisition-aware
-output. Reset clears priming evidence while preserving the applied correction
-property. Open the loop before collecting a new open-loop measurement.
+Use `--prime-on-output NODE:closed=PORT` for each correction if the owner declares
+multiple loops. Declare each controller initially open and select a published,
+acquisition-aware measurement for its camera. Use `PORT,VALIDITY` for measurements
+that also require a published Boolean validity output from the same acquisition.
+Reset clears priming evidence while
+preserving the applied correction property. Open the loop before collecting a new
+open-loop measurement.
 `--recovery-node NODE` opts the declared coupled controllers into scoped CPU
 recovery; repeat it for every participating temporal filter and conditioner.
 The controller is implicit. Recovery refuses unsupported scopes before effects;
@@ -421,12 +447,13 @@ explicit thresholds apply to successful complete frames; sizes come from the
 typed graph outputs. Monitor-only is the default and never changes closure.
 `--correction-timeout-ms N` bounds adoption confirmation for declared loops
 (1–60000 ms, default 5000). Expiry reports Unknown without a control retry.
-`--chopped-warmup PATH` selects bounded version-1 YAML with an image `input`,
-`exposure_duration_ns` and explicit `trigger_high_is_fringed`. Three unpublished
-synthetic F/U/F samples exercise the chopped detector path and the Graph is reset.
-`--qualify-at-install` runs the synthetic checks on the installed complete-frame
-CPU graph. The live owner starts with fresh scientific state and uses real
-camera frames to establish its history. The owner requires explicit identity, exposure timing and optical chopping records.
+`--chopped-warmup PATH` supplies bounded version-1 YAML for offline qualification.
+It declares an image `input`, `exposure_duration_ns` and `trigger_high_is_fringed`.
+Three unpublished synthetic F/U/F samples exercise the chopped detector path.
+Installation qualifies supported complete-frame CPU graphs. The existing
+`--qualify-at-install` flag requires a supported graph and its qualification
+workload. Live owners process only real frames, which establish their scientific
+history and carry any required acquisition identity, exposure or chopping records.
 `--latest-output PORT NODE MEDIA` publishes a complete-frame scalar on an
 independent display Node. `--latest-output-sink NODE PORT` declares an optional
 native sink for that publisher. `--unpublished-output PORT` discards the same

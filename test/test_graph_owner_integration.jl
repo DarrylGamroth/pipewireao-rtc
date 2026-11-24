@@ -21,6 +21,50 @@ using FilterGraphAlgorithms
     keys(Base.loaded_modules),
 )
 
+module GraphOwnerStartupProbe
+using PipeWireAORTC, FilterGraphPipeWire
+
+const Extensions = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
+const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
+const StartupTiming = PipeWireAORTC.Common.StartupTiming
+
+struct Runtime{T}
+    transport::T
+    events::Vector{Symbol}
+end
+
+struct Graph
+    events::Vector{Symbol}
+end
+
+Extensions.graph_node(options, graph::Graph, instance, ::Union{Nothing,StartupTiming}) =
+    (; node = graph, observer = nothing, offset_receiver = nothing,
+       offset_clock = nothing, display = nothing)
+Bootstrap.preparation_check!(::Runtime) = nothing
+Bootstrap.prepared!(runtime::Runtime) = push!(runtime.events, :prepared)
+Bootstrap.take_connect!(::Runtime) = :connect_ticket
+Bootstrap.connecting!(::Runtime, ticket; ready, quit) = nothing
+Bootstrap.check_connect!(::Runtime, ticket) = nothing
+Bootstrap.fault!(runtime::Runtime, ::Exception) = push!(runtime.events, :faulted)
+Bootstrap.finishing!(runtime::Runtime) = push!(runtime.events, :finishing)
+FilterGraphPipeWire.prepare!(::Graph; kwargs...) = error("synthetic frames reached the live owner")
+FilterGraphPipeWire.connect!(graph::Graph) = push!(graph.events, :connect)
+FilterGraphPipeWire.run!(graph::Graph) = push!(graph.events, :run)
+Base.close(graph::Graph) = push!(graph.events, :close)
+end
+
+@testset "Live graph owners connect with no synthetic scientific frames" begin
+    P = GraphOwnerStartupProbe
+    for execution in ("complete-frame", "row-block")
+        events = Symbol[]
+        runtime = P.Runtime((; endpoint = (; instance = Int64(1))), events)
+        options = (; name = "live-owner", capture_backend = nothing, execution,
+                   qualify_at_install = false, warmup_outputs = (:residual,))
+        @test P.Extensions.run_prepared(options, runtime, P.Graph(events), nothing) === nothing
+        @test events == [:prepared, :connect, :run, :finishing, :close]
+    end
+end
+
 @testset "Correction priming observes accepted open-loop acquisitions" begin
     extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
     graph = mktemp() do path, io
@@ -44,7 +88,7 @@ filter.graph = {
             capture_backend = nothing, execution = "complete-frame",
             correction_properties = ["correction:closed"],
         )
-        observer = extension.prepare_priming(options, graph)
+        observer = only(extension.prepare_priming(options, graph))
         @test !observer.ready[]
         @test_throws ArgumentError extension.prepare_priming(
             merge(options, (; prime_on_output = :absent)), graph,
@@ -67,6 +111,40 @@ filter.graph = {
         @test !observer.ready[]
         observe(sample)
         @test observer.ready[]
+        @test !observer.controller.plan.closed
+        @test !extension.priming_measurement(Float32[0, 0], Val(true))
+        @test !extension.priming_measurement(Float32[1, -1], Val(true))
+        @test !extension.priming_measurement(Float32[1, NaN], Val(true))
+        @test extension.priming_measurement(Float32[1, 0], Val(true))
+        @test extension.priming_measurement(Float32[0, 0], Val(false))
+        @test !extension.active_subaperture_valid([false, true, true], [true, false, false])
+        @test extension.active_subaperture_valid([false, true, true], [false, false, true])
+        low_order = extension.CorrectionPriming{
+            :offset, :low_order, :valid, false, typeof(observer.controller), Nothing
+        }(observer.controller, nothing, "primed", Threads.Atomic{Bool}(false))
+        outputs = (; offset = zeros(Float32, 2), valid = [true])
+        receipt = FilterGraphAlgorithms.AdmittedSampleMetadata(true, sample)
+        metadata = (; offset = receipt, valid = receipt)
+        available = (; offset = true, valid = true)
+        low_order(Val(:frame), outputs, metadata, (; low_order = true), available)
+        @test low_order.ready[]
+        low_order(Val(:frame), outputs, metadata, (; low_order = false), (; offset = false, valid = false))
+        @test low_order.ready[]
+        outputs.valid[1] = false
+        low_order(Val(:frame), outputs, metadata, (; low_order = true), available)
+        @test !low_order.ready[]
+        outputs.valid[1] = true
+        other = FilterGraphAlgorithms.SampleMetadata(
+            2; exposure_duration_nanoseconds = 2_000_000,
+            acquisition_identity = FilterGraphAlgorithms.SampleAcquisitionIdentity(domain, 1, 2),
+        )
+        stale = (; offset = receipt, valid = FilterGraphAlgorithms.AdmittedSampleMetadata(true, other))
+        low_order(Val(:frame), outputs, stale, (; low_order = true), available)
+        @test !low_order.ready[]
+        low_order(Val(:frame), outputs, metadata, (; low_order = true), available)
+        @test low_order.ready[]
+        low_order(Val(:frame), outputs, metadata, (; low_order = true), (; offset = false, valid = false))
+        @test !low_order.ready[]
         native_storage = zeros(Float32, 2)
         metadata = (; offset = FilterGraphAlgorithms.AdmittedSampleMetadata(true, sample))
         check_allocations(observer, storage, metadata) = GC.@preserve storage begin
@@ -77,6 +155,13 @@ filter.graph = {
             return @allocated observer(Val(:frame), (; offset), metadata)
         end
         @test check_allocations(observer, native_storage, metadata) == 0
+        loops = PipeWireAORTC.CorrectionLoops.Observer(options.correction_properties, Int64(1))
+        try
+            callback = extension.correction_observation(loops, nothing, (observer,)).frame_observer
+            @test check_allocations(callback, native_storage, metadata) == 0
+        finally
+            close(loops)
+        end
         observe(FilterGraphAlgorithms.SampleMetadata(sample; corrupted = true))
         @test !observer.ready[]
         observe(sample)

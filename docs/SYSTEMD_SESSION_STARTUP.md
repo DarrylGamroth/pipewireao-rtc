@@ -24,6 +24,24 @@ definition and actual active PID, invocation, start time and cgroup. Then render
 application configuration from those retained identities. Native warmup,
 placement inspection and MediaSession admission precede release.
 
+## First live correction
+
+Graph owners connect without executing the offline synthetic qualification
+frames. Ready confirms that the graph and required Links are present and held.
+Start releases acquisition. A graph configured with correction priming starts
+open and waits for an accepted live measurement from the declared camera for
+each loop. The operator sends Close after the owner reports primed. An invalid
+measurement clears priming for its camera, and Reset clears priming for all of
+the owner's cameras.
+
+Classic qualifies a fresh usable measurement according to its calibrated
+Shack–Hartmann pipeline. The slopes and validity must belong to the same
+acquisition. The slopes must be finite and at least one currently active
+subaperture must pass the calibrated validity decision. Only that evidence
+permits an operator's explicit Close request. The graph applies the existing
+per-lenslet thresholds and retains the existing zero-fill behavior for
+invalid slopes.
+
 ## Timing a Julia controller startup
 
 Set `PIPEWIREAORTC_GRAPH_STARTUP_TIMING=1` in the session service environment
@@ -39,7 +57,7 @@ names the graph, so controllers on the same instrument can be timed separately.
 | `configure graph node` | Determine the public ports, metadata, clocks and any correction, supervision or display observers from the declaration. |
 | `construct graph node` | Construct the disconnected PipeWire filter, its buffers and callback state for this controller process. |
 | `attach graph observers` | Check the correction observer and attach its timers to the owner's control loop, when configured. |
-| `warm up graph` | Run the configured scientific check and verify the required outputs. The owner logs the reason for skipping this step when the graph was qualified at installation or uses captured execution. |
+| `warm up graph` | Record that activation skips synthetic qualification. Installation runs the configured checks for supported complete-frame CPU graphs. |
 
 Use wall time to locate a delay. The detailed phases also report CPU time
 consumed by all threads in the graph process, Julia's compilation counter

@@ -49,7 +49,7 @@ end
 
 module GraphOwnerPipeWire
 parse_arguments(args) = (;
-    args, capture_backend = nothing,
+    args, capture_backend = "--captured-test" in args ? "cuda" : nothing,
     execution = "--row-block-test" in args ? "row-block" : "complete-frame",
     row_workers = 0,
 )
@@ -111,6 +111,23 @@ end
     @test selected[2] == graph && last(selected) === nothing
     @test_throws ArgumentError GraphOwner.arguments([open_loop; priming; priming])
     @test_throws ArgumentError GraphOwner.arguments([open_loop; "--prime-on-output=slash/port"])
+    coupled = [open_loop; "--correction-property=other:closed"; "--recovery-node=temporal"]
+    selected = GraphOwner.arguments([
+        coupled; "--prime-on-output"; "controller:closed=modal-residual";
+        "--prime-on-output=other:closed=low-order-residual,low-order-validity"
+    ])
+    @test first(selected).prime_on_output == (
+        "controller:closed" => Symbol("modal-residual"),
+        "other:closed" => (Symbol("low-order-residual"), Symbol("low-order-validity")),
+    )
+    @test_throws ArgumentError GraphOwner.arguments([coupled; priming; priming])
+    @test_throws ArgumentError GraphOwner.arguments([
+        coupled; "--prime-on-output=controller:closed=modal-residual";
+        "--prime-on-output=controller:closed=other-residual"
+    ])
+    @test_throws ArgumentError GraphOwner.arguments([
+        open_loop; "--prime-on-output=controller:closed=modal-residual,"
+    ])
     recovery = GraphOwner.arguments(
         [
             argv;
@@ -234,6 +251,13 @@ end
         [qualified; "--row-block-test"];
         with_owner = fake_owner, load_science = () -> GraphOwnerPipeWire,
     )
+    for unsupported in ("--row-block-test", "--captured-test")
+        @test_throws ArgumentError GraphOwner._main(
+            [without_fits; "--correction-property=controller:closed"; priming; unsupported];
+            with_owner = fake_owner, load_science = () -> GraphOwnerPipeWire,
+            run = (_, _, _) -> error("unsupported graph preparation began"),
+        )
+    end
     @test GraphOwner._main(
         qualified;
         with_owner = fake_owner,
@@ -246,7 +270,7 @@ end
     ) == 0
     empty!(events)
     @test GraphOwner._main(
-        without_fits;
+        [without_fits; "--chopped-warmup"; "/missing-test-data"];
         with_owner = fake_owner,
         load_science = () -> (push!(events, :load_science); GraphOwnerPipeWire),
         run = (options, runtime, entries) -> begin
@@ -254,6 +278,7 @@ end
             @test isempty(entries)
             @test isempty(options.correction_properties)
             @test options.correction_timeout_ms == 5000
+            @test options.chopped_warmup === nothing
             push!(events, :run)
         end,
     ) == 0
@@ -448,7 +473,7 @@ end
     end
 end
 
-@testset "installation runs the declared graph test on a cached workload" begin
+@testset "installation qualifies supported graphs even with a cached workload" begin
     startup = PipeWireAORTC.GraphStartup
     mktempdir() do package
         workload = joinpath(package, startup.DIRECTORY, "controller")
@@ -459,7 +484,8 @@ end
         write(joinpath(source, "ExportedGraphWarmup.jl"), """
             module ExportedGraphWarmup
             function qualify(args)
-                args == ["--graph", "controller.conf", "--qualify-at-install"] ||
+                args in (["--graph", "controller.conf"],
+                         ["--graph", "controller.conf", "--qualify-at-install"]) ||
                     throw(ArgumentError("unexpected qualification arguments"))
                 write($(repr(observation)), read($(repr(calibration))))
             end
@@ -468,10 +494,8 @@ end
         julia = Base.julia_cmd().exec[1]
         owner = Dict("role" => "controller", "argv" => [julia, "-e", startup.ENTRY, "--"])
         push!(owner["argv"], "--graph", "controller.conf")
-        startup.precompile!(julia, package, package, [owner])
-        @test !isfile(observation)
-        push!(owner["argv"], "--qualify-at-install")
-        for revision in ("first", "replacement")
+        for (revision, flags) in (("first", String[]), ("replacement", ["--qualify-at-install"]))
+            append!(owner["argv"], flags)
             write(calibration, revision)
             startup.precompile!(julia, package, package, [owner])
             @test read(observation, String) == revision

@@ -265,7 +265,10 @@ Base.@nospecializeinfer function graph_node(
         )
     supervision = prepare_supervision(options, instance, graph)
     priming = prepare_priming(options, graph)
-    observation = correction_observation(observer, priming === nothing ? supervision : priming)
+    graph isa FilterGraphs.PreparedComposition && supervision !== nothing && throw(
+        ArgumentError("diagnostic supervision requires an ordinary complete-frame graph"),
+    )
+    observation = correction_observation(observer, supervision, priming)
     offsets_path = get(options, :physical_offsets, nothing)
     offsets_path === nothing ||
         (
@@ -405,15 +408,7 @@ Base.@nospecializeinfer function run_prepared(
             )
             Common.startup_phase_end!(timing)
         end
-        if !isnothing(options.capture_backend)
-            Common.startup_phase_skipped(timing, "warm up graph", "captured graph")
-        elseif options.qualify_at_install
-            Common.startup_phase_skipped(timing, "warm up graph", "install-time qualification")
-        else
-            Common.startup_phase(something(timing, options.name), "warm up graph") do
-                warm_graph!(node, graph, options)
-            end
-        end
+        Common.startup_phase_skipped(timing, "warm up graph", "offline qualification")
         Bootstrap.preparation_check!(runtime)
         if display !== nothing
             try
