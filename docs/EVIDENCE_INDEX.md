@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## CAL2 startup CPU and LLOWFS buffer ownership — 2026-11-24 UTC
+
+The [startup and buffer measurements](validation/cal2-ready-and-buffer-lifetime-20261124/README.md)
+relate the main-thread CPU samples to the startup phases and the private-core
+LLOWFS buffer lifecycle. The [CPU profile and preparation comparison](validation/installed-rtc-cpu-20261124/README.md)
+include the compiler trace and the isolated Julia package-image comparison.
+
 ## Direct installed RTC restart — 2026-11-24 UTC
 
 The [service and frame measurements](validation/direct-session-launch-20261124/README.md)

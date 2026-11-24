@@ -22,9 +22,26 @@ prime on live measurements after Start, and require explicit closure. The
 [restart comparison](validation/direct-session-launch-20261124/README.md)
 records the measured scope for each instrument. Classic CPU, GPI2 recovery
 and fitted dual SPIDERS passed the retained-source restart on the recorded
-builds. CAL2 passed live priming and signed first corrections. Its final
-continuity gate remains open because the LLOWFS producer had no available
-native output buffer after graceful RTC shutdown.
+builds. The earlier CAL2 run passed live priming and signed first corrections
+but lost LLOWFS camera buffers across graceful shutdown. The follow-up
+[startup and queue investigation](validation/cal2-ready-and-buffer-lifetime-20261124/README.md)
+identified the unreturned capture loan in an optional image queue. The
+native fix returns its pending buffer while the retiring capture pool is
+still valid. The installed CAL2 run observed the exact LLOWFS and SCC slot
+returns and advancing independent cameras after native Quit. The sealed
+replacement reached held Ready in 8.037 s, primed on both live cameras,
+and verified both signed first corrections after explicit Close. Through
+the post-Quit cutoff the independent tap received every exposure. The queue
+change still needs a released artifact for existing deployments.
+
+The [installed CPU profile](validation/installed-rtc-cpu-20261124/README.md)
+attributes 62% of main-thread user CPU samples to LLVM and Julia code
+generation. Building the session configuration methods into the package
+image saved 0.97 s in a fresh-process render/decode comparison. Two
+matched restart pairs did not establish a repeatable whole-service gain.
+The remaining opportunities are to compile registry binding and native
+Status client methods during the build, and to negotiate independent
+Links concurrently while preserving rollback and held-state checks.
 
 ### Retain controller graph processes across RTC updates — 2026-11-24
 
