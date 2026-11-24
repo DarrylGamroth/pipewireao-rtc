@@ -32,21 +32,38 @@ release pins remain in place.
 
 ## Native graph restart
 
-The exact Classic and GPI2 graph owners each passed ten checks on a private
-core. The fixture killed the first native bootstrap claimant with SIGKILL and
-connected a new claimant. The graph owner kept its PID. Native bootstrap and
-graph serials changed, and the new claimant acknowledged Quit. Both native
-property snapshots reported Open and unprimed.
+The exact Classic, GPI2 and SPIDERS graph owners each passed ten checks on a
+private core using Julia `-O0`. The fixture killed the first native bootstrap
+claimant with SIGKILL and connected a new claimant. The graph owner kept its
+PID. Native bootstrap and graph serials changed, and the new claimant
+acknowledged Quit. Both native property snapshots reported Open and unprimed
+for each correction, including the two branches of the SPIDERS composition.
 [Native rebind receipts](instrument-native-rebind.json)
 
 | Graph | RTC source | Persistent owner PID | Bootstrap serials | Graph serials |
 | --- | --- | ---: | --- | --- |
 | Classic CPU | `3c964d3` | 1617116 | 13, 47 | 17, 52 |
 | GPI2 CPU recovery | `0747f0f` | 1618755 | 14, 68 | 20, 76 |
+| SPIDERS fitted dual CPU | `84fcd27` with FGPW `8b18385` | 1633335 | 13, 54 | 17, 59 |
 
 This selector checks the native bootstrap and graph lifetime with the
 calibrated graph declaration. It runs without camera Links. The managed
 instrument and separately publishing source trials use the full session.
+
+## Installed sessions
+
+These trials use Julia 1.13.4 for the RTC and graph owners. CPUs 12–13
+share a physical core, as do CPUs 14–15. The standard-optimization cold
+trials also overlapped workstation compilation. Their elapsed times are
+specific to these attempts.
+
+| Profile | RTC source | Observed outcome |
+| --- | --- | --- |
+| Classic CPU, session-owned | `3c964d3` | Two installed activations reported Ready with the selected Julia as MainPID, each with 20 declared Links. Both rejected Close while held, then started and observed generation 1 sequence 1 in both the detector and slopes. Both corrections became primed and remained Open. Native stop returned Ready, systemd stopped successfully, and the replacement used a new invocation, session UUID and private core. |
+| GPI2 CPU recovery, session-owned | `0747f0f` | The managed simulator connected held at sequence zero. The graph finished calibrated preparation and entered native node construction. systemd reached its 900-second start timeout before Ready. |
+| SPIDERS fitted dual CPU, retained | `84fcd27` with FGPW `8b18385` | An independent HIL 0.5.13 source using the exported SPIDERS optical configuration published the expected nodes on the private core. The composition prepared in 471.56 seconds, including 471.54 seconds of compilation. The fixture reached its 850-second deadline before Ready. |
+
+[Installed live-session receipts](instrument-live-session.json)
 
 ## Reproduction
 

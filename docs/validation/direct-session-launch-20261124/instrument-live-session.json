@@ -1,0 +1,157 @@
+{
+  "classic-direct": {
+    "activations": [
+      {
+        "first_priming": {
+          "closed-loop-correction:closed": {
+            "closed-loop-correction:closed": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+            "pipewireao.correction-control.closed-loop-correction:closed.primed": true,
+            "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+          }
+        },
+        "held_close_refusals": {
+          "closed-loop-correction:closed": {
+            "field": "session",
+            "message": "ArgumentError: correction control requires a running session"
+          }
+        },
+        "ready_correction": {
+          "closed-loop-correction:closed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+          "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.state": "Open",
+          "pipewireao.correction-control.owner-instance": 403939322408499,
+          "pipewireao.correction-control.version": 1
+        },
+        "ready_declared_links": [
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189
+        ],
+        "ready_seconds": 221.390213176,
+        "remote": "/run/user/1000/pipewireao-session-ctgrmvd/7570f47598534e9a8288dc06ac021b7b/rtc-7570f4759853",
+        "session_invocation": "7570f47598534e9a8288dc06ac021b7b",
+        "session_main_pid": 1629875,
+        "session_uuid": "9d45b0e2-faf1-4ef8-84b4-6c75fb43c012",
+        "source_acquisition": {
+          "detector": {
+            "acquisition": {
+              "domain": "a0000000000000000000000000000000",
+              "generation": 1,
+              "sequence": 1
+            },
+            "header_sequence": 1
+          },
+          "slopes": {
+            "acquisition": {
+              "domain": "a0000000000000000000000000000000",
+              "generation": 1,
+              "sequence": 1
+            },
+            "header_sequence": 1
+          }
+        },
+        "stopped_state": "Ready",
+        "systemd_stop_result": "success"
+      },
+      {
+        "first_priming": {
+          "closed-loop-correction:closed": {
+            "closed-loop-correction:closed": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+            "pipewireao.correction-control.closed-loop-correction:closed.primed": true,
+            "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+          }
+        },
+        "held_close_refusals": {
+          "closed-loop-correction:closed": {
+            "field": "session",
+            "message": "ArgumentError: correction control requires a running session"
+          }
+        },
+        "ready_correction": {
+          "closed-loop-correction:closed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+          "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.state": "Open",
+          "pipewireao.correction-control.owner-instance": 404182125434506,
+          "pipewireao.correction-control.version": 1
+        },
+        "ready_declared_links": [
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189
+        ],
+        "ready_seconds": 127.802059966,
+        "remote": "/run/user/1000/pipewireao-session-ctgrmvd/a4feaace066f4a71b2d8814d641da2fb/rtc-a4feaace066f",
+        "session_invocation": "a4feaace066f4a71b2d8814d641da2fb",
+        "session_main_pid": 1634600,
+        "session_uuid": "30bf7f72-ca29-475b-b54e-50f972a83547",
+        "source_acquisition": {
+          "detector": {
+            "acquisition": {
+              "domain": "a0000000000000000000000000000000",
+              "generation": 1,
+              "sequence": 1
+            },
+            "header_sequence": 1
+          },
+          "slopes": {
+            "acquisition": {
+              "domain": "a0000000000000000000000000000000",
+              "generation": 1,
+              "sequence": 1
+            },
+            "header_sequence": 1
+          }
+        },
+        "stopped_state": "Ready",
+        "systemd_stop_result": "success"
+      }
+    ],
+    "graph_optimization": null,
+    "julia": "1.13.4",
+    "native": "PipeWireAO 4.0.8+0",
+    "rtc_source": "3c964d37c20a1271790924f81a7a74f4d0120742",
+    "rtc_tree": "3f036b2bbf1092a14b75c6f22d4027a0fac3c54e"
+  }
+}
