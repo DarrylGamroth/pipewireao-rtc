@@ -219,12 +219,10 @@ function _identity(
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
 )
-    values = S.properties(unit; extra = "Type,Restart,KillMode", deadline, clock)
+    values = S.properties(unit; extra = PipeWireAORTC.SessionLaunch.LIFETIME_PROPERTIES, deadline, clock)
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "active" &&
-    values["Type"] == "exec" &&
-    values["Restart"] == "no" &&
-    values["KillMode"] == "control-group" ||
+    PipeWireAORTC.SessionLaunch.session_lifetime_valid(values; allow_exec = true) ||
         throw(ArgumentError("RTC session unit is not active with the installed policy"))
     invocation = S.valid_invocation(values["InvocationID"])
     pid = tryparse(Int, values["MainPID"])
@@ -623,6 +621,7 @@ function attach(
             UInt64(saved["start_ticks"]),
             saved["cgroup"],
         ) || throw(ArgumentError("session unit incarnation differs from its stage receipt"))
+        _ledger(handle)
         handle.stage_root = root
         return handle
     end
@@ -630,7 +629,9 @@ function attach(
     matched === nothing &&
         throw(ArgumentError("runtime is not a session stage or systemd runtime root"))
     unit = "pipewireao-session@" * matched.captures[1] * ".service"
-    return _identity(unit, root; deadline, clock)
+    handle = _identity(unit, root; deadline, clock)
+    _ledger(handle)
+    return handle
 end
 
 _direct_connection(connection) =

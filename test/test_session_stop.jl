@@ -103,8 +103,7 @@ end
         entry = "Base.exit_on_sigint(false); using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))"
         for command in ("prepare", "publish", "stop", "cleanup", "control", "restart", "sessions", "")
             args = isempty(command) ? String[] : [command, "--runtime-root", "path with spaces", ""]
-            optimization = get(Dict("prepare" => ["-O0", "--compile=min"],
-                                    "publish" => ["-O0"]), command, String[])
+            optimization = command == "prepare" ? ["-O0", "--compile=min"] : String[]
             open(`$launcher $args`, "r+") do process
                 pid = getpid(process)
                 println(process, "ready")
@@ -145,7 +144,127 @@ end
         split(template, '\n')
     @test first(findfirst("ExecStop=", template)) <
         first(findfirst("ExecStopPost=", template))
+    @test "Type=notify" in split(template, '\n')
+    @test "NotifyAccess=main" in split(template, '\n')
+    @test !occursin("ExecStartPost=", template)
     @test "KillMode=control-group" in split(template, '\n')
     @test "KillSignal=SIGINT" in split(template, '\n')
     @test "TimeoutStopSec=300" in split(template, '\n')
+end
+
+@testset "installed admission binds native identity to the prepared invocation" begin
+    CLI = PipeWireAORTC.SessionCLI
+    pid = Int(getpid())
+    endpoint = (
+        session_id = "a5555555-5555-4555-8555-555555555555",
+        instance = Int64(29),
+        remote = "/runtime/core",
+        node_name = "pipewireao.rtc.session.fixture",
+        owner_pid = UInt32(pid),
+        global_id = UInt32(3),
+        serial = UInt64(81),
+    )
+    request = SessionLaunch.Request(
+        "/package", "/prefix", "pipewireao-session@fixture.service",
+        "/package/bin/pipewireao-rtc-session", "/runtime",
+    )
+    record = Dict{String,Any}(
+        "version" => SessionLaunch.LEDGER_VERSION, "name" => "fixture",
+        "session_uuid" => endpoint.session_id, "session_control_instance" => endpoint.instance,
+        "session_pid" => pid, "remote" => endpoint.remote,
+    )
+    context = CLI.InstalledAdmission(
+        request, "a"^32, "/runtime/rtc/rtc.conf", record, (pid, UInt64(1), "/cgroup"),
+        (endpoint.global_id, endpoint.serial), nothing,
+    )
+    @test CLI._endpoint_identity(context, endpoint) == context.endpoint
+    for changed in (
+        (; endpoint..., session_id = "b5555555-5555-4555-8555-555555555555"),
+        (; endpoint..., instance = Int64(30)),
+        (; endpoint..., remote = "/runtime/foreign"),
+        (; endpoint..., node_name = "pipewireao.rtc.session.foreign"),
+        (; endpoint..., owner_pid = UInt32(pid + 1)),
+        (; endpoint..., global_id = UInt32(0)),
+        (; endpoint..., global_id = typemax(UInt32)),
+        (; endpoint..., serial = UInt64(0)),
+    )
+        @test_throws ArgumentError CLI._endpoint_identity(context, changed)
+    end
+    @test_throws "native endpoint changed after installed admission" CLI.publish_ready!(
+        () -> error("must not reach publication"),
+        context, (; endpoint..., serial = UInt64(82)); deadline = nothing, clock = nothing,
+    )
+    withenv(SessionLaunch.ADMISSION_UNIT_ENV => nothing, "INVOCATION_ID" => "a"^32) do
+        @test CLI.installed_admission("/arbitrary/direct.conf") === nothing
+    end
+    withenv(SessionLaunch.ADMISSION_UNIT_ENV => request.unit, "INVOCATION_ID" => "stale") do
+        @test_throws "invalid systemd invocation identity" CLI.installed_admission(context.config)
+    end
+    @test_throws ArgumentError CLI.main(["publish"])
+end
+
+@testset "installed discovery preserves a conflicting incarnation" begin
+    CLI = PipeWireAORTC.SessionCLI
+    Discovery = PipeWireAORTC.SessionDiscovery
+    record = Dict("version" => SessionLaunch.LEDGER_VERSION)
+    name = "fixture"
+    id = "a5555555-5555-4555-8555-555555555555"
+    pid = UInt32(getpid())
+    remote = "/runtime/core"
+    node = "pipewireao.rtc.session.fixture"
+    ready = Discovery.SessionRecord(name, id, pid, Int64(29), remote, node)
+    conflict = Discovery.SessionRecord(name, id, pid, Int64(30), remote, node)
+    mktempdir() do runtime
+        withenv("XDG_RUNTIME_DIR" => runtime) do
+            path = CLI._verified_discovery!(record, ready)
+            @test_throws "different session already owns discovery UUID" CLI._verified_discovery!(
+                record, conflict
+            )
+            @test Discovery._read_record(path).incarnation == ready.incarnation
+            @test CLI._verified_discovery!(record, ready) == path
+            @test Discovery.remove!(dirname(path), ready)
+            @test !ispath(path)
+        end
+    end
+end
+
+@testset "session unit rendering follows the pinned RTC cohort" begin
+    mktempdir() do root
+        package_id = Base.PkgId(PipeWireAORTC)
+        project = mkdir(joinpath(root, "application"))
+        write(joinpath(project, "Project.toml"), "[deps]\nPipeWireAORTC = \"$(package_id.uuid)\"\n")
+        for (package, policy) in (
+            ("exec", "Type=exec\nExecStartPost=@LAUNCHER@ publish\n"),
+            ("notify", "Type=notify\nNotifyAccess=main\n"),
+        )
+            source = joinpath(root, package)
+            write(joinpath(mkpath(joinpath(source, "src")), "PipeWireAORTC.jl"), "")
+            assets = mkpath(joinpath(source, "assets", "deployment"))
+            write(joinpath(assets, "pipewireao-session@.service.in"), policy)
+            write(
+                joinpath(project, "Manifest.toml"),
+                """
+                manifest_format = "2.0"
+
+                [[deps.PipeWireAORTC]]
+                path = "../$package"
+                uuid = "$(package_id.uuid)"
+                version = "0.7.30"
+                """,
+            )
+            @test SessionInstall.resolved_unit_template(project) == policy
+        end
+    end
+    installed = Dict(
+        "Type" => "notify", "NotifyAccess" => "main", "KillMode" => "control-group",
+        "Restart" => "no",
+    )
+    @test SessionLaunch.session_lifetime_valid(installed)
+    @test !SessionLaunch.session_lifetime_valid(merge(installed, Dict("NotifyAccess" => "all")))
+    historical = merge(installed, Dict("Type" => "exec", "NotifyAccess" => "none"))
+    @test !SessionLaunch.session_lifetime_valid(historical)
+    @test SessionLaunch.session_lifetime_valid(historical; allow_exec = true)
+    @test !SessionLaunch.session_lifetime_valid(
+        merge(historical, Dict("KillMode" => "process")); allow_exec = true,
+    )
 end

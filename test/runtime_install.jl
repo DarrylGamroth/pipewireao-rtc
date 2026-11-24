@@ -275,14 +275,15 @@ end
         sealed_launcher = joinpath(sealed_source, "bin", "pipewireao-rtc-session")
         mkpath(dirname(sealed_launcher))
         julia_executable = Base.julia_cmd().exec[1]
-        for (name, legacy, minimal_prepare) in (
-            ("preserved launcher", true, false),
-            ("sealed startup launcher", false, false),
-            ("sealed preparation launcher", false, true),
+        for (name, legacy, minimal_prepare, historical_publish) in (
+            ("preserved launcher", true, false, false),
+            ("sealed startup launcher", false, false, true),
+            ("sealed external publisher launcher", false, true, true),
+            ("sealed preparation launcher", false, true, false),
         )
             sealed_destination = joinpath(directory, name)
             script = P.SessionInstall.installed_launcher(
-                julia_executable; environment = sealed_destination, legacy, minimal_prepare
+                julia_executable; environment = sealed_destination, legacy, minimal_prepare, historical_publish
             )
             write(sealed_launcher, script)
             P.InstrumentExport.seal!(sealed_source)

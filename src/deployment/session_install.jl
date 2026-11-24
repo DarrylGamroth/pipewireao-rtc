@@ -13,7 +13,7 @@ const C = PipeWireAORTC.Common
 "Generate a one-shot client launcher bound to the installed application environment."
 function installed_launcher(
     julia::AbstractString; environment::AbstractString, commit = nothing,
-    legacy::Bool = false, minimal_prepare::Bool = true,
+    legacy::Bool = false, minimal_prepare::Bool = true, historical_publish::Bool = false,
 )
     pin = commit === nothing ? "" : "export PIPEWIREAO_RTC_EXPORT_COMMIT=$commit\n"
     exec_julia = "exec $(D.shell_quote(julia)) --startup-file=no --project=" *
@@ -23,10 +23,12 @@ function installed_launcher(
         ""
     else
         rules = if minimal_prepare
-            "    prepare) $exec_julia -O0 --compile=min$entry ;;\n" *
-            "    publish) $exec_julia -O0$entry ;;\n"
-        else
+            prepare = "    prepare) $exec_julia -O0 --compile=min$entry ;;\n"
+            historical_publish ? prepare * "    publish) $exec_julia -O0$entry ;;\n" : prepare
+        elseif historical_publish
             "    prepare|publish) $exec_julia -O0$entry ;;\n"
+        else
+            "    prepare) $exec_julia -O0$entry ;;\n"
         end
         "case \"\${1-}\" in\n" * rules * "esac\n"
     end
@@ -157,6 +159,18 @@ function install(options)
     end
 end
 
+function resolved_unit_template(environment)
+    entry = Base.explicit_manifest_uuid_path(
+        joinpath(environment, "Project.toml"), Base.PkgId(PipeWireAORTC)
+    )
+    entry isa AbstractString && isfile(entry) ||
+        throw(ArgumentError("pinned RTC package is unavailable in the application environment"))
+    return read(
+        joinpath(dirname(dirname(entry)), "assets", "deployment", "pipewireao-session@.service.in"),
+        String,
+    )
+end
+
 function finish_install(destination, prefix, julia, commit)
     installed_spec = session_spec(destination, prefix)
     haskey(installed_spec["artifacts"], "systemd/pipewireao-session@.service") &&
@@ -169,12 +183,18 @@ function finish_install(destination, prefix, julia, commit)
     mkpath(bin)
     launcher = joinpath(bin, "pipewireao-rtc-session")
     environment = D.application_environment(installed_spec, destination)
-    script = installed_launcher(julia; environment, commit)
+    template = resolved_unit_template(environment)
+    historical_publish = occursin(r"(?m)^ExecStartPost=.*\bpublish\b", template)
+    script = installed_launcher(julia; environment, commit, historical_publish)
     if haskey(installed_spec["artifacts"], "bin/pipewireao-rtc-session")
         sealed = read(launcher, String)
         # Preserve the exact historical script and its original bindings.
         (sealed == script ||
-         sealed == installed_launcher(julia; environment, commit, minimal_prepare = false) ||
+         sealed == installed_launcher(julia; environment, commit, historical_publish = false) ||
+         sealed == installed_launcher(julia; environment, commit, historical_publish = true) ||
+         sealed == installed_launcher(
+             julia; environment, commit, minimal_prepare = false, historical_publish = true
+         ) ||
          sealed == installed_launcher(julia; environment, commit, legacy = true)) || throw(
             ArgumentError(
                 "sealed session launcher differs from the selected Julia executable"
@@ -191,9 +211,6 @@ function finish_install(destination, prefix, julia, commit)
         owners = filter(!D.uses_external_stream, installed_spec["owners"])
         PipeWireAORTC.HILStartup.install!(environment, destination, owners, prefix)
     end
-    template = read(
-        joinpath(PipeWireAORTC.package_root(), "assets/deployment/pipewireao-session@.service.in"), String
-    )
     unit = installed_unit(
         template, installed_spec; launcher, package = destination, prefix, executable, external
     )

@@ -90,8 +90,8 @@ end
     retain_identity!(service, values)
     return Hsm.transition!(service, :Running)
 end
-@on_event function (service::Service, ::Running, ::Verified, _)
-    verify_identity(service)
+@on_event function (service::Service, ::Running, ::Verified, timing)
+    verify_identity(service; timing.deadline, timing.clock)
     return Hsm.EventHandled
 end
 @on_event function (service::Service, ::Root, ::Verified, _)
@@ -406,8 +406,8 @@ function alive(service::Service)
     process_identity(service.main_pid, service.start_ticks, service.cgroup)
 end
 
-function verify_identity(service::Service)
-    values = properties(service.unit)
+function verify_identity(service::Service; deadline, clock)
+    values = properties(service.unit; deadline, clock)
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "active" &&
     same_incarnation(service, values) &&
@@ -416,12 +416,12 @@ function verify_identity(service::Service)
     return nothing
 end
 """
-    verify!(service)
+    verify!(service; deadline=nothing, clock=Clocks.SystemNanoClock())
 
 Verify the retained service identity against systemd and return the service.
 """
-function verify!(service::Service)
-    Hsm.dispatch!(service, :Verified)
+function verify!(service::Service; deadline = nothing, clock = Clocks.SystemNanoClock())
+    Hsm.dispatch!(service, :Verified, (; deadline, clock))
     return service
 end
 

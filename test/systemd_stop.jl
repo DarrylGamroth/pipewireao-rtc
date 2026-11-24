@@ -16,10 +16,12 @@ const evidence = joinpath(
 )
 mkpath(evidence)
 
-function stop_case(remote, directory, mode)
-    root = joinpath(directory, "stop-" * mode)
+function stop_case(remote, directory, mode; legacy = false)
+    label = legacy ? mode * "-legacy" : mode
+    root = joinpath(directory, "stop-" * label)
     mkpath(root)
-    unit = "codex-rtc-stop-$(getpid())-$(mode).service"
+    unit = "codex-rtc-stop-$(getpid())-$(label).service"
+    lifetime = legacy ? "Type=exec" : "Type=notify\nNotifyAccess=main"
     fragment = joinpath(root, unit)
     hook = "ExecStop=$julia --startup-file=no --optimize=0 --project=$repo " *
            "-e \"using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))\" -- " *
@@ -39,7 +41,7 @@ function stop_case(remote, directory, mode)
         fragment,
         """
 [Service]
-Type=exec
+$lifetime
 # Use low optimization for the stand-in to limit first-use compilation.
 ExecStart=$julia --startup-file=no --optimize=0 --project=$repo $repo/test/systemd_stop_owner.jl $root $remote $unit $mode
 $hook
@@ -146,7 +148,7 @@ $environment
             @test !isfile(joinpath(root, "quit-entry"))
         end
         println(
-            "SYSTEMD_STOP mode=$mode cleanup=true quiescent=true quit_submissions=$submissions accepted=$(get(get(record,"systemd_quit",Dict()),"accepted",false))",
+            "SYSTEMD_STOP mode=$label cleanup=true quiescent=true quit_submissions=$submissions accepted=$(get(get(record,"systemd_quit",Dict()),"accepted",false))",
         )
     finally
         if S.properties(unit)["MainPID"] != "0"
@@ -163,7 +165,7 @@ $environment
             joinpath(root, "journal"),
             read(`journalctl --user -u $unit --no-pager -o short-monotonic`, String),
         )
-        cp(root, joinpath(evidence, mode); force = true)
+        cp(root, joinpath(evidence, label); force = true)
         run(pipeline(ignorestatus(`systemctl --user reset-failed $unit`); stderr = devnull))
         rm(link)
         run(`systemctl --user daemon-reload`)
@@ -193,6 +195,7 @@ end
             )
                 stop_case(remote, directory, mode)
             end
+            stop_case(remote, directory, "normal"; legacy = true)
         end
     end
 end

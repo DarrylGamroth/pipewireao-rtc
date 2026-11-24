@@ -1,5 +1,5 @@
 #!/usr/bin/env julia
-"""One-shot systemd commands for the opt-in RTC RTC unit."""
+"""Installed RTC admission and one-shot systemd commands."""
 module SessionCLI
 
 import ..PipeWireAORTC
@@ -30,39 +30,6 @@ function require_node_owners(spec)
         throw(ArgumentError("one-shot session requires exact node-owners in deployment.conf"))
     return nothing
 end
-
-function prepared_identity(name::String, source_role, record)
-    occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name) &&
-    name == record["name"] &&
-    source_role == record["source_role"] ||
-        throw(ArgumentError("deployment identity differs from prepared invocation"))
-    return nothing
-end
-prepared_identity(name, source_role, record) =
-    throw(ArgumentError("deployment identity differs from prepared invocation"))
-
-function warmup_complete(reply::Session.AdministrativeCompletion)
-    reply.error === nothing || throw(ArgumentError(reply.error.message))
-    reply.header.operation == UInt32(15) &&
-    reply.header.result == 0 &&
-    reply.lifecycle == Session.Runner.Configuring ||
-        throw(ArgumentError("direct session warmup query did not retain Configuring"))
-    return reply.warmed === true
-end
-warmup_complete(reply) =
-    throw(ArgumentError("direct session warmup query did not retain Configuring"))
-
-function confirm_admission(reply::Session.AdministrativeCompletion)
-    reply.header.operation == UInt32(16) &&
-    reply.header.result == 0 &&
-    reply.error === nothing &&
-    reply.warmed === true &&
-    reply.lifecycle == Session.Runner.Ready ||
-        throw(ArgumentError("direct session admission did not reach Ready"))
-    return nothing
-end
-confirm_admission(reply) =
-    throw(ArgumentError("direct session admission did not reach Ready"))
 
 function confirm_ready(reply::Session.Completion)
     reply.header.operation == UInt32(3) &&
@@ -97,46 +64,111 @@ function render!(spec, session, bindings, records, runtime; links = D.session_li
     )
 end
 
-function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
+mutable struct InstalledAdmission
+    request::SessionLaunch.Request
+    invocation::String
+    config::String
+    record::Dict{String,Any}
+    process::Tuple{Int,UInt64,String}
+    endpoint::Union{Nothing,Tuple{UInt32,UInt64}}
+    discovery::Union{Nothing,String}
+end
+
+function _startup_deadline(deadline, clock)
+    Clocks.time_nanos(clock) < deadline ||
+        throw(ArgumentError("installed RTC exceeded its startup deadline"))
+    return nothing
+end
+
+function _main_identity(request, invocation, record, config; deadline, clock)
     values = S.properties(
-        unit; extra = "ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type"
+        request.unit;
+        extra = "ExecStop,ExecStopPost," * SessionLaunch.LIFETIME_PROPERTIES,
+        deadline,
+        clock,
     )
     values["LoadState"] == "loaded" &&
-    values["ActiveState"] in ("activating", "active") &&
-    values["Type"] == "exec" &&
-    values["Restart"] == "no" &&
-    values["KillMode"] == "control-group" ||
-        throw(ArgumentError("RTC unit has unexpected post-start policy"))
+    values["ActiveState"] == "activating" &&
+    SessionLaunch.session_lifetime_valid(values) ||
+        throw(ArgumentError("RTC unit has unexpected startup policy"))
+    pid = getpid()
     S.valid_invocation(values["InvocationID"]) == invocation &&
-    tryparse(Int, values["ControlPID"]) == getpid() ||
-        throw(ArgumentError("publisher is not this unit's ExecStartPost process"))
+    tryparse(Int, values["MainPID"]) == pid ||
+        throw(ArgumentError("RTC is not this invocation's systemd MainPID"))
     group = values["ControlGroup"]
-    startswith(group, "/") &&
-    group != "/" &&
-    (S.proc_cgroup(getpid()) == group || startswith(S.proc_cgroup(getpid()), group * "/")) ||
-        throw(ArgumentError("publisher is outside the RTC unit cgroup"))
-    request = SessionLaunch.Request(
-        dirname(launcher), dirname(launcher), unit, launcher, runtime_root
-    )
-    SessionLaunch.cleanup_hook_valid(values["ExecStopPost"], request, source_role) ||
+    ticks = S.start_ticks(pid)
+    startswith(group, "/") && group != "/" && S.process_identity(pid, ticks, group) ||
+        throw(ArgumentError("RTC MainPID is outside its unit cgroup"))
+    SessionLaunch.cleanup_hook_valid(values["ExecStopPost"], request, record["source_role"]) ||
         throw(ArgumentError("RTC emergency cleanup hook changed"))
     SessionLaunch.stop_hook_valid(values["ExecStop"], request) ||
         throw(ArgumentError("RTC native stop hook changed"))
-    pid = tryparse(Int, values["MainPID"])
-    pid !== nothing && 0 < pid <= typemax(UInt32) ||
-        throw(ArgumentError("RTC MainPID is unavailable"))
-    ticks = S.start_ticks(pid)
-    observed = S.proc_cgroup(pid)
-    (observed == group || startswith(observed, group * "/")) ||
-        throw(ArgumentError("RTC MainPID left its unit cgroup"))
+    record["config"] == record["session_process"]["config"] == config ||
+        throw(ArgumentError("RTC configuration differs from prepared process binding"))
+    D.verify_session_process(pid, record["session_process"])
+    _startup_deadline(deadline, clock)
     return pid, ticks, group
+end
+
+"""
+    installed_admission(config; clock=Clocks.SystemNanoClock())
+
+Bind the installed RTC main process to its private ExecStartPre ledger. Return
+`nothing` for a direct unmanaged launch. Reject mismatched invocation, unit or
+process identity before the RTC starts affecting the graph.
+"""
+function installed_admission(config::AbstractString; clock = Clocks.SystemNanoClock())
+    unit = get(ENV, SessionLaunch.ADMISSION_UNIT_ENV, nothing)
+    unit === nothing && return nothing
+    invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
+    runtime_root = PipeWireAORTC.SessionRuntime.runtime_directory(unit)
+    runtime = joinpath(runtime_root, invocation)
+    config = String(config)
+    config == get(ENV, "RTC_CONFIG", "") == joinpath(runtime, "rtc", "rtc.conf") ||
+        throw(ArgumentError("RTC configuration is outside the prepared invocation"))
+    SessionLaunch._rendered_session_configuration(config, runtime)
+    record = SessionLaunch._read_ledger(runtime)
+    SessionLaunch.validate_ledger(record)
+    record["unit"] == unit &&
+    record["invocation"] == invocation &&
+    record["runtime"] == runtime &&
+    record["phase"] == "prepared" ||
+        throw(ArgumentError("launch ledger does not identify prepared RTC unit"))
+    admission = record["admission"]
+    request = SessionLaunch.Request(
+        admission["package"], admission["prefix"], unit, admission["launcher"], runtime_root
+    )
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000))
+    process = _main_identity(request, invocation, record, config; deadline, clock)
+    return InstalledAdmission(request, invocation, config, record, process, nothing, nothing)
+end
+
+function _verify_main(context::InstalledAdmission; deadline, clock)
+    _main_identity(
+        context.request, context.invocation, context.record, context.config; deadline, clock
+    ) == context.process || throw(ArgumentError("installed RTC process changed during startup"))
+    return nothing
+end
+
+function _endpoint_identity(context::InstalledAdmission, endpoint)
+    record = context.record
+    (
+        endpoint.session_id, endpoint.instance, endpoint.remote, endpoint.node_name,
+        endpoint.owner_pid,
+    ) == (
+        record["session_uuid"], record["session_control_instance"], record["remote"],
+        "pipewireao.rtc.session." * record["name"], context.process[1],
+    ) &&
+    0 < endpoint.global_id < typemax(UInt32) &&
+    0 < endpoint.serial <= typemax(UInt64) ||
+        throw(ArgumentError("native endpoint differs from the prepared RTC session"))
+    return UInt32(endpoint.global_id), UInt64(endpoint.serial)
 end
 
 function _verified_discovery!(record, session_record)
     SessionLaunch.validate_ledger(record)
-    # SessionDiscovery.publish! remains owner-only. ExecStartPost is a
-    # distinct process, so this narrow path writes only after live systemd and
-    # direct native Status proof in publish! below.
+    session_record.owner_pid == UInt32(getpid()) ||
+        throw(ArgumentError("only the owning session may publish its locator"))
     directory = Discovery.registry_directory()
     pod = Discovery.encode_record(session_record)
     path = joinpath(directory, "session-" * session_record.session_id * ".pod")
@@ -159,159 +191,116 @@ function _verified_discovery!(record, session_record)
         end
         Discovery._atomic_replace(directory, path, pod)
     end
-    record["discovery_locator"] = path
     return path
 end
 
-function _placement_snapshot(
-    record, unit, invocation, launcher, group, session_pid, session_contract
-)
-    owner = S.Coordinator(unit, invocation, group, launcher)
+function _placement_snapshot(context::InstalledAdmission; deadline, clock)
+    request = context.request
+    record = context.record
+    pid, _, group = context.process
+    owner = S.Coordinator(request.unit, context.invocation, group, request.launcher)
     snapshots = Dict{String,Any}()
     for (role, item) in record["owners"]
+        SessionLaunch.optional_role(record, role) && continue
         item["role"] == role && item["state"] == "running" ||
             throw(ArgumentError("recorded owner is not running at session publication"))
         service = SessionLaunch.recorded_service(owner, role, item)
-        S.verify!(service)
+        S.verify!(service; deadline, clock)
         snapshots[role] = P.snapshot(service.main_pid, item["placement"])
-        S.verify!(service)
+        S.verify!(service; deadline, clock)
     end
-    snapshots["session"] = P.snapshot(session_pid, session_contract)
+    snapshots["session"] = P.snapshot(pid, record["admission"]["placement"])
+    _startup_deadline(deadline, clock)
     return snapshots
 end
 
-function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
-    invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
-    runtime = joinpath(args.runtime_root, invocation)
-    ledger = joinpath(runtime, "launch.json")
-    record = C.read_json(ledger; maximum = 1024 * 1024)
-    SessionLaunch.validate_ledger(record)
-    record["unit"] == args.unit &&
-    record["invocation"] == invocation &&
-    record["phase"] == "prepared" ||
-        throw(ArgumentError("launch ledger does not identify prepared RTC unit"))
-    package = D.profile(joinpath(args.package, "deployment.conf"), args.prefix)
-    name = package["name"]
-    source_role = package["source-owner"]
-    prepared_identity(name, source_role, record)
-    launcher = joinpath(args.package, "bin", "pipewireao-rtc-session")
-    pid, ticks, group = _unit_identity(
-        args.unit, invocation, args.runtime_root, launcher, source_role
+"""
+    verify_admission!(context, endpoint; deadline, clock)
+
+Verify the native endpoint, systemd invocation and owner placement before the
+session admits its declared Links. Retain the exact observed endpoint identity.
+"""
+function verify_admission!(context::InstalledAdmission, endpoint; deadline, clock)
+    observed = _endpoint_identity(context, endpoint)
+    _verify_main(context; deadline, clock)
+    context.record["placement_snapshot"] = _placement_snapshot(context; deadline, clock)
+    _verify_main(context; deadline, clock)
+    context.endpoint = observed
+    return nothing
+end
+
+"""
+    publish_ready!(check, context, endpoint; deadline, clock)
+
+Retain the startup ledger and publish discovery after the session has proved
+native Ready. Run its readiness check immediately before and after publishing
+discovery. Withdraw the locator if the final check fails.
+"""
+function publish_ready!(check, context::InstalledAdmission, endpoint; deadline, clock)
+    observed = _endpoint_identity(context, endpoint)
+    observed == context.endpoint ||
+        throw(ArgumentError("native endpoint changed after installed admission"))
+    context.discovery === nothing ||
+        throw(ArgumentError("installed RTC discovery was already published"))
+    _verify_main(context; deadline, clock)
+    pid, ticks, _ = context.process
+    request = context.request
+    record = context.record
+    admission = record["admission"]
+    SessionLaunch.start_analysis!(
+        request.package, request.prefix, Dict("analysis" => admission["analysis"]), record;
+        deadline, clock, project = record["session_process"]["project"],
+        client_asset = admission["analysis_client"], check,
     )
-    record["session_process"]["config"] == record["config"] ||
-        throw(ArgumentError("prepared process binding differs from session configuration"))
-    D.verify_session_process(pid, record["session_process"])
-    expected = Int64(record["session_control_instance"])
-    uuid = String(record["session_uuid"])
-    remote = String(record["remote"])
-    node = "pipewireao.rtc.session." * name
-    started = previous = Clocks.time_nanos(clock)
-    startup_ns =
-        haskey(package, "startup-timeout-ms") ?
-        Base.checked_mul(Int64(D.startup_timeout_ms(package)), Int64(1_000_000)) :
-        Int64(240_000_000_000)
-    deadline = Base.checked_add(previous, startup_ns)
-    # The RTC prepares its dispatch paths before publishing the control node.
-    # Discovery and warmup share the startup deadline. Admission has its own bound.
-    @info "Waiting for RTC control endpoint" unit=args.unit
-    client = Client.connect(
-        Profile.Profile(),
-        remote,
-        node,
-        UInt32(pid),
-        expected;
-        deadline,
-        clock,
-        controller_instance = Int64(record["admission_controller_instance"]),
-    )
-    @info "Waiting for owner preparation and RTC warmup" unit=args.unit
-    snapshots = nothing
-    try
-        while true
-            current = Clocks.time_nanos(clock)
-            current >= previous || throw(ArgumentError("session warmup clock regressed"))
-            previous = current
-            current < deadline || throw(
-                ArgumentError("direct session did not warm before publication deadline")
-            )
-            warm = Client.request!(
-                client,
-                Session.WarmupCommand();
-                deadline,
-            )
-            warmup_complete(warm) && break
-            sleep(min(Int64(100_000_000), Base.checked_sub(deadline, current)) / 1.0e9)
-        end
-        @info "RTC warmup completed" unit=args.unit wall_seconds=(Clocks.time_nanos(clock) - started) / 1e9
-        latest_pid, latest_ticks, latest_group = _unit_identity(
-            args.unit, invocation, args.runtime_root, launcher, source_role
-        )
-        (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
-            throw(ArgumentError("RTC process changed during warmup"))
-        snapshots = _placement_snapshot(
-            record,
-            args.unit,
-            invocation,
-            launcher,
-            group,
-            pid,
-            package["placement"]["session"],
-        )
-        latest_pid, latest_ticks, latest_group = _unit_identity(
-            args.unit, invocation, args.runtime_root, launcher, source_role
-        )
-        (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
-            throw(ArgumentError("RTC process changed during placement inspection"))
-        record["placement_snapshot"] = snapshots
-        C.write_json(ledger, record; atomic = true)
-        admit = Client.request!(
-            client,
-            Session.AdmitCommand();
-            deadline = min(
-                deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000))
-            ),
-        )
-        confirm_admission(admit)
-        completion = Client.request!(
-            client,
-            Session.RunnerCommand(:status);
-            deadline = min(
-                deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000))
-            ),
-        )
-        confirm_ready(completion)
-        with_thread_loop_lock(client.loop) do _
-            Client.healthy(client)
-            client.observation.node_identity == uuid &&
-            client.observation.owner_pid == UInt32(pid) &&
-            client.observation.instance == expected &&
-            client.global_id > 0 &&
-            client.global_id < typemax(UInt32) &&
-            client.serial > 0 || throw(
-                ArgumentError(
-                    "direct native Status identity differs from prepared session"
-                ),
-            )
-        end
-    finally
-        close(client)
-    end
-    latest_pid, latest_ticks, latest_group = _unit_identity(
-        args.unit, invocation, args.runtime_root, launcher, source_role
-    )
-    (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
-        throw(ArgumentError("RTC process changed during direct Status proof"))
+    record["placement_snapshot"] = _placement_snapshot(context; deadline, clock)
+    _verify_main(context; deadline, clock)
     session_record = Discovery.SessionRecord(
-        name, uuid, UInt32(pid), expected, remote, node
+        record["name"], endpoint.session_id, UInt32(pid), Int64(endpoint.instance),
+        endpoint.remote, endpoint.node_name,
     )
     directory = Discovery.registry_directory()
     record["session_pid"] = pid
     record["session_start_ticks"] = ticks
-    record["placement_snapshot"] = snapshots
-    record["discovery_locator"] = joinpath(directory, "session-" * uuid * ".pod")
-    C.write_json(ledger, record; atomic = true)
-    _verified_discovery!(record, session_record)
-    SessionLaunch.start_analysis!(args.package, args.prefix, package, record; deadline, clock)
+    record["discovery_locator"] = joinpath(directory, "session-" * endpoint.session_id * ".pod")
+    SessionLaunch.launch_record!(record["runtime"], record)
+    check()
+    _startup_deadline(deadline, clock)
+    context.discovery = _verified_discovery!(record, session_record)
+    try
+        check()
+        _startup_deadline(deadline, clock)
+    catch primary
+        try
+            retire_admission!(context)
+        catch cleanup
+            throw(CompositeException([primary, cleanup]))
+        end
+        rethrow()
+    end
+    return nothing
+end
+
+"""
+    notify_ready!()
+
+Notify systemd from the RTC main process after accepting the completed startup
+publication. Throw if systemd's notification socket could not be reached.
+"""
+function notify_ready!()
+    result = ccall((:sd_notify, "libsystemd.so.0"), Cint, (Cint, Cstring), 0, "READY=1")
+    result > 0 || throw(ArgumentError("systemd readiness notification failed (result $result)"))
+    return nothing
+end
+
+"""
+    retire_admission!(context)
+
+Withdraw the installed session locator if this invocation published it.
+"""
+retire_admission!(::Nothing) = nothing
+function retire_admission!(context::InstalledAdmission)
+    retire_record!(context.record, context.discovery)
+    context.discovery = nothing
     return nothing
 end
 
@@ -390,13 +379,11 @@ end
 
 function stop_invocation!(args, invocation, previous, deadline, trace, clock)
     values = S.properties(
-        args.unit; extra = "ControlPID,Type,Restart,KillMode", deadline, clock
+        args.unit; extra = "ControlPID," * SessionLaunch.LIFETIME_PROPERTIES, deadline, clock
     )
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "deactivating" &&
-    values["Type"] == "exec" &&
-    values["Restart"] == "no" &&
-    values["KillMode"] == "control-group" &&
+    SessionLaunch.session_lifetime_valid(values; allow_exec = true) &&
     S.valid_invocation(values["InvocationID"]) == invocation &&
     tryparse(Int, values["ControlPID"]) == getpid() ||
         throw(ArgumentError("native stop is not this session's ExecStop"))
@@ -614,7 +601,7 @@ throw; the executable wrapper preserves Julia's error reporting and exit status.
 function main(argv = ARGS)
     isempty(argv) && throw(
         ArgumentError(
-            "expected install, prepare, publish, stop, cleanup, sessions, select-session, control or restart",
+            "expected install, prepare, stop, cleanup, sessions, select-session, control or restart",
         ),
     )
     command = first(argv)
@@ -623,11 +610,6 @@ function main(argv = ARGS)
         SessionInstall.main(rest)
     elseif command == "prepare"
         SessionLaunch.main(argv; render!, validate_profile = require_node_owners)
-    elseif command == "publish"
-        args = C.cli_arguments(
-            rest; required = ["package", "prefix", "unit", "runtime-root"]
-        )
-        publish!(args)
     elseif command == "stop"
         args = C.cli_arguments(rest; required = ["unit", "runtime-root"])
         stop!(args)

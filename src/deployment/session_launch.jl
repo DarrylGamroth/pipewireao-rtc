@@ -29,6 +29,7 @@ const N = PipeWireAORTC.ControlClient
 const E = PipeWireAORTC.ScienceExport
 const P = PipeWireAORTC.Placement
 const LEDGER_VERSION = 2
+const ADMISSION_UNIT_ENV = "PIPEWIREAORTC_SYSTEMD_UNIT"
 
 "Reject unsupported private launch-ledger layouts before interpreting or changing them."
 validate_ledger(record) = throw(ArgumentError("unsupported launch ledger version"))
@@ -122,9 +123,19 @@ function stop_hook_valid(value::AbstractString, request::Request)
     )
 end
 
+const LIFETIME_PROPERTIES = "Type,NotifyAccess,Restart,KillMode"
+
+function session_lifetime_valid(values; allow_exec = false)
+    notify = values["Type"] == "notify" && values["NotifyAccess"] == "main"
+    historical = allow_exec && values["Type"] == "exec" && values["NotifyAccess"] == "none"
+    return (notify || historical) &&
+           values["Restart"] == "no" &&
+           values["KillMode"] == "control-group"
+end
+
 function preparation_identity(request::Request, source_role::AbstractString)
     values = S.properties(
-        request.unit; extra = "ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type"
+        request.unit; extra = "ControlPID,ExecStop,ExecStopPost," * LIFETIME_PROPERTIES
     )
     values["LoadState"] == "loaded" && values["ActiveState"] == "activating" ||
         fail("RTC unit is not in start preparation")
@@ -139,9 +150,7 @@ function preparation_identity(request::Request, source_role::AbstractString)
     group != "/" &&
     (observed == group || startswith(observed, group * "/")) ||
         fail("launcher is outside the RTC unit cgroup")
-    values["Restart"] == "no" &&
-    values["KillMode"] == "control-group" &&
-    values["Type"] == "exec" || fail("RTC unit has unexpected lifetime policy")
+    session_lifetime_valid(values) || fail("RTC unit has unexpected lifetime policy")
     cleanup_hook_valid(values["ExecStopPost"], request, source_role) ||
         fail("RTC unit lacks its exact emergency cleanup hook")
     stop_hook_valid(values["ExecStop"], request) ||
@@ -792,15 +801,13 @@ function prepare!(
             service = recorded_service(coordinator, role, item)
             S.verify!(service)
         end
-        record["phase"] = "prepared"
-        record["config"] = String(config)
-        launch_record!(runtime, record)
         julia = D.selected_julia_executable(Base.julia_cmd().exec[1])
         isfile(julia) && Sys.isexecutable(julia) ||
             fail("selected Julia runtime is unavailable")
         isdir(project) || fail("selected Julia project environment is unavailable")
         session_env = Dict{String,String}(
             "RTC_CONFIG" => String(config),
+            ADMISSION_UNIT_ENV => request.unit,
             "PIPEWIRE_RUNTIME_DIR" => runtime,
             "PIPEWIRE_REMOTE" => remote,
             "PIPEWIREAO_REMOTE" => remote,
@@ -810,12 +817,23 @@ function prepare!(
         process_binding = D.session_process_binding(spec, package, String(config))
         process_binding["julia"] == julia && process_binding["project"] == project ||
             fail("selected Julia process binding changed during session preparation")
+        analysis = get(spec, "analysis", [])
+        record["admission"] = Dict(
+            "package" => package,
+            "prefix" => prefix,
+            "launcher" => request.launcher,
+            "placement" => spec["placement"]["session"],
+            "analysis" => analysis,
+            "analysis_client" => isempty(analysis) ? nothing : spec["client"]["analysis"],
+        )
         record["session_process"] = process_binding
+        record["config"] = String(config)
+        record["phase"] = "prepared"
         launch_record!(runtime, record)
         for (key, value) in spec["session-runtime"]["environment"]
             (
                 key in D.SESSION_PRIVATE_ENVIRONMENT ||
-                key in ("PIPEWIREAORTC_JULIA", "PIPEWIREAORTC_PROJECT")
+                haskey(session_env, key)
             ) && fail("session runtime environment cannot override private binding $key")
             session_env[key] = D.substitute(value, bindings)
         end
