@@ -153,5 +153,121 @@
     "native": "PipeWireAO 4.0.8+0",
     "rtc_source": "3c964d37c20a1271790924f81a7a74f4d0120742",
     "rtc_tree": "3f036b2bbf1092a14b75c6f22d4027a0fac3c54e"
+  },
+  "gpi2-direct": {
+    "activations": [
+      {
+        "first_priming": {
+          "closed-loop-correction:closed": {
+            "closed-loop-correction:closed": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+            "pipewireao.correction-control.closed-loop-correction:closed.primed": true,
+            "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+          }
+        },
+        "fresh_recovery_ok": true,
+        "held_close_refusals": {
+          "closed-loop-correction:closed": {
+            "field": "session",
+            "message": "ArgumentError: correction control requires a running session"
+          }
+        },
+        "ready_correction": {
+          "closed-loop-correction:closed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+          "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.state": "Open",
+          "pipewireao.correction-control.owner-instance": 404335791667162,
+          "pipewireao.correction-control.version": 1
+        },
+        "ready_declared_links": [
+          177,
+          251,
+          252,
+          253,
+          254,
+          255,
+          256,
+          257,
+          258,
+          259,
+          260,
+          261,
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273,
+          274,
+          275,
+          276,
+          277,
+          278,
+          279,
+          280,
+          281
+        ],
+        "ready_seconds": 259.908263206,
+        "recovery_after_request": {
+          "pipewireao-recovery:active-generation": 1,
+          "pipewireao-recovery:close-guarded": false,
+          "pipewireao-recovery:closure-inhibited": true,
+          "pipewireao-recovery:controller": "closed-loop-correction",
+          "pipewireao-recovery:observation-monotonic-nanoseconds": 0,
+          "pipewireao-recovery:observation-sequence": 0,
+          "pipewireao-recovery:recovery-generation": 1,
+          "pipewireao-recovery:reference-reached": false,
+          "pipewireao-recovery:reference-timeout-ms": 5000,
+          "pipewireao-recovery:release-token": 0,
+          "pipewireao-recovery:request-token": 15,
+          "pipewireao-recovery:requested-generation": 1,
+          "pipewireao-recovery:state": "applied",
+          "pipewireao-recovery:version": 1
+        },
+        "remote": "/run/user/1000/pipewireao-session-gtgrmvd/d9d2cc365e9b41119c51b982a655ee60/rtc-d9d2cc365e9b",
+        "session_invocation": "d9d2cc365e9b41119c51b982a655ee60",
+        "session_main_pid": 1638222,
+        "session_uuid": "63601f00-7fbf-4c4e-947c-15d4cd3edced",
+        "source_acquisition": {
+          "detector": {
+            "acquisition": {
+              "domain": "a0000000000000000000000000000000",
+              "generation": 1,
+              "sequence": 1
+            },
+            "header_sequence": 1
+          },
+          "pixels": {
+            "acquisition": {
+              "domain": "a0000000000000000000000000000000",
+              "generation": 1,
+              "sequence": 1
+            },
+            "header_sequence": 1
+          }
+        },
+        "stale_recovery_release_error": {
+          "field": "session",
+          "message": "ArgumentError: recovery release requires an inhibited open controller"
+        },
+        "stopped_state": "Ready",
+        "systemd_stop_result": "success"
+      }
+    ],
+    "graph_optimization": "0",
+    "julia": "1.13.4",
+    "native": "PipeWireAO 4.0.8+0",
+    "rtc_source": "61b77ca0a22bb22440c97e97151d14d8fe986a95",
+    "rtc_tree": "b23f75b5bfcebfc157319bd52976d058a1cd31ef",
+    "unqualified_later_attempts": 1
   }
 }
