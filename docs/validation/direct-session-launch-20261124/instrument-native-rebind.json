@@ -1,0 +1,64 @@
+{
+  "classic": {
+    "after": {
+      "bootstrap_serial": 47,
+      "claimant_pid": 1618564,
+      "graph_serial": "52",
+      "owner_pid": 1617116,
+      "properties": {
+        "closed-loop-correction:closed": false,
+        "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+        "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+      }
+    },
+    "assertions_passed": 10,
+    "before": {
+      "bootstrap_serial": 13,
+      "claimant_pid": 1617124,
+      "graph_serial": "17",
+      "owner_pid": 1617116,
+      "properties": {
+        "closed-loop-correction:closed": false,
+        "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+        "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+      }
+    },
+    "claimant_signal": "SIGKILL",
+    "fixture_scope": "calibrated graph owner, independent native bootstrap claimant, no camera Links",
+    "julia_version": "1.13.4",
+    "native_version": "4.0.8+0",
+    "rtc_source": "3c964d37c20a1271790924f81a7a74f4d0120742",
+    "rtc_tree": "3f036b2bbf1092a14b75c6f22d4027a0fac3c54e"
+  },
+  "gpi2": {
+    "after": {
+      "bootstrap_serial": 68,
+      "claimant_pid": 1619872,
+      "graph_serial": "76",
+      "owner_pid": 1618755,
+      "properties": {
+        "closed-loop-correction:closed": false,
+        "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+        "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+      }
+    },
+    "assertions_passed": 10,
+    "before": {
+      "bootstrap_serial": 14,
+      "claimant_pid": 1618759,
+      "graph_serial": "20",
+      "owner_pid": 1618755,
+      "properties": {
+        "closed-loop-correction:closed": false,
+        "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+        "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+      }
+    },
+    "claimant_signal": "SIGKILL",
+    "fixture_scope": "calibrated graph owner, independent native bootstrap claimant, no camera Links",
+    "julia_version": "1.13.4",
+    "native_version": "4.0.8+0",
+    "rtc_source": "0747f0f0ee79b80a571e225dcf61030f0a106310",
+    "rtc_tree": "96459cdc023a7a80e605f0a6c41d8edc421c3f27"
+  }
+}
