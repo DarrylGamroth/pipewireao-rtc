@@ -150,6 +150,46 @@ end
 end
 
 
+@testset "installed activation pins the configuration, executable and calibration" begin
+    mktempdir() do package
+        prefix = PipeWireAORTC.SessionLaunch.LibPipeWire.PipeWireAO_jll.artifact_dir
+        rtc = joinpath(package, "rtc/bin/pipewireao-rtc")
+        launcher = joinpath(package, "session-launcher")
+        mkpath(dirname(rtc))
+        write(rtc, "rtc")
+        write(launcher, "session")
+        names = ["deployment.conf", "session.conf", "client.conf", "core.conf", "calibration.fits",
+                 "Project.toml", "Manifest.toml"]
+        for name in names
+            write(joinpath(package, name), name)
+        end
+        spec = Dict(
+            "artifacts" => Dict("calibration.fits" => nothing),
+            "client" => Dict("session" => "client.conf"),
+            "session" => "session.conf", "core" => "core.conf",
+            "session-runtime" => Dict("argv" => ["@PACKAGE@/rtc/bin/pipewireao-rtc", "-c",
+                "@RUNTIME@/rtc/rtc.conf"], "environment" => Dict()),
+        )
+        activation = I.install_activation!(
+            package, prefix, realpath(Base.julia_cmd().exec[1]), package, launcher, spec, nothing
+        )
+        read_activation(digest) = PipeWireAORTC.SessionCLI.activation_document(package, digest)
+        @test read_activation(activation.digest)["profile"] == spec
+        @test_throws PipeWireAORTC.SessionLaunch.LaunchError read_activation("0"^64)
+        alternate = joinpath(package, "Manifest-v1.13.toml")
+        write(alternate, "")
+        @test_throws ArgumentError read_activation(activation.digest)
+        rm(alternate)
+        replacement = joinpath(package, "new.fits")
+        write(replacement, "calibration.fits")
+        mv(replacement, joinpath(package, "calibration.fits"); force = true)
+        @test_throws ArgumentError read_activation(activation.digest)
+        @test_throws ArgumentError I.install_activation!(
+            package, prefix, realpath(Base.julia_cmd().exec[1]), package, launcher, spec, nothing
+        )
+    end
+end
+
 @testset "site bindings for independent core and source services" begin
     L = PipeWireAORTC.SessionLaunch
     @test L.external_services(Dict()) === nothing

@@ -1,27 +1,30 @@
 # Ordinary systemd services for session startup
 
-Scope: one-shot launcher under RTC-ARCH-026. The headless RTC
-owns admission, application links and source release; systemd owns processes.
-FGN/JFG algorithms, AOS simulation and native controls are unchanged.
+Under RTC-ARCH-026 the headless RTC owns admission, application Links and
+source release. Systemd owns process lifetime.
 
 ## Startup
 
-The session service executes the native `pipewireao-rtc` application directly. Its finite
-`ExecStartPre` helper renders the private configuration and ordinary owner
-service files, then starts the private core. After confirming the core socket
-and retaining its process identity, it starts the remaining held owners through
-one systemd target. This replaces a separate `systemd-run` submission for each
-owner. The target has `Wants` and `After`, with no stop propagation.
+Installation validates the deployment, topology, Julia environment and selected
+executable. It writes `systemd/session-activation.json` and binds its SHA-256
+digest into the generated session unit. The document records the installed
+paths, validated profile and file identities, including the calibration and
+application manifests. Reinstall after changing these inputs.
 
-HEART profiles retain one necessary dependency: the source command contains the
-actual HEART owner PID. Start and retain that owner before rendering the source
-service. Record all intended unit names before the first start request. Neither
-the core nor this staged HEART owner is pulled in by the target, so target start
-cannot silently restart either after its identity was retained.
+Systemd starts the installed MediaSession as its main process. The process
+checks the document digest, installed file identities, its exact command
+line and systemd invocation. It uses the new invocation to bind the private
+socket, owner identities and control endpoints. Existing deployments continue
+to run the service template shipped with their pinned RTC.
 
-Target activation is not proof that every owner started. Check each loaded unit
-definition and actual active PID, invocation, start time and cgroup. Then render
-application configuration from those retained identities.
+For a managed source, MediaSession starts the private core, confirms its
+socket and retains its identity. It starts the remaining held owners through
+one systemd target. HEART profiles require the actual HEART owner PID in the
+source command, so MediaSession starts and retains that owner first. The
+target has `Wants` and `After` with no stop propagation. For independent
+providers MediaSession attaches to the declared running services. It checks
+each unit, PID, invocation, start time and cgroup before generating the
+session configuration with those identities.
 
 The installed RTC service uses `Type=notify`. Its main process owns admission
 for every instrument. Once the required PipeWire Links have negotiated and the

@@ -270,7 +270,7 @@ end
     template = read(
         joinpath(PipeWireAORTC.resource_root(), "pipewireao-session@.service.in"), String
     )
-    @test occursin("ExecStart=@RTC_EXECUTABLE@ -c \${RTC_CONFIG}", template)
+    @test occursin("ExecStart=@RTC_EXECUTABLE@ -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", template)
     @test !occursin("-p ao-rtc", template)
 end
 
