@@ -273,7 +273,13 @@ end
     activation = Dict("julia" => julia, "project" => project, "julia-sysimage" => image,
                       "files" => Dict(image => id))
     with_image = D.session_process_binding(activation, binding["config"])
-    mapping = "1000-2000 r-xp 0000 12345def:abcff 570 $image"
+    selected = realpath(unsafe_string(Base.JLOptions().image_file))
+    file = stat(selected)
+    current = Dict("sysimage" => selected, "device" => file.device, "inode" => file.inode)
+    @test open("/proc/self/maps") do maps
+        any(line -> D.matches_sysimage_mapping(line, current), eachline(maps))
+    end
+    mapping = "1000-2000 r-xp 0000 12345def:abcff 570           $image"
     @test D.matches_sysimage_mapping(mapping, with_image)
     @test D.matches_sysimage_mapping(mapping * " (deleted)", with_image)
     @test !D.matches_sysimage_mapping(replace(mapping, " 570 " => " 571 "), with_image)

@@ -513,7 +513,7 @@ function matches_sysimage_mapping(line, binding)
     fields = split(line; limit = 6)
     length(fields) == 6 || return false
     path = binding["sysimage"]
-    fields[6] in (path, path * " (deleted)") || return false
+    lstrip(fields[6]) in (path, path * " (deleted)") || return false
     tryparse(UInt64, fields[5]) == binding["inode"] || return false
     device = UInt64(binding["device"])
     major = ((device >> 8) & 0xfff) | ((device >> 32) & 0xfffff000)
