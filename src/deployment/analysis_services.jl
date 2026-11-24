@@ -125,6 +125,7 @@ function start_analysis!(package, prefix, spec, record; deadline, clock)
         rendered = D.substitute(read(client, String), bindings; quoted = true)
         services = S.Service[]
         for entry in entries
+            Clocks.time_nanos(clock) < deadline || fail("optional analysis startup budget exhausted")
             try
                 push!(services, install_analysis!(
                     entry, package, prefix, paths, project, rendered, record, deadline; clock
@@ -137,6 +138,7 @@ function start_analysis!(package, prefix, spec, record; deadline, clock)
         result = S.checked(["systemctl", "--user", "daemon-reload"]; deadline, clock)
         result.returncode == 0 || fail("cannot load optional analysis units")
         for service in services
+            Clocks.time_nanos(clock) < deadline || fail("optional analysis startup budget exhausted")
             try
                 item = record["owners"][service.role]
                 S.verify_fragment!(service.unit, record; ordinary = true, deadline, clock)
