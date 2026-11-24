@@ -219,6 +219,9 @@ HoldSources() = HoldSources(false)
 struct ConnectLinks <: AbstractEffect end
 
 struct HoldGraphs <: AbstractEffect end
+struct VerifyAdmission <: AbstractEffect end
+struct CheckHeldStatus <: AbstractEffect end
+struct ConfirmReady <: AbstractEffect end
 
 struct RunSources <: AbstractEffect end
 
@@ -403,6 +406,7 @@ addition is checked; an unrepresentable deadline raises `OverflowError`.
     clock::C
     startup_timeout_ns::Int64
     source_end_supported::Bool
+    installed::Bool
     admission_controller::Union{Nothing,Identity}
     lifecycle::RunnerCodec.Lifecycle
     lifecycle_origin::AbstractOrigin
@@ -452,6 +456,12 @@ end
 
 @statedef Machine :HoldingInitialGraphs :Preparing
 
+@statedef Machine :VerifyingAdmission :Configuring
+@statedef Machine :ConfirmingReady :Managed
+@statedef Machine :AwaitingReadyStatus :ConfirmingReady
+@statedef Machine :CheckingReadyStatus :ConfirmingReady
+@statedef Machine :AwaitingReadyPublication :ConfirmingReady
+@statedef Machine :AnnouncingReady :Managed
 @statedef Machine :AwaitingAdmission :Configuring
 @statedef Machine :Admitted :Managed
 @statedef Machine :Ready :Admitted
@@ -537,6 +547,7 @@ function _reply!(
     details = nothing;
     error = nothing,
     unknown = false,
+    lifecycle = m.lifecycle,
 )
     length(m.replies) < 2 || throw(ArgumentError("session reply outbox is full"))
     push!(
@@ -544,7 +555,7 @@ function _reply!(
         Reply(
             r.token,
             operation(r),
-            m.lifecycle,
+            lifecycle,
             outcome,
             details,
             error === nothing ? nothing : String(error),
@@ -884,7 +895,55 @@ end
 @on_event function (m::Machine, ::HoldingInitialGraphs, ::Completion, event)
     _accept!(m, event) || return Hsm.EventNotHandled
     m.warmed = true
+    if m.installed
+        _issue!(m, VerifyAdmission())
+        return Hsm.transition!(m, :VerifyingAdmission)
+    end
     return Hsm.transition!(m, :AwaitingAdmission)
+end
+
+@on_event function (m::Machine, ::VerifyingAdmission, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    m.admission_controller = event.result::Identity
+    return Hsm.transition!(m, :AwaitingReadyStatus)
+end
+
+# Only the controller observed by the installed RTC can confirm its public endpoint.
+# Keep processing held until its actual wire reply has arrived and publication succeeds.
+@on_event function (m::Machine, ::AwaitingReadyStatus, ::StatusRequested, r)
+    if r.controller != m.admission_controller
+        _reply!(m, r, :Failed; error = "Installed RTC admission is in progress")
+        return Hsm.EventHandled
+    end
+    m.origin, m.request = ReadyOrigin(), r
+    _issue!(m, CheckHeldStatus())
+    return Hsm.transition!(m, :CheckingReadyStatus)
+end
+
+@on_event function (m::Machine, ::CheckingReadyStatus, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    r = something(m.request)
+    m.request = nothing
+    # Only this correlated reply certifies the held graph to the publishing task.
+    # The public capability stays Configuring until the service can accept Start.
+    _reply!(m, r, :Observed, event.result; lifecycle = RunnerCodec.Ready)
+    return Hsm.transition!(m, :AwaitingReadyPublication)
+end
+
+@on_event function (m::Machine, ::AwaitingReadyPublication, ::ReadyPublished, _)
+    _now(m) < m.deadline || return Hsm.EventHandled
+    _lifecycle!(m, ReadyOrigin())
+    _issue!(m, ConfirmReady())
+    return Hsm.transition!(m, :AnnouncingReady)
+end
+@on_event function (m::Machine, ::AnnouncingReady, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    return Hsm.transition!(m, :Ready)
+end
+@on_event function (m::Machine, ::ConfirmingReady, ::Tick, _)
+    _now(m) < m.deadline && return Hsm.EventHandled
+    _enter_fault!(m, "Installed RTC readiness confirmation expired")
+    return Hsm.transition!(m, :HoldingFaultSources)
 end
 @on_event function (m::Machine, ::StartingSources, ::Completion, event)
     _accept!(m, event) || return Hsm.EventNotHandled
@@ -1225,7 +1284,9 @@ end
     return Hsm.EventHandled
 end
 @on_event function (m::Machine, ::Configuring, ::WarmupRequested, r)
-    if r.controller === nothing ||
+    if m.installed
+        _reply!(m, r, :Failed; error = "Installed RTC owns admission")
+    elseif r.controller === nothing ||
         (m.admission_controller !== nothing && r.controller != m.admission_controller)
         _reply!(m, r, :Failed; error = "Resource admission launcher incarnation changed")
     else
@@ -1445,6 +1506,7 @@ function Machine(
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     startup_timeout_ns::Int64 = DEFAULT_STARTUP_TIMEOUT_NS,
     source_end_supported::Bool = true,
+    installed::Bool = false,
     admission_controller::Union{Nothing,Identity} = nothing,
 )
     0 < session <= typemax(Int64) || throw(ArgumentError("invalid session incarnation"))
@@ -1455,6 +1517,7 @@ function Machine(
         clock,
         startup_timeout_ns,
         source_end_supported,
+        installed,
         admission_controller,
         RunnerCodec.Offline,
         OfflineOrigin(),

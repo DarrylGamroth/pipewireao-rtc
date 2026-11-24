@@ -509,7 +509,7 @@ function status_details(runtime; running::Bool)::PolicySPA.Struct
         PolicyPod(PolicySPA.Struct(PolicyPod[])),
     )
 end
-function perform!(runtime, job, ::QueryStatus)
+function perform!(runtime, job, effect::Union{QueryStatus,CheckHeldStatus})
     if external_stream(runtime.configuration)
         isempty(runtime.links) && throw(ArgumentError("external stream Links are absent"))
         for link in runtime.links
@@ -529,6 +529,9 @@ function perform!(runtime, job, ::QueryStatus)
         snapshot = source_operation!(runtime, job, binding, :query)
         snapshot.generation != 0 && !(snapshot.running && snapshot.completed) ||
             throw(ArgumentError("source status has no coherent acquisition proof"))
+        if effect isa CheckHeldStatus && snapshot.running
+            throw(ArgumentError("acquisition source is running during held admission"))
+        end
         index == 1 && (primary_running = snapshot.running)
     end
     return status_details(

@@ -3,6 +3,19 @@ struct ClientBound <: AbstractEvent
     global_id::UInt32
 end
 struct ShutdownRequested <: AbstractEvent end
+struct DiscoveryPublished <: AbstractEvent end
+struct PublicationFailed <: AbstractEvent
+    reason::String
+end
+
+mutable struct Admission
+    deployment::SessionCLI.InstalledAdmission
+    remote::String
+    client::Union{Nothing,ControlClient.Client}
+    confirmation::Union{Nothing,Task}
+    result::Union{Nothing,DiscoveryPublished,PublicationFailed}
+    notified::Bool
+end
 
 """One session's control state, owned by its creating task and OS thread.
 
@@ -12,6 +25,7 @@ Scientific graph state remains in its separate process and data thread.
 """
 mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     configuration::Dict{String,Any}
+    admission::Union{Nothing,Admission}
     declared_links::Vector{DeploymentConfiguration.LinkDeclaration}
     loop::MainLoop
     context::Context{MainLoop}
@@ -55,6 +69,8 @@ mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     done::Bool
     exitcode::Int
 end
+
+include("admission.jl")
 
 function update!(session::Session, event::ClientBound)
     # PipeWire's local core client proxy has ID 1. The server supplies its
@@ -331,12 +347,16 @@ function Agent.do_work(session::Session)
     )
     drain!(session)
     work += start_effect!(session)
+    work += finish_publication!(session)
     if session.done || Hsm.current(session.machine) === :HeldFault
         report_quit_failure!(session)
     end
     # HeldFault has finished compensation. Emergency Disconnect already logs.
     if !session.done && !session.fault_reported && Hsm.current(session.machine) === :HeldFault
         session.fault_reported = true
+        if session.admission !== nothing && !session.admission.notified
+            session.done = true
+        end
         @error(
             "Session fault handling settled",
             session_instance = session.machine.session,
@@ -698,6 +718,8 @@ end
 function prepare_dispatch!(::Type{T}) where {T<:Session}
     Base.precompile(update!, (T, EffectCompleted{Nothing}))
     Base.precompile(update!, (T, EffectCompleted{SPA.Struct}))
+    Base.precompile(update!, (T, EffectCompleted{Identity}))
+    Base.precompile(confirm_installed_ready!, (T, Admission, Int64))
     Base.precompile(update!, (T, EffectFailed))
     controls = (
         (Status, Tuple{}, QueryStatus),
@@ -750,7 +772,7 @@ function prepare_dispatch!(::Type{T}) where {T<:Session}
     Base.precompile(execute_effect!, (T, Job))
     Base.precompile(_shutdown_bootstrap!, (T, Job, bootstrap_owner))
     for effect in (CaptureOwners, ConnectOwners, CaptureParameters, CaptureSources,
-                   PrepareSources, DiscoverGraphs, ConnectLinks, Disconnect)
+                   PrepareSources, DiscoverGraphs, ConnectLinks, VerifyAdmission, CheckHeldStatus, ConfirmReady, Disconnect)
         Base.precompile(perform!, (T, Job, effect))
     end
     Base.precompile(_hold_graphs!, (T, Job, FaultOrigin))
@@ -826,6 +848,9 @@ function Session(
         throw(ArgumentError("session configuration has unsupported context modules"))
     isdefined(PipeWireAO, :iterate!) ||
         throw(ArgumentError("MediaSession requires PipeWireAO's owner-thread iterate! API"))
+    deployment = SessionCLI.installed_admission(file; clock)
+    admission = deployment === nothing ? nothing :
+        Admission(deployment, config["context.properties"]["remote.name"], nothing, nothing, nothing, false)
     queue = EventQueue()
     objects = Dict{UInt32,Object}()
     loop = MainLoop()
@@ -874,6 +899,7 @@ function Session(
             instance;
             clock = cached,
             source_end_supported,
+            installed = admission !== nothing,
             startup_timeout_ns = Base.Checked.checked_mul(
                 Int64(configuration["startup.timeout-ms"]), Int64(1_000_000)
             ),
@@ -881,6 +907,7 @@ function Session(
         ingress = Ingress.Gate(instance; clock = cached)
         session = Session(
             configuration,
+            admission,
             declared_links,
             loop,
             context,
@@ -931,7 +958,7 @@ function Session(
         # public Filter has connected yet, so no caller's receipt is deferred.
         Clocks.update!(cached, Clocks.time_nanos(clock))
         machine = Machine(
-            instance; clock = cached, source_end_supported,
+            instance; clock = cached, source_end_supported, installed = admission !== nothing,
             startup_timeout_ns = machine.startup_timeout_ns,
         )
         session.machine = machine
@@ -1010,6 +1037,22 @@ function Base.close(session::Session)
             wait(session.active_task)
         catch cleanup
             push!(failures, cleanup)
+        end
+    end
+    if session.admission !== nothing
+        admission = session.admission
+        if admission.confirmation !== nothing
+            try
+                wait(admission.confirmation)
+            catch error
+                push!(failures, error)
+            end
+        end
+        _close_resource!(failures, admission.client)
+        try
+            SessionCLI.retire_admission!(admission.deployment)
+        catch error
+            push!(failures, error)
         end
     end
     _close_transport!(session, failures)

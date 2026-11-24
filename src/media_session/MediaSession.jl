@@ -15,6 +15,8 @@ using PrecompileTools: @compile_workload
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import ..Common
 import ..RunnerCodec
+import ..SessionCLI
+import ..SessionProfile
 import ..SessionCodec
 import ..ControlCodec
 import ..ControlClient

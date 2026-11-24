@@ -102,6 +102,93 @@ end
     @test Hsm.current(m) === :Ready
 end
 
+@testset "Installed RTC admits held resources and confirms its own native Status" begin
+    m = S.Machine(101; clock = zero_clock(), installed = true)
+    S.submit!(m, S.Request(S.InspectWarmup(); controller = LAUNCHER))
+    @test only(S.take_replies!(m)).outcome === :Failed
+    sequence!(m, PREPARATION)
+    @test Hsm.current(m) === :VerifyingAdmission
+    verification = m.effect
+    @test verification.effect isa S.VerifyAdmission
+    S.submit!(m, S.Request(S.Admit(); controller = LAUNCHER))
+    @test only(S.take_replies!(m)).outcome === :Failed
+    @test m.effect === verification && m.lifecycle == R.Configuring
+    acknowledge!(m, LAUNCHER; submitted = false)
+    @test Hsm.current(m) === :AwaitingReadyStatus && m.lifecycle == R.Configuring
+    Hsm.dispatch!(m, :ReadyPublished)
+    @test Hsm.current(m) === :AwaitingReadyStatus
+    foreign = S.Identity(LAUNCHER.global_id, LAUNCHER.serial + 1, LAUNCHER.instance, LAUNCHER.pid)
+    S.submit!(m, S.Request(S.Status(); controller = foreign))
+    @test only(S.take_replies!(m)).outcome === :Failed
+    S.submit!(m, S.Request(S.Start()))
+    @test only(S.take_replies!(m)).outcome === :Failed
+    S.submit!(m, S.Request(S.Status(); controller = LAUNCHER))
+    @test m.effect.effect isa S.CheckHeldStatus
+    acknowledge!(m, :held_from_native_query; submitted = false)
+    reply = only(S.take_replies!(m))
+    @test reply.details === :held_from_native_query && reply.lifecycle == R.Ready
+    @test Hsm.current(m) === :AwaitingReadyPublication && m.lifecycle == R.Configuring
+    S.submit!(m, S.Request(S.Status(); controller = foreign))
+    @test only(S.take_replies!(m)).lifecycle == R.Configuring
+    S.submit!(m, S.Request(S.Start()))
+    @test only(S.take_replies!(m)).outcome === :Failed
+    Hsm.dispatch!(m, :ReadyPublished)
+    @test Hsm.current(m) === :AnnouncingReady && m.effect.effect isa S.ConfirmReady
+    S.submit!(m, S.Request(S.Start()))
+    @test only(S.take_replies!(m)).outcome === :Failed
+    acknowledge!(m; submitted = false)
+    @test Hsm.current(m) === :Ready && m.effect === nothing
+end
+
+mutable struct TestPublication
+    result::Union{Nothing,S.DiscoveryPublished}
+end
+
+@testset "Queued native loss takes precedence over service-ready notification" begin
+    m = S.Machine(101; clock = zero_clock(), installed = true)
+    sequence!(m, PREPARATION)
+    acknowledge!(m, LAUNCHER; submitted = false)
+    S.submit!(m, S.Request(S.Status(); controller = LAUNCHER))
+    acknowledge!(m, :held; submitted = false)
+    S.take_replies!(m)
+    queue = S.EventQueue()
+    pending = TestPublication(S.DiscoveryPublished())
+    host = (; admission = pending, queue)
+    S.stage!(queue, S.ShutdownRequested())
+    @test S.finish_publication!(host) == 0
+    @test pending.result isa S.DiscoveryPublished
+    @test S.next_event!(queue) isa S.ShutdownRequested
+    S.submit!(m, S.Request(S.Quit()))
+    Hsm.dispatch!(m, :ReadyPublished)
+    @test Hsm.current(m) === :HoldingQuitSources
+end
+
+@testset "Loss, failed placement and expired publication keep installed execution held" begin
+    for failure in (:placement, :loss, :deadline)
+        clock = zero_clock()
+        m = S.Machine(101; clock, installed = true)
+        sequence!(m, PREPARATION)
+        if failure === :placement
+            S.fail!(m, m.effect, "owner CPU placement changed"; submitted = false)
+        else
+            acknowledge!(m, LAUNCHER; submitted = false)
+            S.submit!(m, S.Request(S.Status(); controller = LAUNCHER))
+            acknowledge!(m, :held; submitted = false)
+            S.take_replies!(m)
+            if failure === :loss
+                S.required_lost!(m, "required Link removed")
+            else
+                Clocks.update!(clock, m.deadline)
+                Hsm.dispatch!(m, :ReadyPublished)
+                @test Hsm.current(m) === :AwaitingReadyPublication
+                S.tick!(m)
+            end
+        end
+        Hsm.dispatch!(m, :ReadyPublished)
+        @test m.lifecycle == R.Fault && m.effect.effect isa S.HoldSources
+    end
+end
+
 @testset "Connect failure prevents admission and retains the failure" begin
     m = S.Machine(101; clock = zero_clock())
     sequence!(m, (S.CaptureOwners,))

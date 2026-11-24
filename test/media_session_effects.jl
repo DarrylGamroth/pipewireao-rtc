@@ -777,6 +777,17 @@ end
     @test isempty(runtime.trace)
 end
 
+@testset "Installed admission checks every managed source is held" begin
+    runtime = capture_sources!(Runtime())
+    details = S.perform!(runtime, job(S.ReadyOrigin()), S.CheckHeldStatus())
+    @test !decode_details(S.STATUS_OPERATION, details).details.running
+    for handle in UInt64[22, 42]
+        runtime.snapshots[handle] = snapshot(; running = true)
+        @test_throws "source is running" S.perform!(runtime, job(S.ReadyOrigin()), S.CheckHeldStatus())
+        runtime.snapshots[handle] = snapshot(; running = false)
+    end
+end
+
 @testset "Wire observations and public property adapters" begin
     runtime = capture_sources!(Runtime())
     push!(runtime.links, UInt32(50))
