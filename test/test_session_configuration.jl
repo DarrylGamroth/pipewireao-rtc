@@ -268,7 +268,16 @@ end
     tampered = merge(binding, Dict("argv" => [julia, "-c", "/runtime/rtc/rtc.conf"]))
     @test_throws D.DeploymentError D.verify_session_process(getpid(), tampered)
     image = "/installed/image with spaces.so"
-    with_image = D.session_process_binding(julia, project, binding["config"]; sysimage = image)
+    # Include high major and minor bits as represented in Linux dev_t.
+    id = Dict("device" => 0x12345000abcdefff, "inode" => 570)
+    activation = Dict("julia" => julia, "project" => project, "julia-sysimage" => image,
+                      "files" => Dict(image => id))
+    with_image = D.session_process_binding(activation, binding["config"])
+    mapping = "1000-2000 r-xp 0000 12345def:abcff 570 $image"
+    @test D.matches_sysimage_mapping(mapping, with_image)
+    @test D.matches_sysimage_mapping(mapping * " (deleted)", with_image)
+    @test !D.matches_sysimage_mapping(replace(mapping, " 570 " => " 571 "), with_image)
+    @test !D.matches_sysimage_mapping(replace(mapping, "abcff" => "abdff"), with_image)
     @test with_image["sysimage"] == image
     @test with_image["argv"][4] == "--sysimage=" * image
     @test_throws r"invalid headless RTC process arguments" D.verify_session_process(

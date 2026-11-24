@@ -485,13 +485,43 @@ end
 
 function session_process_binding(
     julia::AbstractString, project::AbstractString, config::AbstractString; sysimage = nothing,
+    identity = nothing,
 )
     binding = Dict{String,Any}(
         "julia" => julia, "project" => project, "config" => String(config),
         "argv" => ScienceExport.rtc_arguments(julia, project, config; sysimage),
     )
-    sysimage === nothing || (binding["sysimage"] = sysimage)
+    if sysimage !== nothing
+        binding["sysimage"] = sysimage
+        binding["device"] = identity["device"]
+        binding["inode"] = identity["inode"]
+    end
     return binding
+end
+
+function session_process_binding(activation::AbstractDict, config::AbstractString)
+    image = get(activation, "julia-sysimage", nothing)
+    identity = image === nothing ? nothing : activation["files"][image]
+    return session_process_binding(
+        activation["julia"], activation["project"], config; sysimage = image, identity
+    )
+end
+
+# Linux /proc/PID/maps identifies a file by its major:minor device and inode.
+# An RTC retains the original mapping across an atomic file replacement.
+function matches_sysimage_mapping(line, binding)
+    fields = split(line; limit = 6)
+    length(fields) == 6 || return false
+    path = binding["sysimage"]
+    fields[6] in (path, path * " (deleted)") || return false
+    tryparse(UInt64, fields[5]) == binding["inode"] || return false
+    device = UInt64(binding["device"])
+    major = ((device >> 8) & 0xfff) | ((device >> 32) & 0xfffff000)
+    minor = (device & 0xff) | ((device >> 12) & 0xffffff00)
+    parts = split(fields[4], ':')
+    return length(parts) == 2 &&
+        tryparse(UInt32, parts[1]; base = 16) == major &&
+        tryparse(UInt32, parts[2]; base = 16) == minor
 end
 
 "Verify the exact Julia executable, project, launcher arguments, config and optional image."
@@ -500,7 +530,9 @@ function verify_session_process(pid::Integer, binding::AbstractDict)
     if haskey(binding, "sysimage")
         image = binding["sysimage"]
         require(image isa AbstractString && isabspath(image), "invalid headless RTC sysimage path")
-        push!(expected_keys, "sysimage")
+        require(all(k -> get(binding, k, nothing) isa Integer && binding[k] >= 0,
+                    ("device", "inode")), "invalid headless RTC sysimage file identity")
+        union!(expected_keys, ("sysimage", "device", "inode"))
     end
     require(
         Set(keys(binding)) == expected_keys,
@@ -527,10 +559,7 @@ function verify_session_process(pid::Integer, binding::AbstractDict)
         end
         mapped = try
             open("/proc/$pid/maps") do maps
-                any(eachline(maps)) do line
-                    fields = split(line; limit = 6)
-                    length(fields) == 6 && last(fields) == sysimage
-                end
+                any(line -> matches_sysimage_mapping(line, binding), eachline(maps))
             end
         catch
             false

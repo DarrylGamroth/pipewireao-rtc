@@ -95,9 +95,7 @@ function activate_installed!(config)
     config == joinpath(root, invocation, "rtc", "rtc.conf") ||
         throw(ArgumentError("RTC configuration is outside this systemd invocation"))
     activation = activation_document(package, digest)
-    julia, project = activation["julia"], activation["project"]
-    sysimage = get(activation, "julia-sysimage", nothing)
-    D.verify_session_process(getpid(), D.session_process_binding(julia, project, config; sysimage))
+    D.verify_session_process(getpid(), D.session_process_binding(activation, config))
     request = SessionLaunch.Request(package, activation["prefix"], unit, activation["launcher"], root)
     SessionLaunch.prepare!(request; render!, validate_profile = require_node_owners, activation)
     return nothing
@@ -459,6 +457,12 @@ function stop_invocation!(args, invocation, previous, deadline, trace, clock)
     main_group = S.proc_cgroup(pid)
     (main_group == group || startswith(main_group, group * "/")) ||
         throw(ArgumentError("RTC MainPID left its session cgroup before stop"))
+    binding = get(record, "session_process", nothing)
+    if binding !== nothing && haskey(binding, "sysimage")
+        record["config"] == binding["config"] == joinpath(runtime, "rtc", "rtc.conf") ||
+            throw(ArgumentError("native stop configuration differs from the prepared RTC"))
+        D.verify_session_process(pid, binding)
+    end
     haskey(record, "systemd_quit") &&
         throw(ArgumentError("native systemd Quit was already attempted; refusing to retry"))
     client = Client.connect(
