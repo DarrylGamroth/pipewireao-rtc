@@ -134,6 +134,8 @@ end
     @test only(S.take_replies!(m)).outcome === :Failed
     Hsm.dispatch!(m, :ReadyPublished)
     @test Hsm.current(m) === :AnnouncingReady && m.effect.effect isa S.ConfirmReady
+    S.submit!(m, S.Request(S.Status(); controller = foreign))
+    @test only(S.take_replies!(m)).lifecycle == R.Configuring
     S.submit!(m, S.Request(S.Start()))
     @test only(S.take_replies!(m)).outcome === :Failed
     acknowledge!(m; submitted = false)

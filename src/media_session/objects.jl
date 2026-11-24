@@ -956,6 +956,20 @@ function create_links!(runtime, job)
     return nothing
 end
 
+function verify_held_links!(runtime)
+    length(runtime.links) == length(runtime.declared_links) ||
+        throw(ArgumentError("declared Link cohort changed before Ready"))
+    for link in runtime.links
+        link.failure === nothing && link.negotiated && !link.retiring &&
+            link.serial !== nothing && registry_serial(runtime, link.id) == link.serial ||
+            throw(ArgumentError("negotiated Link incarnation changed before Ready"))
+        for endpoint in (link.output, link.input), id in (endpoint.node, endpoint.port, endpoint.parent)
+            assert_identity!(runtime, UInt64(id))
+        end
+    end
+    return nothing
+end
+
 _destroy_created!(core, ::Nothing) = nothing
 _destroy_created!(core, proxy::PipeWireAO.Link) = destroy_object!(core, proxy)
 _close_listener!(::Nothing) = nothing

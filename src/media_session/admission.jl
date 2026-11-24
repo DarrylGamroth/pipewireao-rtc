@@ -119,8 +119,8 @@ function update!(session::Session, ::DiscoveryPublished)
     return nothing
 end
 
-# The owner has queued the new public capability. Retire the proof client
-# and wait for the PipeWire core to process that capability before notifying systemd.
+# Retire the proof client and flush outstanding PipeWire observations before
+# accepting the held graph and advertising Ready.
 function perform!(session::Session, job, ::ConfirmReady)
     admission = something(session.admission)
     endpoint = admission_endpoint(session)
@@ -129,12 +129,14 @@ function perform!(session::Session, job, ::ConfirmReady)
     synchronize!(session, job)
     registry_serial(session, node_id(session.endpoint)) == endpoint.serial ||
         throw(ArgumentError("RTC endpoint changed before Ready notification"))
+    verify_held_links!(session)
     return nothing
 end
 
 function after_completion!(session::Session, ::ConfirmReady)
     Hsm.current(session.machine) === :Ready || return nothing
     try
+        drain!(session)
         SessionCLI.notify_ready!()
         session.admission.notified = true
     catch error

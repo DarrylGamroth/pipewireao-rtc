@@ -932,12 +932,12 @@ end
 
 @on_event function (m::Machine, ::AwaitingReadyPublication, ::ReadyPublished, _)
     _now(m) < m.deadline || return Hsm.EventHandled
-    _lifecycle!(m, ReadyOrigin())
     _issue!(m, ConfirmReady())
     return Hsm.transition!(m, :AnnouncingReady)
 end
 @on_event function (m::Machine, ::AnnouncingReady, ::Completion, event)
     _accept!(m, event) || return Hsm.EventNotHandled
+    _lifecycle!(m, ReadyOrigin())
     return Hsm.transition!(m, :Ready)
 end
 @on_event function (m::Machine, ::ConfirmingReady, ::Tick, _)

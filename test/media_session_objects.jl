@@ -1004,6 +1004,12 @@ include("control_private_core.jl")
             create_links!(runtime, job)
             @test length(runtime.links) == 1 && only(runtime.links).negotiated
             @test only(runtime.links).serial !== nothing
+            @test verify_held_links!(runtime) === nothing
+            record = only(runtime.links)
+            serial = record.serial
+            record.serial += 1
+            @test_throws "Link incarnation changed" verify_held_links!(runtime)
+            record.serial = serial
             @test isempty(runtime.machine.losses)
             source_object = something(find_object(runtime, node_id(source)))
             old_proxy = source_object.proxy
