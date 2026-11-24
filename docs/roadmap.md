@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Direct startup of the installed RTC — 2026-11-24
+
+New installations start MediaSession as the systemd main process. Installation
+selects the Julia executable, validates the project and topology, and records
+the expected inputs. On restart MediaSession verifies these inputs and the live
+processes, placement and Links before publishing Ready. Graphs start held,
+prime on live measurements after Start, and require explicit closure. The
+[restart comparison](validation/direct-session-launch-20261124/README.md)
+records the measured scope for each instrument.
+
 ### Retain controller graph processes across RTC updates — 2026-11-24
 
 An opt-in installed deployment keeps eligible complete-frame CPU graph services

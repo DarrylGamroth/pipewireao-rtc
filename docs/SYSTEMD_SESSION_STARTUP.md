@@ -73,18 +73,25 @@ fresh held attachments with correction open. To take the entire instrument
 offline, stop the RTC first, then stop the graph units explicitly and stop the
 independent source and core under their respective service owners.
 
-This option currently supports ordinary complete-frame CPU graph services with
-session run control. Graphs with correction require live priming. Composition,
-row-block processing, accelerator capture, an offset receiver and recovery
-owners require their existing deployment mode. The [bootstrap contract](OWNER_BOOTSTRAP_DESIGN.md#graph-service-lifetime-across-rtc-sessions)
+Persistent graph services support complete-frame CPU execution with session
+run control. Each correction must declare the live output that primes it.
+Recovery state and composed branch graphs are reconstructed for each
+attachment. The installer checks the declared branch and shared graph files.
+Compositions with live priming also need a FilterGraphPipeWire build that
+reports current camera arrivals and output availability to the frame observer.
+The [instrument qualification record](validation/direct-session-launch-20261124/instruments.md)
+identifies the builds exercised. Row-block processing, accelerator capture
+and physical offset receivers use their existing deployment mode. The
+[bootstrap contract](OWNER_BOOTSTRAP_DESIGN.md#graph-service-lifetime-across-rtc-sessions)
 defines the observable behaviour for another implementation.
 
 ## First live correction
 
 Graph owners connect without executing the offline synthetic qualification
 frames. Ready confirms that the graph and required Links are present and held.
-Start releases acquisition. A graph configured with correction priming starts
-open and waits for an accepted live measurement from the declared camera for
+Start releases the graph to process frames. Managed acquisition starts with it.
+An independent source has already been publishing. A graph configured with
+correction priming starts open and waits for an accepted live measurement from the declared camera for
 each loop. The operator sends Close after the owner reports primed. An invalid
 measurement clears priming for its camera, and Reset clears priming for all of
 the owner's cameras.

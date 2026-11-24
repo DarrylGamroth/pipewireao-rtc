@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Direct installed RTC restart — 2026-11-24 UTC
+
+The [service and frame measurements](validation/direct-session-launch-20261124/README.md)
+cover the change from separate preparation to direct MediaSession activation
+and distinguish confirmed Ready from a usable live measurement.
+
 ## Controller graph services across RTC restarts — 2026-11-24 UTC
 
 The [restart verification](validation/independent-graph-owners-20261124/README.md)
