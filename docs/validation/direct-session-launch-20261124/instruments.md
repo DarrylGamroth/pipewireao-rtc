@@ -63,8 +63,29 @@ specific to these attempts.
 | GPI2 CPU recovery, session-owned | `0747f0f` | The managed simulator connected held at sequence zero. The graph finished calibrated preparation and entered native node construction. systemd reached its 900-second start timeout before Ready. |
 | GPI2 CPU recovery, session-owned | `61b77ca`, graph owner `-O0` | The installed activation reported Ready with 32 declared Links and rejected Close while held. Detector and reconstruction pixels both began at generation 1 sequence 1. The correction primed and remained Open. The session refused a stale recovery release and accepted a new recovery request, which reached `applied`. Native stop returned Ready and systemd stopped successfully. The installation used normal runtime simulator construction. A duplicate second activation was canceled to prioritize retained-owner trials. |
 | SPIDERS fitted dual CPU, retained | `84fcd27` with FGPW `8b18385` | An independent HIL 0.5.13 source using the exported SPIDERS optical configuration published the expected nodes on the private core. The composition prepared in 471.56 seconds, including 471.54 seconds of compilation. The fixture reached its 850-second deadline before Ready. |
+| SPIDERS fitted dual CPU, retained | `84fcd27` with FGPW `8b18385`, graph owners `-O0` | The independent source and both graph owner units were active when the installed session reached Ready with 27 declared Links. The readout client stopped before running the session because it imported an unused package absent from the instrument project. That attempt establishes installation and Ready, and the readout import was corrected for subsequent trials. |
 
 [Installed live-session receipts](instrument-live-session.json)
+
+## Retained source and graph owners
+
+Classic used its configured v3 optics in the managed HIL package's
+free-running acquisition mode. A separate native bootstrap client started
+the simulator and tracked generation 1 from sequence 8 before RTC startup
+through sequence 2742 after the two RTC activations. The source, private
+core and graph-owner services retained their process IDs, process start
+times and systemd invocations through the forced replacement and graceful
+stop. The test used `3c964d3` and graph-only `-O0`.
+
+The first RTC was killed while Running. Its replacement used fresh declared
+Link serials and a fresh graph Node serial (144 to 226). It began Open and
+unprimed, refused Close while held, then primed on fresh live output during
+Running. The first captured detector acquisition advanced from 1574 to
+2434 with the same acquisition domain and generation. The first slopes
+advanced from 1594 to 2454. The replacement accepted an Open write while
+Running. The old control client reported that its native owner proxy had
+been removed. Native stop returned Ready and systemd stopped the replacement
+while all three independently supervised owners remained active.
 
 ## Reproduction
 
@@ -74,6 +95,8 @@ and exercising the staged profiles. The stage records each RTC source tree
 and, for SPIDERS, the companion tree. The scheduler, source controller and
 readout taps use live native messages. Graph launch omits numerical warmup.
 The exact-owner gate uses `exact-owner-attach.jl` and `exact-owner-claim.jl`.
+The v3 source gate uses `v3-independent.py` and `start-managed-source.jl` to
+keep the separately started source running through both RTC activations.
 
 GPI2 authoring commit `bb74679` in the instrument repository applies the
 opening and priming declarations to both the integrator and HEART modes.
