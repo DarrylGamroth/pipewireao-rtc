@@ -12,6 +12,21 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Retain controller graph processes across RTC updates — 2026-11-24
+
+An opt-in installed deployment keeps eligible complete-frame CPU graph services
+alive across a MediaSession restart. Systemd owns the process lifetime. Each
+MediaSession must acquire a fresh native bootstrap and verify the graph, Links
+and placement. Each attachment starts held with correction open. The shared
+protocol is independent of implementation language. The installer currently
+provides a Julia graph adapter. Recovery, composition, row-block and
+accelerator owners require separate qualification before adoption. On a private CAL2 core one matched graceful
+restart reduced service time to Ready from 13.50 to 8.83 s. The repaired
+build also reached Ready in 11.84 s after the closed-loop RTC was killed,
+retaining both graph processes and requiring fresh open-loop priming. See the
+[service procedure](SYSTEMD_SESSION_STARTUP.md#keep-controller-graph-services-running-across-an-rtc-restart)
+and [restart evidence](validation/independent-graph-owners-20261124/README.md).
+
 ### RTC startup with correction open — 2026-11-23
 
 The shared control package image handles common operator commands and admission.

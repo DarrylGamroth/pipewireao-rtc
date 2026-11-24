@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Controller graph services across RTC restarts — 2026-11-24 UTC
+
+The [restart verification](validation/independent-graph-owners-20261124/README.md)
+records matched CAL2 service timings, fresh open-loop priming, signed corrections,
+recovery after RTC process loss, preserved graph identities and CPU sharing.
+
 ## CAL2 startup time by operation — 2026-11-24 UTC
 
 The [RTC startup profile](validation/session-owned-admission-20261123/startup-profile.md)
