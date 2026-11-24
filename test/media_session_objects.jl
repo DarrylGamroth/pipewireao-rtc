@@ -913,6 +913,24 @@ end
     @test isempty(runtime.links) && !runtime.withdrawing
 end
 
+@testset "Downstream and shared-port Link negotiation prerequisites" begin
+    endpoint(node, port) = Endpoint(UInt32(node), UInt32(port), UInt32(100), CONTRACT)
+    rows = [
+        (endpoint(1, 11), endpoint(2, 21), false), # detector to controller
+        (endpoint(2, 22), endpoint(3, 31), false), # controller result
+        (endpoint(1, 11), endpoint(4, 41), true),  # tap on detector's output
+        (endpoint(5, 51), endpoint(6, 61), false), # independent detector
+        (endpoint(6, 62), endpoint(7, 71), false), # independent result
+        (endpoint(2, 23), endpoint(8, 81), true),  # second controller result
+        (endpoint(9, 91), endpoint(3, 31), false), # shares the input of Link 2
+    ]
+    prerequisites = link_prerequisites(rows, _link_order(rows))
+    @test prerequisites == [[2, 3, 6], [], [], [5], [], [], [2]]
+    @test_throws "scheduling cycle" _link_order(
+        [rows[1], (endpoint(2, 23), endpoint(1, 12), false)]
+    )
+end
+
 include("control_private_core.jl")
 @testset "Private core exact Link ownership and acknowledged withdrawal" begin
     with_control_private_core() do socket, directory, daemon
@@ -945,16 +963,24 @@ include("control_private_core.jl")
             ],
         )
         configuration = Dict{String,Any}(
-            "node.pids" => Dict("objects-source" => getpid(), "objects-sink" => getpid()),
+            "node.pids" => Dict(
+                name => getpid()
+                for name in ("objects-source", "objects-sink", "guide-source", "guide-sink")
+            ),
             "session" => Dict(
-                "sources" => [declaration("objects-source", "output", "output_1")],
-                "sinks" => [declaration("objects-sink", "input", "input_1")],
+                "sources" => [
+                    declaration(name, "output", "output_1") for name in ("objects-source", "guide-source")
+                ],
+                "sinks" => [
+                    declaration(name, "input", "input_1") for name in ("objects-sink", "guide-sink")
+                ],
                 "graphs" => [],
                 "links" => [
                     Dict(
                         "output" => "objects-source:output_1",
                         "input" => "objects-sink:input_1",
                     ),
+                    Dict("output" => "guide-source:output_1", "input" => "guide-sink:input_1"),
                 ],
             ),
         )
@@ -971,6 +997,12 @@ include("control_private_core.jl")
         )
         sink = NdArraySink(
             core, "objects-sink", zeros(Float32, 2), FORMAT; schema = CONTRACT.schema
+        )
+        guide_source = NdArraySource(
+            core, "guide-source", zeros(Float32, 2), FORMAT; schema = CONTRACT.schema
+        )
+        guide_sink = NdArraySink(
+            core, "guide-sink", zeros(Float32, 2), FORMAT; schema = CONTRACT.schema
         )
         unrelated = NdArraySource(
             core,
@@ -990,6 +1022,8 @@ include("control_private_core.jl")
         try
             start!(source)
             start!(sink)
+            start!(guide_source)
+            start!(guide_sink)
             start!(unrelated)
             synchronize!(runtime, job)
             runtime.client_id = PipeWireAO.LibPipeWire.pw_proxy_get_bound_id(
@@ -1002,10 +1036,10 @@ include("control_private_core.jl")
             @test_throws ArgumentError find_object(runtime, "objects-source", getpid() + 1)
             discover_graphs!(runtime, job)
             create_links!(runtime, job)
-            @test length(runtime.links) == 1 && only(runtime.links).negotiated
-            @test only(runtime.links).serial !== nothing
+            @test length(runtime.links) == 2 && all(link -> link.negotiated, runtime.links)
+            @test all(link -> link.serial !== nothing, runtime.links)
             @test verify_held_links!(runtime) === nothing
-            record = only(runtime.links)
+            record = first(runtime.links)
             serial = record.serial
             record.serial += 1
             @test_throws "Link incarnation changed" verify_held_links!(runtime)
@@ -1018,15 +1052,15 @@ include("control_private_core.jl")
             synchronize!(runtime, job)
             @test assert_identity!(runtime, UInt64(replacement.id)) === nothing
             retained = node_id(unrelated)
-            old = only(runtime.links)
+            old = copy(runtime.links)
             remove_links!(runtime, job)
             @test isempty(runtime.links) &&
                 !isempty(runtime.captured) &&
                 !runtime.withdrawing
             @test PipeWireAO.find_global(registry, retained) !== nothing
             @test find_object(runtime, retained) === nothing
-            @test !any(object -> _correlated_link(object, [old]), registry_links(runtime))
-            @test length(runtime.objects) == 5
+            @test !any(object -> _correlated_link(object, old), registry_links(runtime))
+            @test length(runtime.objects) == 9
             # Cancel before bound/Format events are consumed. Local destruction
             # receipts plus the server sync must fence pending creation.
             fresh = (;
@@ -1039,15 +1073,18 @@ include("control_private_core.jl")
             )
             runtime.cancel_creation = true
             @test_throws ErrorException create_links!(runtime, fresh)
-            @test only(runtime.links).pending && only(runtime.links).id === nothing
+            # Both branch requests must already be in flight before the first binding.
+            @test length(runtime.links) == 2
+            @test all(link -> link.pending && link.id === nothing, runtime.links)
             runtime.cancel_creation = false
-            pending = only(runtime.links)
+            pending = copy(runtime.links)
             remove_links!(runtime, fresh)
-            @test pending.destroyed && !pending.pending
+            @test all(link -> link.destroyed && !link.pending, pending)
+            @test !any(object -> _correlated_link(object, pending), registry_links(runtime))
             @test isempty(runtime.links) && isopen(unrelated)
 
             create_links!(runtime, fresh)
-            lost = only(runtime.links)
+            lost = first(runtime.links)
             close(sink)
             await_condition!(runtime, fresh) do
                 lost.failure
@@ -1061,6 +1098,8 @@ include("control_private_core.jl")
             end
             close(source)
             close(sink)
+            close(guide_source)
+            close(guide_sink)
             close(unrelated)
             dispose_objects!(runtime)
             close(listener)

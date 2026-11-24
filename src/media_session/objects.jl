@@ -863,6 +863,97 @@ function _link_order(rows)
     end
     return sortperm(eachindex(rows); by = index -> (rank(rows[index][2].node), index))
 end
+# Each incoming edge waits for the downstream node's outgoing edges. Fan-out
+# on the same port also keeps the original negotiation order and format.
+function link_prerequisites(rows, order)
+    before = [Int[] for _ in rows]
+    for (position, index) in enumerate(order)
+        output, input, _ = rows[index]
+        for previous in @view order[1:(position - 1)]
+            earlier_output, earlier_input, _ = rows[previous]
+            if input.node == earlier_output.node || output.port == earlier_output.port ||
+               input.port == earlier_input.port
+                push!(before[index], previous)
+            end
+        end
+    end
+    return before
+end
+
+function request_link!(runtime, job, prefix, index, row)
+    output, input, passive = row
+    for endpoint in (output, input),
+        id in (endpoint.node, endpoint.port, endpoint.parent)
+
+        assert_identity!(runtime, UInt64(id))
+    end
+    sequence = Base.Checked.checked_add(
+        Base.Checked.checked_mul(job.ticket.serial, UInt64(65)), UInt64(index)
+    )
+    record = LinkRecord(
+        sequence,
+        prefix * string(index),
+        output,
+        input,
+        passive,
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        true,
+        true,
+        false,
+        false,
+        false,
+        nothing,
+    )
+    push!(runtime.links, record)
+    properties = Dict(
+        "link.output.node" => string(output.node),
+        "link.output.port" => string(output.port),
+        "link.input.node" => string(input.node),
+        "link.input.port" => string(input.port),
+        "link.passive" => string(passive),
+        "object.linger" => "false",
+        "object.path" => record.path,
+    )
+    queue = runtime.queue
+    try
+        proxy = create_object(
+            runtime.core,
+            "link-factory",
+            PipeWireAO.Link;
+            properties,
+            on_bound = (_, id) -> stage!(queue, LinkBound(sequence, id)),
+            on_info = (_, info) -> stage!(queue, LinkUpdated(sequence, info)),
+            on_removed = (_) ->
+                stage!(queue, LinkError(sequence, "Required Link removed")),
+            on_error = (_, seq, error) ->
+                stage!(queue, LinkError(sequence, sprint(showerror, error))),
+        )
+        record.proxy = proxy
+        record.listener = add_listener!(
+            proxy.proxy; on_destroyed = (_) -> stage!(queue, LinkDestroyed(sequence))
+        )
+    finally
+        # create_object is synchronous; binding/negotiation remains pending.
+        # Even construction failure retains the record/path for the fence.
+        record.creation_pending = false
+    end
+    return record
+end
+
+function link_negotiated!(runtime, record)
+    record.failure === nothing || throw(ArgumentError(record.failure))
+    record.id === nothing && return false
+    serial = registry_serial(runtime, record.id)
+    serial === nothing && return false
+    record.serial === nothing && (record.serial = serial)
+    serial == record.serial || throw(ArgumentError("created Link registry incarnation changed"))
+    return record.negotiated && !record.pending
+end
+
 function create_links!(runtime, job)
     isempty(runtime.links) && !runtime.withdrawing ||
         throw(ArgumentError("old Link cohort remains"))
@@ -878,80 +969,22 @@ function create_links!(runtime, job)
         push!(rows, (output, input, declaration.passive))
     end
     prefix = "pipewireao/session/$(job.ticket.session)/$(job.ticket.epoch)/"
-    for index in _link_order(rows)
-        output, input, passive = rows[index]
-        for endpoint in (output, input),
-            id in (endpoint.node, endpoint.port, endpoint.parent)
-
-            assert_identity!(runtime, UInt64(id))
-        end
-        sequence = Base.Checked.checked_add(
-            Base.Checked.checked_mul(job.ticket.serial, UInt64(65)), UInt64(index)
-        )
-        record = LinkRecord(
-            sequence,
-            prefix * string(index),
-            output,
-            input,
-            passive,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            nothing,
-            true,
-            true,
-            false,
-            false,
-            false,
-            nothing,
-        )
-        push!(runtime.links, record)
-        properties = Dict(
-            "link.output.node" => string(output.node),
-            "link.output.port" => string(output.port),
-            "link.input.node" => string(input.node),
-            "link.input.port" => string(input.port),
-            "link.passive" => string(passive),
-            "object.linger" => "false",
-            "object.path" => record.path,
-        )
-        queue = runtime.queue
-        try
-            proxy = create_object(
-                runtime.core,
-                "link-factory",
-                PipeWireAO.Link;
-                properties,
-                on_bound = (_, id) -> stage!(queue, LinkBound(sequence, id)),
-                on_info = (_, info) -> stage!(queue, LinkUpdated(sequence, info)),
-                on_removed = (_) ->
-                    stage!(queue, LinkError(sequence, "Required Link removed")),
-                on_error = (_, seq, error) ->
-                    stage!(queue, LinkError(sequence, sprint(showerror, error))),
-            )
-            record.proxy = proxy
-            record.listener = add_listener!(
-                proxy.proxy; on_destroyed = (_) -> stage!(queue, LinkDestroyed(sequence))
-            )
-        finally
-            # create_object is synchronous; binding/negotiation remains pending.
-            # Even construction failure retains the record/path for the fence.
-            record.creation_pending = false
-        end
-        await_condition!(runtime, job) do
-            record.failure === nothing || throw(ArgumentError(record.failure))
-            if record.id !== nothing
-                serial = registry_serial(runtime, record.id)
-                if serial !== nothing
-                    record.serial === nothing && (record.serial = serial)
-                    serial == record.serial ||
-                        throw(ArgumentError("created Link registry incarnation changed"))
-                    record.negotiated && !record.pending && return true
-                end
+    order = _link_order(rows)
+    before = link_prerequisites(rows, order)
+    records = Union{Nothing,LinkRecord}[nothing for _ in rows]
+    settled = falses(length(rows))
+    await_condition!(runtime, job) do
+        for index in order
+            settled[index] && continue
+            all(previous -> settled[previous], before[index]) || continue
+            record = records[index]
+            if record === nothing
+                check_job(runtime, job)
+                record = records[index] = request_link!(runtime, job, prefix, index, rows[index])
             end
-            return nothing
+            settled[index] = link_negotiated!(runtime, record)
         end
+        return all(settled) ? true : nothing
     end
     return nothing
 end

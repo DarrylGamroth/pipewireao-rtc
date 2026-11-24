@@ -115,6 +115,12 @@ Only then may cleanup succeed or a new realization generation begin. A
 zero-links snapshot alone is insufficient while creation or withdrawal may be
 pending. A replacement manager MUST NOT adopt an old generation. Unknown
 cleanup MUST remain a fault.
+During admission, MediaSession can submit independent Link requests to the
+native factory in one pass. Each incoming Link waits for the
+downstream node’s outgoing Links to negotiate. Links sharing an output or
+input port also keep their established order. The native Link info, format,
+registry incarnation and held checks apply to every Link in the cohort.
+
 RTC-ARCH-026 selects the headless application as this provider. Earlier
 WirePlumber and retired-runner evidence remains provider-specific; moving the
 policy does not transfer qualification automatically.
@@ -126,8 +132,8 @@ complete owned-object cleanup, and preservation of unrelated objects.
 ### RTC-DEV-004 — Basic lifecycle
 
 The session authority MUST serialize the following stable states and
-transitions. Under RTC-ARCH-026, the headless RTC application is that authority;
-its policy reuses libwireplumber. The former Julia DeploymentRunner and Rust
+transitions. Under RTC-ARCH-026, MediaSession is the authority inside the
+headless RTC application and uses PipeWireAO.jl’s native bindings. The former Julia DeploymentRunner and Rust
 runtime coordinators remain retired.
 
 ```mermaid

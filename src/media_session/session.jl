@@ -246,7 +246,7 @@ function drain!(session::Session)
     if cancellation !== nothing &&
         job !== nothing &&
         cancellation.serial == job.ticket.serial
-        job.cancelled = true
+        cancel_job!(job)
     end
     cancellation === nothing || after_retirement!(session, cancellation.effect)
     session.ingress.lifecycle == session.machine.lifecycle ||
@@ -324,6 +324,12 @@ function Agent.do_work(session::Session)
         observe_controllers!(session)
         drain!(session)
         work += 1
+    end
+    # Registry visibility can change even when no application event was staged.
+    # Wake the Link effect after applying this dispatch's observations.
+    job = session.active_job
+    if work > 0 && job !== nothing && job.link_progress !== nothing
+        notify(job.link_progress)
     end
     # The owner coroutine has one result slot, separate from native ingress.
     # Observation overflow must not drop the emergency teardown acknowledgement.
@@ -1035,7 +1041,7 @@ end
 
 function Base.close(session::Session)
     current_task() === session.owner || error("session belongs to another task")
-    session.active_job === nothing || (session.active_job.cancelled = true)
+    session.active_job === nothing || cancel_job!(session.active_job)
     session.done = true
     failures = Exception[]
     if session.active_task !== nothing
