@@ -173,6 +173,13 @@ function bind_object!(runtime, id::UInt32, interface::AbstractString)
     global_object.type == interface || throw(ArgumentError("registry object type differs"))
     return bind_object!(runtime, global_object)
 end
+object_callbacks(queue, id, serial) = (
+    on_info = (_, info) -> stage!(queue, ObjectUpdated(id, serial, info)),
+    on_bound = (_, bound) -> stage!(queue, ObjectBound(id, serial, bound)),
+    on_removed = (_) -> stage!(queue, ObjectError(id, serial, "Bound object removed")),
+    on_error = (_, sequence, error) ->
+        stage!(queue, ObjectError(id, serial, sequence, sprint(showerror, error))),
+)
 function _bind_object!(runtime, global_object, ::Type{P}, ::Type{I}) where {P,I}
     id, serial = global_object.id, _serial(global_object.properties)
     old = find_object(runtime, id)
@@ -182,13 +189,7 @@ function _bind_object!(runtime, global_object, ::Type{P}, ::Type{I}) where {P,I}
         return old
     end
     queue = runtime.queue
-    callbacks = (
-        on_info = (_, info) -> stage!(queue, ObjectUpdated(id, serial, info)),
-        on_bound = (_, bound) -> stage!(queue, ObjectBound(id, serial, bound)),
-        on_removed = (_) -> stage!(queue, ObjectError(id, serial, "Bound object removed")),
-        on_error = (_, sequence, error) ->
-            stage!(queue, ObjectError(id, serial, sequence, sprint(showerror, error))),
-    )
+    callbacks = object_callbacks(queue, id, serial)
     proxy = _bind_object(runtime.registry, global_object, P, callbacks, queue, id)
     object = Object{typeof(proxy),I}(
         id, serial, copy(global_object.properties), proxy, nothing, false
