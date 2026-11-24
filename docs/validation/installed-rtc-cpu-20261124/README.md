@@ -6,7 +6,9 @@ The RTC used the installed direct systemd launcher from `bc90853`, Julia
 1.13.3, existing package images and CPU 3. It admitted ten fresh Links and
 reported native Ready with execution held. The endpoint and required graph
 identities were checked independently. This interval ends at Ready, before any
-Start command or wait for a usable camera frame.
+Start command or wait for a usable camera frame. The installation descriptor
+sealed 465 file identities. This fixture used the descriptor without a Git
+export pin.
 
 | Time through Ready | Passive | Leader CPU profile |
 | --- | ---: | ---: |
@@ -46,8 +48,9 @@ keeps scheduler samples if the I/O counters are unavailable.
 The third activation used a separately built RTC image with phase timestamps
 and Julia compilation tracing. It retained the original pinned launcher,
 core, simulation source, both graph services and ordinary native admission.
-It reached Ready in 13.597 s. Its larger I/O count and its tracing make the
-diagnostic timeline unsuitable as an uninstrumented baseline. Its Quit helper
+It reached Ready in 13.597 s. It recorded 239 MB of storage reads and about
+67,600 write operations, compared with 74.8–92.1 MB and about 2,270 write
+operations in the first two arms. Its timings are diagnostic. Its Quit helper
 inherited the diagnostic package environment and expired while connecting.
 Systemd cleanup finished. The two normal baseline starts acknowledged Quit.
 
@@ -140,3 +143,39 @@ belong to each activation.
 The archive contains the process counters, symbol samples, phase trace,
 render selector, package inputs and focused test output.
 [Startup CPU receipts](startup-cpu-receipts.tar.gz)
+
+## Installed restart comparison
+
+Four untraced activations alternated the baseline and precompiled RTC images.
+Both arms used the baseline installation's direct systemd command and pinned
+inputs. A temporary environment drop-in selected the precompiled package for
+the MainPID in the two middle starts. The native PipeWire library mapping
+identity and both retained graph process maps matched across all four. The drop-in was removed
+before ordinary systemd Stop. Each trial confirmed native Ready with ten fresh
+held Links and acknowledged native Quit. The same private core and optical
+source remained live throughout. This comparison used the narrowed native
+queue module for both arms.
+
+| Execution order | Request to systemctl return | RTC main-thread CPU | Main thread runnable wait | Remaining main-thread nonrunning time |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline | 10.592 s | 8.245 s | 0.169 s | 2.014 s |
+| Precompiled | 9.144 s | 7.952 s | 0.170 s | 0.903 s |
+| Precompiled | 9.440 s | 8.090 s | 0.218 s | 0.918 s |
+| Baseline | 9.389 s | 8.141 s | 0.172 s | 0.912 s |
+
+The adjacent precompiled starts were 1.447 s faster and 0.051 s slower,
+respectively. The first pair's lower nonrunning time accounts for most of
+its 1.447 s wall difference. The last main-thread CPU samples differed by
+0.293 s and 0.050 s in favor of the precompiled runs. The final samples preceded systemd Active by 72–173 ms.
+The isolated renderer saved 0.968 s at the median. The four full starts
+showed a variable service-level effect. The full restart measurements
+combine compilation with the varying costs of source and graph admission,
+scheduling and I/O.
+
+A separate sealed installation with `b2c2f1f` in its Manifest and no package
+overlay then reached systemd and native Ready with ten held Links in
+12.346 s. It reused the same live source and core and started a fresh pair
+of persistent graph services. This activation verifies the normal installed
+startup path for the candidate.
+
+[Matched restart and sealed startup receipts](matched-startup-receipts.tar.gz)
