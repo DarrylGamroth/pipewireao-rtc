@@ -244,18 +244,15 @@ const RTC_JULIA_FLAGS = ("--startup-file=no", "--threads=1,0")
 const RTC_ENTRYPOINT =
     "Base.exit_on_sigint(false); using PipeWireAORTC; exit(PipeWireAORTC.MediaSession.main(ARGS))"
 
-"Exact Julia arguments shared by launcher generation and process verification."
-rtc_arguments(julia::AbstractString, project::AbstractString, config::AbstractString) =
-    String[
-        julia,
-        RTC_JULIA_FLAGS...,
-        "--project="*project,
-        "-e",
-        RTC_ENTRYPOINT,
-        "--",
-        "-c",
-        config,
-    ]
+"Exact Julia command shared by installed unit generation and process verification."
+function rtc_command(julia::AbstractString, project::AbstractString; sysimage = nothing)
+    command = String[julia, RTC_JULIA_FLAGS...]
+    sysimage === nothing || push!(command, "--sysimage=" * sysimage)
+    return append!(command, ["--project=" * project, "-e", RTC_ENTRYPOINT, "--"])
+end
+
+rtc_arguments(julia::AbstractString, project::AbstractString, config::AbstractString; sysimage = nothing) =
+    append!(rtc_command(julia, project; sysimage), ["-c", config])
 
 function rtc_launcher()
     return raw"""#!/bin/sh

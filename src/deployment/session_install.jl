@@ -78,7 +78,10 @@ end
 
 # Record the installation selected by this unit. Replacements read one bounded
 # JSON document and check the installed files before acquiring any owners.
-function install_activation!(package, prefix, julia, project, launcher, spec, commit)
+function install_activation!(
+    package, prefix, julia, project, launcher, spec, commit;
+    sysimage = nothing, validated_image = nothing,
+)
     launch = PipeWireAORTC.SessionLaunch
     path = joinpath(package, "systemd", launch.ACTIVATION_FILE)
     !(ispath(path) || islink(path)) || throw(ArgumentError("reserved activation file: $path"))
@@ -97,15 +100,25 @@ function install_activation!(package, prefix, julia, project, launcher, spec, co
     append!(files, [julia, joinpath(project, "Project.toml"), joinpath(project, "Manifest.toml"),
                     D.session_executable(spec, package, prefix), launcher, paths["parser"],
                     paths["daemon"], joinpath(paths["library"], "libpipewire-ao-0.3.so")])
+    sysimage === nothing || push!(files, sysimage)
     document = Dict(
         "version" => 1, "package" => package, "prefix" => prefix, "launcher" => launcher,
         "project" => project, "julia" => julia, "paths" => paths, "profile" => spec,
         "files" => Dict(file => launch.graph_file_identity(file) for file in unique(files)),
         "export-commit" => commit, "graph-templates" => graphs,
     )
+    if sysimage !== nothing
+        identity = document["files"][sysimage]
+        validated_image === nothing || validated_image == identity ||
+            throw(ArgumentError("Julia sysimage changed after installation validation"))
+        document["julia-sysimage"] = sysimage
+        document["julia-sysimage-sha256"] = C.sha256_file(sysimage)
+        launch.graph_file_identity(sysimage) == identity ||
+            throw(ArgumentError("Julia sysimage changed during activation sealing"))
+    end
     C.write_json(path, document; atomic = true)
     filesize(path) <= D.MAX_CONFIG_BYTES || throw(ArgumentError("installed activation exceeds size bound"))
-    return (; julia, project, digest = C.sha256_file(path))
+    return (; julia, project, sysimage, digest = C.sha256_file(path))
 end
 
 function installed_unit(
@@ -121,6 +134,16 @@ function installed_unit(
                    "PIPEWIREAORTC_JULIA" => activation.julia, "PIPEWIREAORTC_PROJECT" => activation.project)
         append!(lines, ["Environment=" * quote_unit(key * "=" * env[key]) for key in sort!(collect(keys(env)))])
     end
+    command = quote_unit(executable)
+    sysimage = activation === nothing ? nothing : get(activation, :sysimage, nothing)
+    if sysimage !== nothing
+        occursin("@RTC_COMMAND@", template) ||
+            throw(ArgumentError("pinned RTC package does not support a Julia sysimage"))
+        arguments = PipeWireAORTC.ScienceExport.rtc_command(
+            activation.julia, activation.project; sysimage,
+        )
+        command = join((quote_unit(replace(argument, "\$" => "\$\$")) for argument in arguments), " ")
+    end
     leader = spec["placement"]["session"]["leader-cpu"]
     unit = replace(
         template,
@@ -128,6 +151,7 @@ function installed_unit(
         "@LAUNCHER@" => quote_unit(launcher),
         "@PACKAGE@" => quote_unit(package),
         "@PIPEWIRE_PREFIX@" => quote_unit(prefix),
+        "@RTC_COMMAND@" => command,
         "@RTC_EXECUTABLE@" => quote_unit(executable),
         "@SOURCE_ROLE@" => spec["source-owner"],
         "@CPUS@" => string(leader),
@@ -158,8 +182,9 @@ end
     install(options)
 
 Validate and copy a sealed session package into a fresh `options.destination`.
-Supply absolute `package` and `pipewire_prefix` paths; optional `julia_executable`
-selects the Julia client executable. Supply `git_repository` (the Git directory)
+Supply absolute `package` and `pipewire_prefix` paths. Use `julia_executable`
+to select the Julia executable and `julia_sysimage` to pin an absolute image path
+for the main RTC process. Supply `git_repository` (the Git directory)
 and `git_commit` (the full export commit ID) to select an explicit Git snapshot.
 Otherwise use the sibling `<package>.git` repository when Git is available.
 Optionally select `persistent_graph_owners = true` with the independent core
@@ -183,6 +208,7 @@ function install(options)
         get(options, :julia_executable, Base.julia_cmd().exec[1])
     )
     persistent_graph_owners = get(options, :persistent_graph_owners, false)
+    sysimage = selected_sysimage(get(options, :julia_sysimage, nothing))
     for name in (".git", GitExport.DIRECTORY)
         entry = joinpath(source, name)
         !(ispath(entry) || islink(entry)) ||
@@ -213,7 +239,7 @@ function install(options)
                 throw(ArgumentError("installed export asset must be a regular file: $file"))
         end
         follow_symlinks || GitExport.verify_install!(destination, realpath(repository), commit)
-        return finish_install(destination, prefix, julia, commit; persistent_graph_owners)
+        return finish_install(destination, prefix, julia, commit; persistent_graph_owners, sysimage)
     catch
         Base.samefile(created, lstat(destination)) && rm(destination; recursive = true)
         rethrow()
@@ -234,7 +260,35 @@ resolved_unit_template(environment) = read(
     String,
 )
 
-function finish_install(destination, prefix, julia, commit; persistent_graph_owners = false)
+selected_sysimage(::Nothing) = nothing
+function selected_sysimage(path::AbstractString)
+    isabspath(path) && !any(character -> occursin(character, path), ('\0', '\n', '\r')) &&
+        isfile(path) || throw(ArgumentError("--julia-sysimage requires an absolute file path"))
+    return realpath(path)
+end
+
+function validate_sysimage(julia, project, sysimage)
+    code = raw"""
+        id = Base.PkgId(Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6"), "PipeWireAORTC")
+        rtc = get(Base.loaded_modules, id, nothing)
+        rtc !== nothing && Base.in_sysimage(id) ||
+            error("Julia sysimage does not preload PipeWireAORTC")
+        selected = Base.explicit_manifest_uuid_path(Base.active_project(), id)
+        selected isa AbstractString && realpath(pathof(rtc)) == realpath(selected) ||
+            error("Julia sysimage uses a different PipeWireAORTC package source")
+        realpath(unsafe_string(Base.JLOptions().image_file)) == only(ARGS) ||
+            error("Julia loaded a different sysimage")
+        """
+    receipt = C.run_checked(
+        [julia, "--startup-file=no", "--compiled-modules=existing", "--threads=1,0",
+         "--project=" * project, "--sysimage=" * sysimage, "-e", code, "--", sysimage];
+        timeout = 60, maximum_output_bytes = 64 * 1024,
+    )
+    receipt.returncode == 0 || throw(ArgumentError("cannot validate Julia sysimage: " * strip(receipt.stderr)))
+    return nothing
+end
+
+function finish_install(destination, prefix, julia, commit; persistent_graph_owners = false, sysimage = nothing)
     installed_spec = session_spec(destination, prefix)
     haskey(installed_spec["artifacts"], "systemd/pipewireao-session@.service") &&
         throw(ArgumentError("export must not seal an installation-specific session unit"))
@@ -247,6 +301,13 @@ function finish_install(destination, prefix, julia, commit; persistent_graph_own
     launcher = joinpath(bin, "pipewireao-rtc-session")
     environment = D.application_environment(installed_spec, destination)
     template = resolved_unit_template(environment)
+    validated_image = if sysimage !== nothing
+        occursin("@RTC_COMMAND@", template) && occursin("@ACTIVATION_ENVIRONMENT@", template) ||
+            throw(ArgumentError("pinned RTC package does not support a Julia sysimage"))
+        identity = PipeWireAORTC.SessionLaunch.graph_file_identity(sysimage)
+        validate_sysimage(julia, environment, sysimage)
+        identity
+    end
     external = PipeWireAORTC.SessionLaunch.external_services()
     if persistent_graph_owners
         external === nothing &&
@@ -286,7 +347,10 @@ function finish_install(destination, prefix, julia, commit; persistent_graph_own
         destination, prefix, installed_spec, external
     ) : nothing
     activation = occursin("@ACTIVATION_ENVIRONMENT@", template) ?
-        install_activation!(destination, prefix, julia, environment, launcher, installed_spec, commit) : nothing
+        install_activation!(
+            destination, prefix, julia, environment, launcher, installed_spec, commit;
+            sysimage, validated_image,
+        ) : nothing
     unit = installed_unit(
         template, installed_spec;
         launcher, package = destination, prefix, executable, external, persistent, activation,
@@ -299,14 +363,15 @@ end
     main(argv=ARGS)
 
 Parse installer arguments and return the installed package path. Required flags
-are `--package`, `--destination` and `--pipewire-prefix`. The optional
-`--persistent-graph-owners` flag selects separately supervised graph units.
+are `--package`, `--destination` and `--pipewire-prefix`. Use the optional
+`--julia-sysimage` option to pin a main-process image and
+`--persistent-graph-owners` to select separately supervised graph units.
 """
 function main(argv = ARGS)
     args = C.cli_arguments(
         argv;
         required = ["package", "destination", "pipewire-prefix"],
-        allowed = ["julia-executable", "git-repository", "git-commit"],
+        allowed = ["julia-executable", "julia-sysimage", "git-repository", "git-commit"],
         flags = ["persistent-graph-owners"],
     )
     return install(args)

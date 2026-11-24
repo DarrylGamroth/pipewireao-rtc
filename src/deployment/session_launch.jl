@@ -857,7 +857,8 @@ function prepare!(
             "PIPEWIREAORTC_JULIA" => julia,
             "PIPEWIREAORTC_PROJECT" => project,
         )
-        process_binding = D.session_process_binding(julia, project, config)
+        sysimage = main ? get(activation, "julia-sysimage", nothing) : nothing
+        process_binding = D.session_process_binding(julia, project, config; sysimage)
         # Reserve the main process's activation budget before staging optional
         # jobs. Their condition permits execution only after RTC notifies systemd.
         clock = Clocks.SystemNanoClock()

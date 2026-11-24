@@ -483,23 +483,34 @@ function session_process_binding(
     return session_process_binding(julia, launcher_project, config)
 end
 
-function session_process_binding(julia::AbstractString, project::AbstractString, config::AbstractString)
-    return Dict{String,Any}(
+function session_process_binding(
+    julia::AbstractString, project::AbstractString, config::AbstractString; sysimage = nothing,
+)
+    binding = Dict{String,Any}(
         "julia" => julia, "project" => project, "config" => String(config),
-        "argv" => ScienceExport.rtc_arguments(julia, project, config),
+        "argv" => ScienceExport.rtc_arguments(julia, project, config; sysimage),
     )
+    sysimage === nothing || (binding["sysimage"] = sysimage)
+    return binding
 end
 
-"Verify exact Julia executable, pinned project, launcher arguments, and config."
+"Verify the exact Julia executable, project, launcher arguments, config and optional image."
 function verify_session_process(pid::Integer, binding::AbstractDict)
+    expected_keys = Set(("julia", "project", "config", "argv"))
+    if haskey(binding, "sysimage")
+        image = binding["sysimage"]
+        require(image isa AbstractString && isabspath(image), "invalid headless RTC sysimage path")
+        push!(expected_keys, "sysimage")
+    end
     require(
-        Set(keys(binding)) == Set(("julia", "project", "config", "argv")),
+        Set(keys(binding)) == expected_keys,
         "invalid headless RTC process binding",
     )
     julia, project, config, argv = session_process_values(
         binding["julia"], binding["project"], binding["config"], binding["argv"]
     )
-    expected = ScienceExport.rtc_arguments(julia, project, config)
+    sysimage = get(binding, "sysimage", nothing)
+    expected = ScienceExport.rtc_arguments(julia, project, config; sysimage)
     require(argv == expected, "invalid headless RTC process arguments")
     observed = try
         realpath("/proc/$pid/exe") == realpath(julia) &&
@@ -508,6 +519,24 @@ function verify_session_process(pid::Integer, binding::AbstractDict)
         false
     end
     require(observed, "session MainPID is not the exact prepared headless RTC executable")
+    if sysimage !== nothing
+        if pid == getpid()
+            selected = Base.JLOptions().image_file
+            require(selected != C_NULL && unsafe_string(selected) == sysimage,
+                    "session MainPID did not select the installed Julia sysimage")
+        end
+        mapped = try
+            open("/proc/$pid/maps") do maps
+                any(eachline(maps)) do line
+                    fields = split(line; limit = 6)
+                    length(fields) == 6 && last(fields) == sysimage
+                end
+            end
+        catch
+            false
+        end
+        require(mapped, "session MainPID does not map the installed Julia sysimage")
+    end
     return nothing
 end
 

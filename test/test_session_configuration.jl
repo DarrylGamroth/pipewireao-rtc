@@ -267,10 +267,23 @@ end
     @test_throws D.DeploymentError D.verify_session_process(getpid(), binding)
     tampered = merge(binding, Dict("argv" => [julia, "-c", "/runtime/rtc/rtc.conf"]))
     @test_throws D.DeploymentError D.verify_session_process(getpid(), tampered)
+    image = "/installed/image with spaces.so"
+    with_image = D.session_process_binding(julia, project, binding["config"]; sysimage = image)
+    @test with_image["sysimage"] == image
+    @test with_image["argv"][4] == "--sysimage=" * image
+    @test_throws r"invalid headless RTC process arguments" D.verify_session_process(
+        getpid(), merge(with_image, Dict("sysimage" => "/other/image.so"))
+    )
+    @test_throws r"invalid headless RTC sysimage path" D.verify_session_process(
+        getpid(), merge(with_image, Dict("sysimage" => "relative.so"))
+    )
+    @test_throws r"not the exact prepared headless RTC executable" D.verify_session_process(
+        getpid(), with_image
+    )
     template = read(
         joinpath(PipeWireAORTC.resource_root(), "pipewireao-session@.service.in"), String
     )
-    @test occursin("ExecStart=@RTC_EXECUTABLE@ -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", template)
+    @test occursin("ExecStart=@RTC_COMMAND@ -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", template)
     @test !occursin("-p ao-rtc", template)
 end
 
