@@ -721,7 +721,7 @@ bind_owner(registry, owner, client, observation) = bind(
         fail!(client, "owner proxy was removed"; retirement = true),
     on_error = (_, _, error) ->
         fail!(client, sprint(showerror, error); retirement = true),
-    on_param = (_, _, id, _, pod) -> begin
+    on_param = (_, _, id, _, _, pod) -> begin
         id == SPA.PARAM_PROPS &&
             pod !== nothing &&
             observe!(observation, pod; at = Clocks.time_nanos(client.clock))
