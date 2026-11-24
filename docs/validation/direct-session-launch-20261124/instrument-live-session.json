@@ -529,5 +529,337 @@
     "rtc_source": "61b77ca0a22bb22440c97e97151d14d8fe986a95",
     "rtc_tree": "b23f75b5bfcebfc157319bd52976d058a1cd31ef",
     "unqualified_later_attempts": 1
+  },
+  "gpi2-persistent": {
+    "activations": [
+      {
+        "first_priming": {
+          "closed-loop-correction:closed": {
+            "closed-loop-correction:closed": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+            "pipewireao.correction-control.closed-loop-correction:closed.primed": true,
+            "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+          }
+        },
+        "forced_stop": {
+          "result": {
+            "ActiveState": "failed",
+            "ExecMainStatus": "9",
+            "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@gtgrmvp.service",
+            "InvocationID": "d8e42c28095f4f658a12a31dc0cac89f",
+            "MainPID": "0",
+            "Result": "signal"
+          },
+          "signal": "SIGKILL"
+        },
+        "fresh_recovery_ok": true,
+        "graph_serial": 208,
+        "held_close_refusals": {
+          "closed-loop-correction:closed": {
+            "field": "session",
+            "message": "ArgumentError: correction control requires a running session"
+          }
+        },
+        "old_authority_after_replacement": {
+          "error": "native control outcome unknown: owner proxy was removed"
+        },
+        "persistent_services_at_ready": {
+          "core": {
+            "invocation": "9debc03f8092438dbef9897037730bb3",
+            "pid": 1662121,
+            "start_ticks": 40532292,
+            "unit": "iv3-g-tgrmv-core.service"
+          },
+          "julia": {
+            "invocation": "c94257e225294f2cab9009280862d8cf",
+            "pid": 1665663,
+            "start_ticks": 40549678,
+            "unit": "pipewireao-graph-gpi2-direct-tgrmv-julia.service"
+          },
+          "simulator": {
+            "invocation": "f6edab0d5e7d427592eec834c516bc66",
+            "pid": 1662126,
+            "start_ticks": 40532298,
+            "unit": "iv3-g-tgrmv-source.service"
+          }
+        },
+        "probed_recovery_generation": 15,
+        "ready_correction": {
+          "closed-loop-correction:closed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+          "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.state": "Open",
+          "pipewireao.correction-control.owner-instance": 906390648680256755,
+          "pipewireao.correction-control.version": 1
+        },
+        "ready_declared_links": [
+          255,
+          256,
+          257,
+          258,
+          259,
+          260,
+          261,
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273,
+          274,
+          275,
+          276,
+          277,
+          278,
+          279,
+          280,
+          281,
+          282,
+          283,
+          284,
+          285
+        ],
+        "ready_seconds": 170.489083712,
+        "recovery_after_request": {
+          "pipewireao-recovery:active-generation": 1,
+          "pipewireao-recovery:close-guarded": false,
+          "pipewireao-recovery:closure-inhibited": true,
+          "pipewireao-recovery:controller": "closed-loop-correction",
+          "pipewireao-recovery:observation-monotonic-nanoseconds": 405694311232825,
+          "pipewireao-recovery:observation-sequence": 6,
+          "pipewireao-recovery:recovery-generation": 1,
+          "pipewireao-recovery:reference-reached": true,
+          "pipewireao-recovery:reference-timeout-ms": 5000,
+          "pipewireao-recovery:release-token": 0,
+          "pipewireao-recovery:request-token": 15,
+          "pipewireao-recovery:requested-generation": 1,
+          "pipewireao-recovery:state": "applied",
+          "pipewireao-recovery:version": 1
+        },
+        "remote": "/run/user/1000/iv3-g-tgrmv/c",
+        "session_invocation": "d8e42c28095f4f658a12a31dc0cac89f",
+        "session_main_pid": 1665664,
+        "session_uuid": "56ab7f02-eb86-4432-81b5-ba582ca08019",
+        "source_acquisition": {
+          "detector": {
+            "acquisition": {
+              "domain": "07d2ea92c6eb42dbb4306a064b1f6396",
+              "generation": 1,
+              "sequence": 255
+            },
+            "header_sequence": 255
+          },
+          "pixels": {
+            "acquisition": {
+              "domain": "07d2ea92c6eb42dbb4306a064b1f6396",
+              "generation": 1,
+              "sequence": 259
+            },
+            "header_sequence": 259
+          }
+        },
+        "stale_recovery_release_error": {
+          "field": "session",
+          "message": "ArgumentError: recovery release requires an inhibited open controller"
+        },
+        "stopped_state": null,
+        "systemd_stop_result": null
+      },
+      {
+        "first_priming": {
+          "closed-loop-correction:closed": {
+            "closed-loop-correction:closed": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+            "pipewireao.correction-control.closed-loop-correction:closed.primed": true,
+            "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+            "pipewireao.correction-control.closed-loop-correction:closed.state": "Open"
+          }
+        },
+        "fresh_recovery_ok": true,
+        "graph_serial": 312,
+        "held_close_refusals": {
+          "closed-loop-correction:closed": {
+            "field": "session",
+            "message": "ArgumentError: correction control requires a running session"
+          }
+        },
+        "persistent_services_at_ready": {
+          "core": {
+            "invocation": "9debc03f8092438dbef9897037730bb3",
+            "pid": 1662121,
+            "start_ticks": 40532292,
+            "unit": "iv3-g-tgrmv-core.service"
+          },
+          "julia": {
+            "invocation": "c94257e225294f2cab9009280862d8cf",
+            "pid": 1665663,
+            "start_ticks": 40549678,
+            "unit": "pipewireao-graph-gpi2-direct-tgrmv-julia.service"
+          },
+          "simulator": {
+            "invocation": "f6edab0d5e7d427592eec834c516bc66",
+            "pid": 1662126,
+            "start_ticks": 40532298,
+            "unit": "iv3-g-tgrmv-source.service"
+          }
+        },
+        "probed_recovery_generation": 1,
+        "ready_correction": {
+          "closed-loop-correction:closed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.fault": "",
+          "pipewireao.correction-control.closed-loop-correction:closed.primed": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.requested": false,
+          "pipewireao.correction-control.closed-loop-correction:closed.state": "Open",
+          "pipewireao.correction-control.owner-instance": 906390648680256755,
+          "pipewireao.correction-control.version": 1
+        },
+        "ready_declared_links": [
+          376,
+          377,
+          378,
+          379,
+          380,
+          381,
+          382,
+          383,
+          384,
+          385,
+          386,
+          387,
+          388,
+          389,
+          390,
+          391,
+          392,
+          393,
+          394,
+          395,
+          396,
+          397,
+          398,
+          399,
+          400,
+          401,
+          402,
+          403,
+          404,
+          405,
+          406
+        ],
+        "ready_seconds": 40.834563273,
+        "recovery_after_request": {
+          "pipewireao-recovery:active-generation": 1,
+          "pipewireao-recovery:close-guarded": false,
+          "pipewireao-recovery:closure-inhibited": true,
+          "pipewireao-recovery:controller": "closed-loop-correction",
+          "pipewireao-recovery:observation-monotonic-nanoseconds": 0,
+          "pipewireao-recovery:observation-sequence": 0,
+          "pipewireao-recovery:recovery-generation": 1,
+          "pipewireao-recovery:reference-reached": false,
+          "pipewireao-recovery:reference-timeout-ms": 5000,
+          "pipewireao-recovery:release-token": 0,
+          "pipewireao-recovery:request-token": 15,
+          "pipewireao-recovery:requested-generation": 1,
+          "pipewireao-recovery:state": "applied",
+          "pipewireao-recovery:version": 1
+        },
+        "remote": "/run/user/1000/iv3-g-tgrmv/c",
+        "replacement_write_accepted": true,
+        "retained_after_graceful_stop": {
+          "core": {
+            "ActiveState": "active",
+            "ExecMainStatus": "0",
+            "FragmentPath": "/run/user/1000/systemd/transient/iv3-g-tgrmv-core.service",
+            "InvocationID": "9debc03f8092438dbef9897037730bb3",
+            "MainPID": "1662121",
+            "Result": "success"
+          },
+          "julia": {
+            "ActiveState": "active",
+            "ExecMainStatus": "0",
+            "FragmentPath": "/run/user/1000/systemd/user/pipewireao-graph-gpi2-direct-tgrmv-julia.service",
+            "InvocationID": "c94257e225294f2cab9009280862d8cf",
+            "MainPID": "1665663",
+            "Result": "success"
+          },
+          "simulator": {
+            "ActiveState": "active",
+            "ExecMainStatus": "0",
+            "FragmentPath": "/run/user/1000/systemd/transient/iv3-g-tgrmv-source.service",
+            "InvocationID": "f6edab0d5e7d427592eec834c516bc66",
+            "MainPID": "1662126",
+            "Result": "success"
+          }
+        },
+        "session_invocation": "489c725499944919944ed7a9e4ac0167",
+        "session_main_pid": 1669294,
+        "session_uuid": "e3a51ffb-d08e-4525-8dfa-3cef65b52d11",
+        "source_acquisition": {
+          "detector": {
+            "acquisition": {
+              "domain": "07d2ea92c6eb42dbb4306a064b1f6396",
+              "generation": 1,
+              "sequence": 369
+            },
+            "header_sequence": 369
+          },
+          "pixels": {
+            "acquisition": {
+              "domain": "07d2ea92c6eb42dbb4306a064b1f6396",
+              "generation": 1,
+              "sequence": 372
+            },
+            "header_sequence": 372
+          }
+        },
+        "stale_recovery_release_error": {
+          "field": "session",
+          "message": "ArgumentError: recovery release requires an inhibited open controller"
+        },
+        "stopped_state": "Ready",
+        "systemd_stop_result": "success"
+      }
+    ],
+    "graph_optimization": "0",
+    "julia": "1.13.4",
+    "native": "PipeWireAO 4.0.8+0",
+    "rtc_source": "61b77ca0a22bb22440c97e97151d14d8fe986a95",
+    "rtc_tree": "b23f75b5bfcebfc157319bd52976d058a1cd31ef",
+    "source_continuity": {
+      "after": {
+        "generation": 1,
+        "host_monotonic_ns": 405793689968873,
+        "instance": 3658431039171154961,
+        "pid": 1662126,
+        "sequence": 396
+      },
+      "before": {
+        "generation": 1,
+        "host_monotonic_ns": 405496197246986,
+        "instance": 3658431039171154961,
+        "pid": 1662126,
+        "sequence": 3
+      },
+      "services": {
+        "iv3-g-tgrmv-core.service": [
+          "1662121",
+          "9debc03f8092438dbef9897037730bb3",
+          "40532292"
+        ],
+        "iv3-g-tgrmv-source.service": [
+          "1662126",
+          "f6edab0d5e7d427592eec834c516bc66",
+          "40532298"
+        ]
+      }
+    }
   }
 }

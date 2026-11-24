@@ -87,6 +87,19 @@ Running. The old control client reported that its native owner proxy had
 been removed. Native stop returned Ready and systemd stopped the replacement
 while all three independently supervised owners remained active.
 
+GPI2 used its configured v3 optics with a separate free-running native
+bootstrap client and RTC `61b77ca` with graph-only `-O0`. The source cursor
+advanced in generation 1 from sequence 3 before RTC startup to 396 after
+both activations. The graph Node serial changed from 208 to 312, declared
+Link serials changed, and the same core, source and graph services survived
+the Running RTC's SIGKILL and subsequent graceful stop. Detector sequence
+255 advanced to 369 and reconstruction pixels advanced from 259 to 372 in
+the same acquisition domain and generation. Both activations began Open,
+unprimed and recovery-idle, then primed in Running with the correction open.
+The replacement refused release using the prior activation's actual recovery
+generation, accepted an Open write and applied a new recovery request. The
+prior control client reported that its owner proxy had been removed.
+
 ## Reproduction
 
 The local fixture directory recorded in `/var/tmp/rtc-direct-instruments-location`
