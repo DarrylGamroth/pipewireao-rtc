@@ -177,6 +177,18 @@ end
         )
         read_activation(digest) = PipeWireAORTC.SessionCLI.activation_document(package, digest)
         @test read_activation(activation.digest)["profile"] == spec
+        launch = PipeWireAORTC.SessionLaunch
+        withenv(launch.ACTIVATION_ENV => activation.digest, launch.INSTALLATION_ENV => package,
+                launch.ADMISSION_UNIT_ENV => "pipewireao-session@test.service",
+                "INVOCATION_ID" => "a"^32, "XDG_RUNTIME_DIR" => package) do
+            root = joinpath(package, "pipewireao-session-test", "a"^32)
+            @test_throws ArgumentError PipeWireAORTC.SessionCLI.activate_installed!("/other.conf")
+            @test_throws D.DeploymentError PipeWireAORTC.SessionCLI.activate_installed!(
+                joinpath(root, "rtc", "rtc.conf")
+            )
+            @test !ispath(root)
+        end
+
         mkdir(joinpath(package, "graphs"))
         write(joinpath(package, "graphs", "late.conf.in"), "{}")
         @test isempty(read_activation(activation.digest)["graph-templates"])
