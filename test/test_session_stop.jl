@@ -206,7 +206,6 @@ end
 @testset "installed discovery preserves a conflicting incarnation" begin
     CLI = PipeWireAORTC.SessionCLI
     Discovery = PipeWireAORTC.SessionDiscovery
-    record = Dict("version" => SessionLaunch.LEDGER_VERSION)
     name = "fixture"
     id = "a5555555-5555-4555-8555-555555555555"
     pid = UInt32(getpid())
@@ -214,6 +213,10 @@ end
     node = "pipewireao.rtc.session.fixture"
     ready = Discovery.SessionRecord(name, id, pid, Int64(29), remote, node)
     conflict = Discovery.SessionRecord(name, id, pid, Int64(30), remote, node)
+    record = Dict{String,Any}(
+        "version" => SessionLaunch.LEDGER_VERSION, "session_uuid" => id,
+        "session_pid" => pid, "session_control_instance" => conflict.incarnation,
+    )
     mktempdir() do runtime
         withenv("XDG_RUNTIME_DIR" => runtime) do
             path = CLI._verified_discovery!(record, ready)
@@ -222,7 +225,10 @@ end
             )
             @test Discovery._read_record(path).incarnation == ready.incarnation
             @test CLI._verified_discovery!(record, ready) == path
-            @test Discovery.remove!(dirname(path), ready)
+            CLI.retire_record!(record, path)
+            @test isfile(path)
+            record["session_control_instance"] = ready.incarnation
+            CLI.retire_record!(record, path)
             @test !ispath(path)
         end
     end
