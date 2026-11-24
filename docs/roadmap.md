@@ -20,7 +20,11 @@ the expected inputs. On restart MediaSession verifies these inputs and the live
 processes, placement and Links before publishing Ready. Graphs start held,
 prime on live measurements after Start, and require explicit closure. The
 [restart comparison](validation/direct-session-launch-20261124/README.md)
-records the measured scope for each instrument.
+records the measured scope for each instrument. Classic CPU, GPI2 recovery
+and fitted dual SPIDERS passed the retained-source restart on the recorded
+builds. CAL2 passed live priming and signed first corrections. Its final
+continuity gate remains open because the LLOWFS producer had no available
+native output buffer after graceful RTC shutdown.
 
 ### Retain controller graph processes across RTC updates — 2026-11-24
 

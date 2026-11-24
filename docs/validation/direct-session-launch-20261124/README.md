@@ -117,6 +117,63 @@ at its specified physical cadence needs its own measurement. Each mode had
 one complete optical trial in this cohort. Across the two cohorts, neither
 mode consistently reached Ready first. [Matched optical, timing and restart receipts](cal2-control-thread-retry.tar.gz)
 
+## CAL2 with retries on the PipeWire loop
+
+HIL `030bed3` signals a PipeWire event on a transient output-buffer miss.
+The stream loop dispatches the retry independently of optical calculation.
+A per-exposure budget bounds retries. Both CAL2 graphs and the independent
+detector tap retained their normal output and acquisition contracts.
+
+The private core kept its PID, invocation and socket across the switch to the
+event-driven HIL. Within that source epoch one direct RTC reached Ready in
+20.108 s and its replacement in 12.398 s. During the forced outage the LLOWFS callback
+encountered a busy buffer on acquisition 10. The first event-driven retry
+queued it, and both cameras continued to publish while the RTC was absent.
+
+After forced replacement, LLOWFS acquisition 16 encountered a busy buffer
+and was queued under the same identity 69.540 µs later. Both the independent
+receiver and the graph saw it. This was the first usable open-loop LLOWFS
+measurement in the replacement. Both physical offsets were zero before
+closure. The session later acknowledged Stop and Quit with both graph
+processes still running.
+
+| Camera | First usable acquisition | Start acknowledgement to usable | First corrected acquisition | Close request to correction | Maximum absolute error over 2,304 channels |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| LLOWFS | 16 | 30.638 s | 26 | 29.153 s | 3.16 × 10⁻¹⁶ m |
+| SCC | 5 | 316.645 s | 6 | 157.287 s | 4.79 × 10⁻¹⁷ m |
+
+The final graceful restart reached Ready in 8.788 s. The direct main-thread
+samples for the three starts recorded 16.886, 11.068 and 7.653 s of CPU time,
+with 0.264, 0.187 and 0.129 s runnable waiting for CPU. These counters do not
+attribute CPU time to individual Julia functions.
+
+**Continuous publication across final shutdown failed.** The final recovery
+acknowledged Start and Stop. LLOWFS acquisition 36 reached the tap before
+Start. The camera generated no new exposure during this short Running
+interval. The first buffer miss for acquisition 37 occurred 24.853 s after
+systemd finished stopping the RTC. Three event-driven retries also returned
+busy within 42.640 µs. The tap subsequently received SCC 8. Across the event
+cohort, 36 of 40 staged LLOWFS acquisitions reached the native queue.
+Acquisitions 37–39 were overwritten and 40 was pending at teardown. All 8
+staged SCC acquisitions entered the queue. Every native publication reached
+the independent receiver. The native registry still showed the same active
+LLOWFS camera-to-tap Link (serial 322) after Quit and graph-service shutdown.
+All ten retired session Link serials were absent. The source trace establishes output-buffer
+unavailability but does not identify the holder of the buffers. The bounded
+retry repairs a missed wakeup. Native ownership at teardown remains open. [Final activation, staged-to-queued joins and optical receipts](cal2-event-retry.tar.gz)
+
+## Classic, GPI2 and SPIDERS
+
+Each private-core fixture killed its first Running RTC and connected a fresh
+one to the same source and graph processes. The replacements observed fresh
+camera frames, primed while open and stopped gracefully. Classic used live
+slopes, GPI2 used reconstruction pixels and tested recovery generations, and
+SPIDERS used both SCC and LLOWFS residuals. These are functional tests on
+the recorded package and optimization settings. The default cold GPI2 and
+SPIDERS graph constructions exceeded their deadlines. The fitted dual
+SPIDERS pass required a local FilterGraphPipeWire observer change.
+[Instrument builds, command results and acquisition identities](instruments.md)
+
 ## Software verification
 
 The RTC suite on the final implementation `61b77ca` passed 11,886 assertions
