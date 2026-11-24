@@ -706,6 +706,18 @@ end
     precompile(main, (Vector{String},))
     precompile(D.profile, (String, String))
     precompile(D.validate_application, (Dict{String,Any}, String, String))
+    precompile(
+        Core.kwcall,
+        (
+            NamedTuple{(:links,),Tuple{Vector{D.LinkDeclaration}}},
+            typeof(render!),
+            Dict{String,Any},
+            Dict{String,Any},
+            Dict{String,String},
+            Dict{String,Any},
+            String,
+        ),
+    )
     precompile(stop!, (NamedTuple{(:unit, :runtime_root),Tuple{String,String}},))
     precompile(
         Core.kwcall,
@@ -743,6 +755,27 @@ end
         """)
     C.finite_json(record)
     JSON.json(record)
+end
+
+# Exercise the generated session's heterogeneous maps and arrays in memory.
+# Native parser validation and the final file write still run on activation.
+@compile_workload begin
+    config = Dict{String,Any}(
+        "context.properties" => Dict{String,Any}(
+            "library.use-fallback" => false, "remote.name" => "/run/rtc/core",
+        ),
+        "context.modules" => Any[Dict("name" => "libpipewire-module-protocol-native")],
+        "pipewireao.session" => Dict{String,Any}(
+            "session" => Dict{String,Any}(
+                "links" => Any[Dict("output" => "source:pixels", "input" => "graph:pixels")],
+            ),
+            "node.pids" => Dict("source" => 42, "graph" => 43),
+            "core.owner" => Dict("pid" => 41, "nodes" => String[]),
+            "auxiliary-sources" => [Dict{String,Any}("role" => "lamp", "pid" => 44)],
+            "startup.timeout-ms" => 300000,
+        ),
+    )
+    PipeWireAORTC.ScienceExport.spa_config_payload(config, "Generated RTC session configuration.")
 end
 
 end # module
