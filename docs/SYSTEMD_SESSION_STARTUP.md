@@ -11,6 +11,14 @@ digest into the generated session unit. The document records the installed
 paths, validated profile and file identities, including the calibration and
 application manifests. Reinstall after changing these inputs.
 
+Pass `--julia-sysimage /absolute/path/to/image.so` to install with an application
+sysimage. Build it with the selected Julia runtime from the exact application
+Project and Manifest, with `PipeWireAORTC` preloaded. Installation checks the
+image and records its SHA-256 and file identity in the activation seal. Keep
+the image at the recorded path. The main RTC invocation selects that image
+explicitly and checks its mapping at admission and before native Quit. Retained
+graph owners and management commands use their regular Julia environments.
+
 Systemd starts the installed MediaSession as its main process. The process
 checks the document digest, installed file identities, its exact command
 line and systemd invocation. It uses the new invocation to bind the private

@@ -149,6 +149,20 @@ end
                                prefix = "/sdk", executable = "/sdk/bin/rtc", activation, external)
     @test occursin("Environment=\"PIPEWIREAORTC_CORE_SOCKET=/private/100%% core\"", attached)
     @test occursin("Environment=\"PIPEWIREAORTC_SOURCE_UNIT=ao-input.service\"", attached)
+    image = merge(activation, (sysimage = "/image/100% \$rc.so",))
+    with_image = I.installed_unit(template, spec; launcher = "/launcher", package = "/app",
+        prefix = "/sdk", executable = "/sdk/bin/rtc", activation = image)
+    @test occursin("\"--sysimage=/image/100%% \$\$rc.so\"", with_image)
+    @test occursin("\"--threads=1,0\"", with_image)
+    @test occursin("\"--\" -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", with_image)
+    @test occursin("ExecStop=\"/launcher\" stop --unit", with_image)
+    legacy_template = replace(template, "@RTC_COMMAND@" => "@RTC_EXECUTABLE@")
+    @test I.installed_unit(legacy_template, spec; launcher = "/launcher", package = "/app",
+        prefix = "/sdk", executable = "/sdk/bin/rtc", activation) ==
+        I.installed_unit(template, spec; launcher = "/launcher", package = "/app",
+            prefix = "/sdk", executable = "/sdk/bin/rtc", activation)
+    @test_throws ArgumentError I.installed_unit(legacy_template, spec; launcher = "/launcher",
+        package = "/app", prefix = "/sdk", executable = "/sdk/bin/rtc", activation = image)
 end
 
 
@@ -205,6 +219,21 @@ end
         @test_throws ArgumentError I.install_activation!(
             package, prefix, realpath(Base.julia_cmd().exec[1]), package, launcher, spec, nothing
         )
+        rm(joinpath(package, "systemd", launch.ACTIVATION_FILE))
+        image = joinpath(package, "image.so")
+        write(image, "original sysimage")
+        @test I.selected_sysimage(image) == image
+        @test_throws ArgumentError I.selected_sysimage("relative.so")
+        @test_throws ArgumentError I.validate_sysimage(realpath(Base.julia_cmd().exec[1]), package, image)
+        sealed_image = I.install_activation!(
+            package, prefix, realpath(Base.julia_cmd().exec[1]), package, launcher, spec, nothing; sysimage = image,
+        )
+        selection = read_activation(sealed_image.digest)
+        @test selection["julia-sysimage"] == image
+        @test selection["julia-sysimage-sha256"] == PipeWireAORTC.Common.sha256_file(image)
+        @test haskey(selection["files"], image)
+        write(image, "modified sysimage bytes")
+        @test_throws ArgumentError read_activation(sealed_image.digest)
     end
 end
 

@@ -96,7 +96,8 @@ function activate_installed!(config)
         throw(ArgumentError("RTC configuration is outside this systemd invocation"))
     activation = activation_document(package, digest)
     julia, project = activation["julia"], activation["project"]
-    D.verify_session_process(getpid(), D.session_process_binding(julia, project, config))
+    sysimage = get(activation, "julia-sysimage", nothing)
+    D.verify_session_process(getpid(), D.session_process_binding(julia, project, config; sysimage))
     request = SessionLaunch.Request(package, activation["prefix"], unit, activation["launcher"], root)
     SessionLaunch.prepare!(request; render!, validate_profile = require_node_owners, activation)
     return nothing
