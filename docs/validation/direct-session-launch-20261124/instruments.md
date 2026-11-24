@@ -101,6 +101,11 @@ keep the separately started source running through both RTC activations.
 GPI2 authoring commit `bb74679` in the instrument repository applies the
 opening and priming declarations to both the integrator and HEART modes.
 The native parser verified the open configuration and public reconstruction
-pixels output in both modes. The change preserves the package pins and
-calibration. The SPIDERS declaration remains in the fixture as
-`spiders-priming-authoring.patch`.
+pixels output in both modes.
+
+Instrument validation branch `codex/spiders-live-open-startup` at
+`7aa90d43b3d00ecac9793d718568dc6c9dcf46db` documents the required companion
+and adds the fitted dual declarations. Three checks compared the parsed
+authoring with the installed graph-owner arguments and checked the package
+version from the selected companion tree. The validation branch and patch
+target the fitted dual mode. [SPIDERS authoring patch](spiders-fitted-dual-priming.patch)

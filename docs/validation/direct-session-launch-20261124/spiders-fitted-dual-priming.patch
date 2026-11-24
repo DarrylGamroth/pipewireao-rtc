@@ -1,0 +1,15 @@
+diff --git a/spiders/rtc/modes.yaml b/spiders/rtc/modes.yaml
+index dcbed2d..c7ccab2 100644
+--- a/spiders/rtc/modes.yaml
++++ b/spiders/rtc/modes.yaml
+@@ -659,6 +659,10 @@ modes:
+             - dm-command
+             - --correction-property
+             - llowfs-correction:closed
++            - --prime-on-output
++            - correction:closed=modal-residual
++            - --prime-on-output
++            - llowfs-correction:closed=llowfs-modal-residual,llowfs-validity
+             - --recovery-node
+             - pair
+             - --recovery-node
