@@ -76,14 +76,60 @@ function session_assets(spec, package, prefix)
     return nothing
 end
 
+# Record the installation selected by this unit. Replacements read one bounded
+# JSON document and check the installed files before acquiring any owners.
+function install_activation!(package, prefix, julia, project, launcher, spec, commit)
+    launch = PipeWireAORTC.SessionLaunch
+    path = joinpath(package, "systemd", launch.ACTIVATION_FILE)
+    !(ispath(path) || islink(path)) || throw(ArgumentError("reserved activation file: $path"))
+    paths = D.installed_paths(prefix)
+    tracked = GitExport.verified_paths(package)
+    names = Set{String}([keys(spec["artifacts"])...; values(spec["client"])...;
+                          spec["core"]; spec["session"]; "deployment.conf"])
+    tracked === nothing || union!(names, tracked)
+    graphs = joinpath(package, "graphs")
+    if isdir(graphs)
+        union!(names, (joinpath("graphs", file) for file in readdir(graphs) if endswith(file, ".conf.in")))
+    end
+    files = [joinpath(package, name) for name in names]
+    append!(files, [julia, joinpath(project, "Project.toml"), joinpath(project, "Manifest.toml"),
+                    D.session_executable(spec, package, prefix), launcher, paths["parser"],
+                    paths["daemon"], joinpath(paths["library"], "libpipewire-ao-0.3.so")])
+    document = Dict(
+        "version" => 1, "package" => package, "prefix" => prefix, "launcher" => launcher,
+        "project" => project, "julia" => julia, "paths" => paths, "profile" => spec,
+        "files" => Dict(file => launch.graph_file_identity(file) for file in unique(files)),
+        "export-commit" => commit,
+    )
+    C.write_json(path, document; atomic = true)
+    filesize(path) <= D.MAX_CONFIG_BYTES || throw(ArgumentError("installed activation exceeds size bound"))
+    return (; julia, project, digest = C.sha256_file(path))
+end
+
 function installed_unit(
     template, spec; launcher, package, prefix, executable, external = nothing,
-    persistent = nothing,
+    persistent = nothing, activation = nothing,
 )
     quote_unit(value) = String(JSON.json(replace(String(value), "%" => "%%")))
+    lines = String[]
+    if occursin("@ACTIVATION_ENVIRONMENT@", template)
+        activation === nothing && throw(ArgumentError("RTC unit requires its installed activation"))
+        launch = PipeWireAORTC.SessionLaunch
+        env = Dict(launch.ACTIVATION_ENV => activation.digest, launch.INSTALLATION_ENV => package,
+                   "PIPEWIREAORTC_JULIA" => activation.julia, "PIPEWIREAORTC_PROJECT" => activation.project)
+        for (key, value) in get(get(spec, "session-runtime", Dict()), "environment", Dict())
+            occursin(r"^[A-Za-z_][A-Za-z0-9_]*$", key) && !occursin(r"[\r\n\0]", value) ||
+                throw(ArgumentError("invalid RTC environment declaration: $key"))
+            static = replace(value, "@PACKAGE@" => package, "@PREFIX@" => prefix)
+            # A value involving a new live identity becomes known only during activation.
+            occursin(r"@[A-Z_]+@", static) || (env[key] = static)
+        end
+        append!(lines, ["Environment=" * quote_unit(key * "=" * env[key]) for key in sort!(collect(keys(env)))])
+    end
     leader = spec["placement"]["session"]["leader-cpu"]
     unit = replace(
         template,
+        "@ACTIVATION_ENVIRONMENT@" => join(lines, "\n"),
         "@LAUNCHER@" => quote_unit(launcher),
         "@PACKAGE@" => quote_unit(package),
         "@PIPEWIRE_PREFIX@" => quote_unit(prefix),
@@ -244,9 +290,11 @@ function finish_install(destination, prefix, julia, commit; persistent_graph_own
     persistent = persistent_graph_owners ? PipeWireAORTC.SessionLaunch.install_persistent_graphs!(
         destination, prefix, installed_spec, external
     ) : nothing
+    activation = occursin("@ACTIVATION_ENVIRONMENT@", template) ?
+        install_activation!(destination, prefix, julia, environment, launcher, installed_spec, commit) : nothing
     unit = installed_unit(
         template, installed_spec;
-        launcher, package = destination, prefix, executable, external, persistent,
+        launcher, package = destination, prefix, executable, external, persistent, activation,
     )
     write(joinpath(systemd, "pipewireao-session@.service"), unit)
     return destination

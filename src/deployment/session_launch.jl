@@ -1,7 +1,6 @@
-"""One-shot preparation for a RTC-owned RTC session.
+"""Activation of an installed RTC session.
 
-The installed RTC unit calls `prepare!` from ExecStartPre. Its direct
-ExecStart runs RTC after this function returns. This module creates
+MediaSession binds its installation to the current systemd invocation. This module creates
 processes and configuration; it never admits a session or issues source/link
 operations. The MediaSession module owns those actions.
 
@@ -23,6 +22,10 @@ using UUIDs
 
 export Request, Prepared, prepare!, cleanup_invocation!, main
 
+# Service deployment manipulates cold, heterogeneous configuration trees.
+# Keep its compile policy local to deployment, including in the RTC process.
+Base.Experimental.@compiler_options compile=min optimize=0
+
 const D = PipeWireAORTC.DeploymentConfiguration
 const C = PipeWireAORTC.Common
 const S = PipeWireAORTC.SystemdOwners
@@ -31,6 +34,9 @@ const E = PipeWireAORTC.ScienceExport
 const P = PipeWireAORTC.Placement
 const LEDGER_VERSION = 2
 const ADMISSION_UNIT_ENV = "PIPEWIREAORTC_SYSTEMD_UNIT"
+const ACTIVATION_ENV = "PIPEWIREAORTC_ACTIVATION_SHA256"
+const INSTALLATION_ENV = "PIPEWIREAORTC_INSTALLATION"
+const ACTIVATION_FILE = "session-activation.json"
 
 "Reject unsupported private launch-ledger layouts before interpreting or changing them."
 validate_ledger(record) = throw(ArgumentError("unsupported launch ledger version"))
@@ -135,7 +141,7 @@ function session_lifetime_valid(values; allow_exec = false)
            values["KillMode"] == "control-group"
 end
 
-function preparation_identity(request::Request, source_role::AbstractString)
+function preparation_identity(request::Request, source_role::AbstractString; main = false)
     values = S.properties(
         request.unit;
         extra = "ControlPID,ExecStop,ExecStopPost,InactiveExitTimestampMonotonic," *
@@ -143,8 +149,8 @@ function preparation_identity(request::Request, source_role::AbstractString)
     )
     values["LoadState"] == "loaded" && values["ActiveState"] == "activating" ||
         fail("RTC unit is not in start preparation")
-    tryparse(Int, values["ControlPID"]) == getpid() ||
-        fail("launcher is not the unit ExecStartPre ControlPID")
+    property = main ? "MainPID" : "ControlPID"
+    tryparse(Int, values[property]) == getpid() || fail("launcher is not the unit $property")
     invocation = S.valid_invocation(values["InvocationID"])
     S.valid_invocation(get(ENV, "INVOCATION_ID", "")) == invocation ||
         fail("launcher invocation environment differs from systemd")
@@ -185,7 +191,7 @@ function owner_environment(paths, spec, bindings, runtime, role; ambient = ENV)
     env = Dict{String,String}(ambient)
     for key in (
         "NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID",
-        EXTERNAL_SERVICE_ENV..., GRAPH_MANIFEST_ENV,
+        EXTERNAL_SERVICE_ENV..., GRAPH_MANIFEST_ENV, ADMISSION_UNIT_ENV, ACTIVATION_ENV, INSTALLATION_ENV,
     )
         delete!(env, key)
     end
@@ -270,7 +276,7 @@ function prepare_julia_overlay!(request, paths, spec, runtime)
     return nothing
 end
 
-function parameter_owner!(request, spec, session, declared_links, bindings, runtime)
+function parameter_owner!(request, spec, session, declared_links, bindings, runtime; project = nothing)
     sources = filter(
         source -> get(source, "factory", nothing) == "pipewireao.runtime-parameter",
         session["sources"],
@@ -337,7 +343,7 @@ function parameter_owner!(request, spec, session, declared_links, bindings, runt
     executable = realpath(Base.julia_cmd().exec[1])
     isfile(executable) && Sys.isexecutable(executable) ||
         fail("Current Julia runtime is unavailable for parameter transport")
-    environment = D.application_environment(spec, request.package)
+    environment = project === nothing ? D.application_environment(spec, request.package) : project
     entry = [
         "--project=" * environment,
         "-e",
@@ -531,7 +537,7 @@ end
 """
     prepare!(request; render!, validate_profile=Returns(nothing))
 
-Prepare a fresh invocation in ExecStartPre. Run `validate_profile` on the
+Prepare a fresh systemd invocation. Run `validate_profile` on the
 validated deployment spec before contacting systemd or changing the runtime
 directory. The `render!` callback writes standard RTC SPA-JSON and returns
 its absolute path. It receives the same deployment spec, decoded rendered
@@ -539,11 +545,14 @@ session, resolved bindings, exact owner records, and invocation runtime.
 It must not release the source or realize links.
 """
 function prepare!(
-    request::Request; render!::Function, validate_profile::Function = Returns(nothing)
+    request::Request; render!::Function, validate_profile::Function = Returns(nothing),
+    activation = nothing,
 )
     package = realpath(request.package)
     prefix = realpath(request.prefix)
-    spec = D.profile(joinpath(package, "deployment.conf"), prefix)
+    main = activation !== nothing
+    spec = main ? activation["profile"] : D.profile(joinpath(package, "deployment.conf"), prefix)
+    project = main ? String(activation["project"]) : D.application_environment(spec, package)
     validate_profile(spec)
     spec["cpu-latency-us"] === nothing || fail(
         "RTC session does not yet retain a CPU DMA latency lease; cpu-latency-us must be null",
@@ -555,7 +564,7 @@ function prepare!(
     external === nothing && D.uses_external_stream(source) &&
         fail("external stream requires independent core and source service bindings")
     external === nothing || external_source!(spec, source)
-    coordinator, _ = preparation_identity(request, source_role)
+    coordinator, _ = preparation_identity(request, source_role; main)
     invocation = coordinator.invocation
     root = request.runtime_root
     isdir(root) && !islink(root) || fail("private runtime root is unavailable")
@@ -609,10 +618,10 @@ function prepare!(
     end
     D.uses_acquisition_protocol(source) &&
         (bindings["SOURCE_OWNER_INSTANCE"] = string(N.next_instance()))
-    paths = D.installed_paths(prefix)
+    paths = main ? activation["paths"] : D.installed_paths(prefix)
     session = render_inputs!(request, spec, bindings, runtime)
     declared_links = D.session_links(session)
-    parameters = parameter_owner!(request, spec, session, declared_links, bindings, runtime)
+    parameters = parameter_owner!(request, spec, session, declared_links, bindings, runtime; project)
     if parameters !== nothing
         push!(spec["owners"], parameters)
         spec["placement"]["parameters"] = deepcopy(spec["placement"]["session"])
@@ -725,7 +734,6 @@ function prepare!(
             verify_external_core(request.prefix, remote, S.pid(core), client_env)
         end
 
-        project = D.application_environment(spec, package)
         hil_startup = external === nothing ? PipeWireAORTC.HILStartup.interface(project) : nothing
         function install_owner!(owner)
             role = owner["role"]
@@ -812,7 +820,7 @@ function prepare!(
             fail("session generator emitted retired WirePlumber configuration")
         get(generated["context.properties"], "remote.name", nothing) == remote ||
             fail("RTC configuration targets a different private core")
-        final_coordinator, started_us = preparation_identity(request, source_role)
+        final_coordinator, started_us = preparation_identity(request, source_role; main)
         final_coordinator.invocation == invocation &&
         final_coordinator.cgroup == coordinator.cgroup ||
             fail("RTC unit incarnation changed during preparation")
@@ -820,7 +828,7 @@ function prepare!(
             service = recorded_service(coordinator, role, item)
             S.verify!(service)
         end
-        julia = D.selected_julia_executable(Base.julia_cmd().exec[1])
+        julia = main ? String(activation["julia"]) : D.selected_julia_executable(Base.julia_cmd().exec[1])
         isfile(julia) && Sys.isexecutable(julia) ||
             fail("selected Julia runtime is unavailable")
         isdir(project) || fail("selected Julia project environment is unavailable")
@@ -833,9 +841,8 @@ function prepare!(
             "PIPEWIREAORTC_JULIA" => julia,
             "PIPEWIREAORTC_PROJECT" => project,
         )
-        process_binding = D.session_process_binding(spec, package, String(config))
-        process_binding["julia"] == julia && process_binding["project"] == project ||
-            fail("selected Julia process binding changed during session preparation")
+        process_binding = Dict("julia" => julia, "project" => project, "config" => String(config),
+                               "argv" => E.rtc_arguments(julia, project, config))
         # Reserve the main process's activation budget before staging optional
         # jobs. Their condition permits execution only after RTC notifies systemd.
         clock = Clocks.SystemNanoClock()
@@ -861,7 +868,21 @@ function prepare!(
             ) && fail("session runtime environment cannot override private binding $key")
             session_env[key] = D.substitute(value, bindings)
         end
-        atomic_environment(locator, session_env)
+        if main
+            # Most profiles have no invocation-dependent process environment.
+            # Preserve exec-time settings (e.g. JULIA_DEPOT_PATH) when one is declared.
+            reexec = any(get(ENV, key, nothing) != session_env[key]
+                         for key in keys(spec["session-runtime"]["environment"]))
+            merge!(ENV, session_env)
+            if reexec
+                delete!(ENV, ACTIVATION_ENV)
+                argv = process_binding["argv"]
+                Base.systemerror("exec installed RTC", ccall(:execv, Cint,
+                    (Cstring, Ptr{Cstring}), julia, argv) == -1)
+            end
+        else
+            atomic_environment(locator, session_env)
+        end
         return Prepared(
             invocation, runtime, remote, String(config), deepcopy(owner_records)
         )
@@ -869,7 +890,7 @@ function prepare!(
         record["phase"] = "failed"
         record["error"] = sprint(showerror, error)
         launch_record!(runtime, record)
-        # ExecStopPost runs after a failed ExecStartPre. It performs the same
+        # ExecStopPost runs after a failed activation. It performs the same
         # core/source-first cleanup using this retained launch ledger.
         rethrow()
     end

@@ -1073,6 +1073,7 @@ end
 function main(arguments = ARGS)
     length(arguments) == 2 && first(arguments) == "-c" ||
         throw(ArgumentError("usage: pipewireao-rtc -c CONFIG"))
+    SessionCLI.activate_installed!(last(arguments))
     session = Session(last(arguments))
     result = try
         serve!(session)

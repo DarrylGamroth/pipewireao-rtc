@@ -64,6 +64,45 @@ function render!(spec, session, bindings, records, runtime; links = D.session_li
     )
 end
 
+# Check the same pinned inputs the installer validated without reparsing the
+# application manifest, probing Julia, or hashing large calibrations at restart.
+function activation_document(package, digest)
+    path = joinpath(package, "systemd", SessionLaunch.ACTIVATION_FILE)
+    document = SessionLaunch.sealed_graph_document(path, digest)
+    document["package"] == realpath(package) || throw(ArgumentError("RTC installation moved"))
+    for (file, identity) in document["files"]
+        SessionLaunch.graph_file_identity(file) == identity ||
+            throw(ArgumentError("installed RTC input changed: $file"))
+    end
+    project = document["project"]
+    all(name -> name in ("Project.toml", "Manifest.toml") || !D.julia_environment_file(name),
+        readdir(project)) || throw(ArgumentError("installed RTC project selection changed"))
+    if document["export-commit"] !== nothing
+        withenv("PIPEWIREAO_RTC_EXPORT_COMMIT" => document["export-commit"]) do
+            PipeWireAORTC.GitExport.verified_paths(package)
+        end
+    end
+    return document
+end
+
+function activate_installed!(config)
+    digest = get(ENV, SessionLaunch.ACTIVATION_ENV, nothing)
+    digest === nothing && return nothing
+    package = ENV[SessionLaunch.INSTALLATION_ENV]
+    unit = ENV[SessionLaunch.ADMISSION_UNIT_ENV]
+    root = PipeWireAORTC.SessionRuntime.runtime_directory(unit)
+    invocation = S.valid_invocation(ENV["INVOCATION_ID"])
+    config == joinpath(root, invocation, "rtc", "rtc.conf") ||
+        throw(ArgumentError("RTC configuration is outside this systemd invocation"))
+    activation = activation_document(package, digest)
+    julia, project = activation["julia"], activation["project"]
+    D.verify_session_process(getpid(), Dict("julia" => julia, "project" => project,
+        "config" => config, "argv" => PipeWireAORTC.ScienceExport.rtc_arguments(julia, project, config)))
+    request = SessionLaunch.Request(package, activation["prefix"], unit, activation["launcher"], root)
+    SessionLaunch.prepare!(request; render!, validate_profile = require_node_owners, activation)
+    return nothing
+end
+
 mutable struct InstalledAdmission
     request::SessionLaunch.Request
     invocation::String
@@ -113,7 +152,7 @@ end
 """
     installed_admission(config; clock=Clocks.SystemNanoClock())
 
-Bind the installed RTC main process to its private ExecStartPre ledger. Return
+Bind the installed RTC main process to its private activation ledger. Return
 `nothing` for a direct unmanaged launch. Reject mismatched invocation, unit or
 process identity before the RTC starts affecting the graph.
 """

@@ -123,25 +123,28 @@ end
         "startup-timeout-ms" => 120000,
     )
     original = deepcopy(spec)
+    activation = (; julia = "/bin/julia", project = "/application/100%", digest = "a"^64)
     unit = I.installed_unit(
         template,
         spec;
         launcher = "/a space/session",
         package = "/application/100%",
         prefix = "/sdk",
-        executable = "/sdk/bin/rtc",
+        executable = "/sdk/bin/rtc", activation,
     )
     @test filter(line -> startswith(line, "CPUAffinity="), split(unit, '\n')) ==
         ["CPUAffinity=3"]
     @test spec == original
     @test "TimeoutStartSec=120.0" in split(unit, '\n')
-    @test occursin("ExecStart=\"/sdk/bin/rtc\" -c \${RTC_CONFIG}", unit)
-    @test occursin("--package \"/application/100%%\"", unit)
+    @test occursin("ExecStart=\"/sdk/bin/rtc\" -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", unit)
+    @test !occursin("ExecStartPre=", unit)
+    @test !occursin("EnvironmentFile=", unit)
+    @test occursin("PIPEWIREAORTC_INSTALLATION=/application/100%%", unit)
     @test occursin("--source-role simulator", unit)
     @test !occursin(r"@[A-Z_]+@", unit)
     external = (; core = "ao-core.service", socket = "/private/100% core", source = "ao-input.service")
     attached = I.installed_unit(template, spec; launcher = "/launcher", package = "/app",
-                               prefix = "/sdk", executable = "/sdk/bin/rtc", external)
+                               prefix = "/sdk", executable = "/sdk/bin/rtc", activation, external)
     @test occursin("Environment=\"PIPEWIREAORTC_CORE_SOCKET=/private/100%% core\"", attached)
     @test occursin("Environment=\"PIPEWIREAORTC_SOURCE_UNIT=ao-input.service\"", attached)
 end
