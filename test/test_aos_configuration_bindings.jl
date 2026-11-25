@@ -353,3 +353,47 @@ AlgorithmGraphs.graph_node_bindings(::typeof(calibrated_node), config::NamedTupl
     @test E.configuration_binding_names(document, (; custom = calibrated_node)) == [:gain]
     @test AlgorithmGraphs.graph_node_bindings(identity, (;)) == ()
 end
+
+@testset "declared dark HIL frames block detector illumination" begin
+    mktempdir() do directory
+        (; path, document, graph) = calibration_simulation(directory)
+        dark = deepcopy(graph)
+        filter!(node -> node["name"] in ("modal", "camera"), dark["nodes"])
+        filter!(output -> output["name"] == "frame", dark["outputs"])
+        empty!(dark["links"])
+        push!(dark["inputs"], Dict(
+            "name" => "blocked", "binding" => "blocked", "destination" => "camera.photon_rate",
+        ))
+        document["graphs"]["dark"] = "dark.yaml"
+        document["bindings"]["blocked"] =
+            Dict("kind" => "zeros", "type" => "Float32", "shape" => [8, 10])
+        dark_path = joinpath(directory, "dark.yaml")
+        C.write_yaml(dark_path, dark)
+        C.write_yaml(path, document)
+
+        light = IC.prepare_system(path)
+        @test step_hil_frame!(light.boundary) == 1
+        @test sum(hil_frame_buffer(light.boundary)) > 0
+
+        system = IC.prepare_system(path; simulation_graph = "dark")
+        @test step_hil_frame!(system.boundary) == 1
+        @test hil_frame_buffer(system.boundary) == zeros(Float32, 8, 10)
+        hil_command_buffer(system.boundary) .= 12.0f-9
+        @test adopt_hil_command!(system.boundary, UInt64(1)) == 1
+        @test step_hil_frame!(system.boundary) == 2
+        @test hil_frame_buffer(system.boundary) == zeros(Float32, 8, 10)
+
+        push!(dark["links"], Dict("source" => "modal.opd", "destination" => "camera.photon_rate"))
+        C.write_yaml(dark_path, dark)
+        @test_throws "dark detector cannot receive an optical photon-rate link" IC.prepare_system(
+            path; simulation_graph = "dark",
+        )
+        empty!(dark["links"])
+        C.write_yaml(dark_path, dark)
+        document["bindings"]["blocked"]["type"] = "Float64"
+        C.write_yaml(path, document)
+        @test_throws "dark photon rate requires an explicit Float32 zero binding" IC.prepare_system(
+            path; simulation_graph = "dark",
+        )
+    end
+end
