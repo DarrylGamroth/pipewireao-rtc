@@ -470,6 +470,16 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             target = IC.prepare_publication(directory)
             @test JSON.parsefile(target)["scientific_identity"] ==
                 publication.scientific_identity
+            mirror = PipeWireAORTC.InstrumentDefinition
+            spec = (; rtc_configuration = documents.paths.rtc, instrument = target)
+            expected = Dict(mirror.MIRROR_PROPERTY => read(joinpath(directory, "mirror.json"), String))
+            named = merge(spec, (; version = 3, command_count = (; primary = 2)))
+            pupil = merge(spec, (; version = 5, mirror = "primary", command_count = 2))
+            @test mirror.mirror_properties(named, :primary) == expected
+            @test mirror.mirror_properties(pupil, :primary) == expected
+            @test isempty(mirror.mirror_properties(named, :unobserved))
+            @test_throws "controlled physical mirror" mirror.mirror_properties(pupil, :unobserved)
+            @test_throws ArgumentError mirror.mirror_properties(merge(pupil, (; command_count = 3)), :primary)
             @test !isfile(joinpath(directory, "simulation.conf"))
         end
     end
