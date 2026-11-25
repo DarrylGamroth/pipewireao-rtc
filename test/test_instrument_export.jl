@@ -1,6 +1,8 @@
 using Test, PipeWireAORTC, JSON, TOML
+import PipeWireAO
 
 const E = PipeWireAORTC.InstrumentExport
+const PREFIX = get(ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
 
@@ -29,11 +31,11 @@ const D = PipeWireAORTC.DeploymentConfiguration
             application,
             declarations,
             "instrument.json",
-            "/opt/pipewireao";
+            PREFIX;
             dimensions = Dict("count" => 3),
         )
         @test only(
-            D.decode(joinpath(application, "graph.conf"), "/opt/pipewireao")["filter.graph"]["nodes"],
+            D.decode(joinpath(application, "graph.conf"), PREFIX)["filter.graph"]["nodes"],
         )["config"]["count"] == 3
         @test read(joinpath(application, "heart.conf")) == bytes
         @test occursin("heart.conf", read(joinpath(application, "graph.conf"), String))
@@ -42,14 +44,14 @@ const D = PipeWireAORTC.DeploymentConfiguration
             application,
             vcat(declarations, declarations),
             "instrument.json",
-            "/opt/pipewireao",
+            PREFIX,
         )
         @test read(joinpath(application, "graph.conf")) == before
         @test_throws ArgumentError E.prepare_graph_configurations!(
             application,
             vcat(declarations, [Dict("path" => "heart.conf")]),
             "instrument.json",
-            "/opt/pipewireao";
+            PREFIX;
             dimensions = Dict("count" => 3),
         )
         @test read(joinpath(application, "graph.conf")) == before
@@ -58,17 +60,17 @@ const D = PipeWireAORTC.DeploymentConfiguration
             application,
             [Dict("path" => "graph.conf", "source" => joinpath(application, "heart.conf"))],
             "instrument.json",
-            "/opt/pipewireao",
+            PREFIX,
         )
         @test read(joinpath(application, "graph.conf")) == before
         E.prepare_graph_configurations!(
             application,
             [Dict("path" => "graph.conf")],
             "instrument.json",
-            "/opt/pipewireao",
+            PREFIX,
         )
         @test only(
-            D.decode(joinpath(application, "graph.conf"), "/opt/pipewireao")["filter.graph"]["nodes"],
+            D.decode(joinpath(application, "graph.conf"), PREFIX)["filter.graph"]["nodes"],
         )["config"]["count"] == 3
     end
 end
@@ -248,7 +250,7 @@ end
             Dict("path" => "recipe.conf", "format" => "spa-json"),
         ]
         recipe = Dict("measurement_count" => reference("/rtc/dimensions/measurements"))
-        prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+        prefix = PREFIX
         write(
             joinpath(directory, "views.yaml"),
             "parameter:\n  - shape: {\"\$ref\": /rtc/dimensions/shape}\nslope_to_image: {\"\$ref\": /instrument/wavefront_sensors/sensor/pixel_to_image}\n",
@@ -323,7 +325,7 @@ end
 
 @testset "session references resolve the whole composed document before sealing" begin
     reference(pointer) = Dict("\$ref" => pointer)
-    prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+    prefix = PREFIX
     mktempdir() do directory
         instrument = Dict("deformable_mirrors" => Dict(), "wavefront_sensors" => Dict())
         C.write_json(joinpath(directory, "instrument.json"), instrument)
@@ -646,7 +648,7 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "external_pupil_owner_documents.jl"
 end
 
 @testset "shared instrument templates" begin
-    prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+    prefix = PREFIX
     bindings = E.profile_bindings(export_profile(), "julia")
     mktempdir() do directory
         mkpath(joinpath(directory, "rtc"))
@@ -961,7 +963,7 @@ end
             spec,
             [],
             "absent.json",
-            "/opt/pipewireao";
+            PREFIX;
             configurations = configuration,
         )
         resolved = C.read_yaml(path)
@@ -977,7 +979,7 @@ end
                 spec,
                 [],
                 "absent.json",
-                "/opt/pipewireao";
+                PREFIX;
                 configurations = configuration,
             )
             @test C.read_yaml(path) == explicit
@@ -992,7 +994,7 @@ end
                 spec,
                 [],
                 "absent.json",
-                "/opt/pipewireao";
+                PREFIX;
                 configurations = configuration,
             )
             @test read(path) == before

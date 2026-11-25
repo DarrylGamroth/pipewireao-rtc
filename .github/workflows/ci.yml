@@ -50,6 +50,18 @@ jobs:
               calibration_action_endpoint test_calibration_capture_private_core media_session_process; do
             julia --startup-file=no --code-coverage=@ --project=. "test/$selector.jl"
           done
+      - name: Test calibration responses and native session disconnect
+        run: |
+          julia --startup-file=no --code-coverage=@ --project=test test/test_simulation_responses.jl
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/media_session_host.jl
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/integration/independent_core_identity.jl
+      - name: Test service admission and native Quit against the user manager
+        run: |
+          uid=$(id -u)
+          sudo systemctl start "user@$uid.service"
+          export XDG_RUNTIME_DIR="/run/user/$uid"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          julia --startup-file=no --code-coverage=@ --project=test test/systemd_bus.jl
       - name: Exercise cold application export
         run: |
           julia --startup-file=no --code-coverage=@ --project=. -e '
