@@ -62,20 +62,10 @@ jobs:
           julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/parameter_owner_private_core.jl
           julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/media_session_host.jl
           julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/integration/independent_core_identity.jl
+      - name: Start the systemd user manager
+        run: bash .github/ci_user_manager.sh
       - name: Test service admission and native Quit against the user manager
         run: |
-          uid=$(id -u)
-          # The managed owner unit requests these hard limits from its user manager.
-          dropin="/run/systemd/system/user@$uid.service.d"
-          sudo mkdir -p "$dropin"
-          printf '[Service]\nLimitRTPRIO=95\nLimitMEMLOCK=4G\n' |
-            sudo tee "$dropin/rtc-test.conf" > /dev/null
-          sudo systemctl daemon-reload
-          sudo systemctl restart "user@$uid.service"
-          export XDG_RUNTIME_DIR="/run/user/$uid"
-          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
-          echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
-          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
           julia --startup-file=no --code-coverage=@ --project=test test/systemd_bus.jl
           RTC_STOP_EVIDENCE_ROOT="$RUNNER_TEMP" julia --startup-file=no --code-coverage=@ --project=test test/systemd_stop.jl
       - name: Test managed graph preparation and owner cleanup
@@ -147,6 +137,13 @@ jobs:
         run: julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl cold
       - name: Test live calibration, metadata and analysis on private cores
         run: julia --startup-file=no --code-coverage=@ --threads=4,1 --project=test/science test/science/runtests.jl private_core
+      - name: Provision the systemd user manager for the retained graph service
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends util-linux-extra
+          bash .github/ci_user_manager.sh
+      - name: Test retained graph installation, restart and withdrawal
+        run: julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/integration/retained_graph_service.jl
       - name: Test retained graph owners
         run: julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl retained_owner
       - name: Test physical offset inputs
