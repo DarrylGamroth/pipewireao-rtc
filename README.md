@@ -1,5 +1,9 @@
 # PipeWireAORTC
 
+[![CI](https://github.com/DarrylGamroth/pipewireao-rtc/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DarrylGamroth/pipewireao-rtc/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/DarrylGamroth/pipewireao-rtc/branch/main/graph/badge.svg)](https://codecov.io/gh/DarrylGamroth/pipewireao-rtc)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+
 `pipewireao-rtc` is the headless, non-actuating adaptive-optics application. It
 owns admission, lifecycle and declared application links through its Julia
 `MediaSession` module and public PipeWireAO interfaces. Independent WirePlumber

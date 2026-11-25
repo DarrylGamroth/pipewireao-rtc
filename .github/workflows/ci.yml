@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: RTC tests and coverage
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      JULIA_NUM_THREADS: '3,0'
+      OPENBLAS_NUM_THREADS: '1'
+      TMPDIR: /tmp
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13'
+      - uses: julia-actions/cache@v3
+      - name: Install native build and test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends meson ninja-build gcovr libglib2.0-dev libjson-c-dev util-linux-extra
+      - name: Instantiate the test workspace
+        run: |
+          julia --startup-file=no --project=. -e '
+            using Pkg
+            Pkg.Registry.add("General")
+            Pkg.Registry.add(RegistrySpec(url="https://github.com/DarrylGamroth/PackageRegistry.git"))
+            Pkg.instantiate(; workspace=true)'
+      - name: Test the RTC and run Aqua
+        run: julia --startup-file=no --code-coverage=@ --project=test test/runtests.jl
+      - name: Build and test the native management service
+        run: |
+          meson setup runtime/build runtime -Db_coverage=true -Dbuildtype=debug
+          meson compile -C runtime/build
+          meson test -C runtime/build --print-errorlogs
+          PIPEWIREAO_MANAGEMENT_BINARY="$PWD/runtime/build/pipewireao-management" \
+            julia --startup-file=no --code-coverage=@ --project=. test/management_endpoint.jl
+          gcovr --root . --filter '^runtime/management\.c$' --lcov management.info runtime/build
+          sed -i 's|^SF:.*/runtime/management\.c$|SF:runtime/management.c|' management.info
+          grep -Fx 'SF:runtime/management.c' management.info
+      - name: Process Julia line coverage
+        uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: src,ext
+      - name: Upload line coverage using GitHub OIDC
+        uses: codecov/codecov-action@v7
+        with:
+          files: lcov.info,management.info
+          disable_search: true
+          use_oidc: true
+          fail_ci_if_error: true
+      - name: Require project line coverage above 90%
+        run: julia --startup-file=no .github/check_coverage.jl lcov.info management.info

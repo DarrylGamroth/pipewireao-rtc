@@ -111,10 +111,7 @@ dependencies. Run the core tests from the RTC package environment with the
 matching native prefix:
 
 ```sh
-julia --startup-file=no --project=. -e '
-using PipeWireAO
-ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
-include("test/runtests.jl")'
+julia --startup-file=no --project=. -e 'using Pkg; Pkg.test(; allow_reresolve=false)'
 ```
 
 - Choose focused checks by behavior. For cold instrument export and profile

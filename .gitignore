@@ -1,3 +1,7 @@
 /target/
 
 /runtime/build/
+
+*.jl.*.cov
+/lcov.info
+/management.info
