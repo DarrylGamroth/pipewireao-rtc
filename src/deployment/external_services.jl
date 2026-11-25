@@ -38,14 +38,14 @@ function external_source!(spec, source)
     return nothing
 end
 
-function external_service(coordinator, role, unit)
+function external_service(coordinator, role, unit; manager = nothing, deadline = nothing, clock = Clocks.SystemNanoClock())
     service = S.Service(coordinator, role)
     service.unit = external_unit(unit)
-    values = S.properties(service.unit)
+    values = S.unit_properties(manager, service.unit; deadline, clock)
     values["ActiveState"] == "active" ||
         fail("external service $(service.unit) is not active")
     S.retain!(service, values)
-    S.verify!(service)
+    S.verify!(manager, service; deadline, clock)
     return service
 end
 
@@ -57,8 +57,9 @@ function record_external_service!(record, service, placement)
     return service
 end
 
-function record_external_service!(coordinator, record, role, unit, placement)
-    return record_external_service!(record, external_service(coordinator, role, unit), placement)
+function record_external_service!(coordinator, record, role, unit, placement; kwargs...)
+    service = external_service(coordinator, role, unit; kwargs...)
+    return record_external_service!(record, service, placement)
 end
 
 # Check the native Core before any RTC-owned graph or bootstrap node is published.

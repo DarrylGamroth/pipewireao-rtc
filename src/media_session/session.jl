@@ -876,6 +876,14 @@ function Session(
     try
         context = Context(loop; properties = Dict("config.name" => file))
         core = session_core(context, config["context.properties"]["remote.name"], queue)
+        if attachment !== nothing
+            pid = deployment.record["owners"]["core"]["pid"]
+            deadline = min(
+                attachment.deadline,
+                Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000)),
+            )
+            verify_attachment_core!(loop, core, queue, pid; deadline, clock)
+        end
         registry = Registry(core)
         controller_name = configuration["controller.node.name"]
         listener = add_listener!(
@@ -1080,8 +1088,14 @@ end
 function main(arguments = ARGS)
     length(arguments) == 2 && first(arguments) == "-c" ||
         throw(ArgumentError("usage: pipewireao-rtc -c CONFIG"))
-    attachment = SessionCLI.activate_installed!(last(arguments))
-    session = Session(last(arguments); attachment)
+    config = last(arguments)
+    return SessionCLI.with_installed_attachment(config) do attachment
+        run_session(config, attachment)
+    end
+end
+
+function run_session(config, attachment)
+    session = Session(config; attachment)
     result = try
         serve!(session)
     catch primary

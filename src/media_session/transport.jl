@@ -86,6 +86,34 @@ struct FilterChanged <: AbstractEvent
     state::Int32
     message::Union{Nothing,String}
 end
+
+# Before creating the registry or filters, verify the Core on the connection
+# that will publish them. Leave the staged observations for the session owner.
+function verify_attachment_core!(loop, core, queue, pid; deadline, clock)
+    sequence = PipeWireAO.sync!(core)
+    while Clocks.time_nanos(clock) < deadline
+        work = PipeWireAO.iterate!(loop; max_dispatches = 1)
+        queue.overflow && throw(ArgumentError("session observation queue overflow"))
+        info = nothing
+        done = false
+        for event in @view queue.records[1:queue.count]
+            if event isa CoreUpdated
+                info = event.info
+            elseif event isa CoreDone && event.id == 0 && event.sequence == sequence
+                done = true
+            elseif event isa CoreError && (event.id == 0 || event.sequence == sequence)
+                throw(ArgumentError(event.message))
+            end
+        end
+        if done && Clocks.time_nanos(clock) < deadline
+            require_core_pid(info, pid)
+            return nothing
+        end
+        work == 0 && sleep(0.001)
+    end
+    throw(ArgumentError("timed out verifying the declared PipeWire core"))
+end
+
 param_callback(queue::EventQueue, object::UInt32) =
     (_proxy, sequence, param, _index, _next, pod) ->
         stage!(queue, ParamReceived(object, sequence, param, pod))

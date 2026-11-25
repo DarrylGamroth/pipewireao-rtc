@@ -112,6 +112,14 @@ function cleanup_hook_valid(
     )
 end
 
+function stop_hook_valid(commands::Vector{S.ExecCommand}, request::Request; direct = false)
+    length(commands) == 1 || return false
+    command = only(commands)
+    argv = [request.launcher, "stop", "--unit", request.unit, "--runtime-root", request.runtime_root]
+    direct && push!(argv, "--direct")
+    return !command.ignore_failure && command.path == request.launcher && command.argv == argv
+end
+
 function stop_hook_valid(value::AbstractString, request::Request; direct = false)
     prefix =
         "{ path=" *

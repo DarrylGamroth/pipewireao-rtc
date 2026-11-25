@@ -39,6 +39,8 @@ end
 Base.showerror(io::IO, error::OwnerError) = print(io, error.message)
 fail(message) = throw(OwnerError(message))
 
+include("systemd_bus.jl")
+
 struct Coordinator
     unit::String
     invocation::String
@@ -91,7 +93,7 @@ end
     return Hsm.transition!(service, :Running)
 end
 @on_event function (service::Service, ::Running, ::Verified, timing)
-    verify_identity(service; timing.deadline, timing.clock)
+    verify_identity(service; timing.manager, timing.deadline, timing.clock)
     return Hsm.EventHandled
 end
 @on_event function (service::Service, ::Root, ::Verified, _)
@@ -246,6 +248,8 @@ function properties(
     return values
 end
 
+unit_properties(::Nothing, unit; kwargs...) = properties(unit; kwargs...)
+
 function parse_properties(output::AbstractString)
     values = Dict{String,String}()
     for line in split(output, '\n'; keepempty = false)
@@ -317,8 +321,11 @@ function maybe_start_ticks(pid::Integer)
     end
 end
 
+property_pid(value::Integer) = Int(value)
+property_pid(value::AbstractString) = tryparse(Int, value)
+
 function parsed_pid(values)
-    value = tryparse(Int, values["MainPID"])
+    value = property_pid(values["MainPID"])
     value !== nothing && value > 0 || fail("owner systemd MainPID is unavailable")
     return value
 end
@@ -408,29 +415,37 @@ function alive(service::Service)
     process_identity(service.main_pid, service.start_ticks, service.cgroup)
 end
 
-function verify_identity(service::Service; deadline, clock)
-    values = properties(service.unit; deadline, clock)
+function verify_identity(service::Service; manager = nothing, deadline, clock)
+    values = unit_properties(manager, service.unit; deadline, clock)
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "active" &&
     same_incarnation(service, values) &&
-    tryparse(Int, values["MainPID"]) == service.main_pid &&
+    property_pid(values["MainPID"]) == service.main_pid &&
     alive(service) || fail("owner systemd identity differs from retained incarnation")
     return nothing
 end
 """
     verify!(service; deadline=nothing, clock=Clocks.SystemNanoClock())
+    verify!(manager, service; deadline=nothing, clock=Clocks.SystemNanoClock())
 
 Verify the retained service identity against systemd and return the service.
 """
 function verify!(service::Service; deadline = nothing, clock = Clocks.SystemNanoClock())
-    Hsm.dispatch!(service, :Verified, (; deadline, clock))
+    return verify!(nothing, service; deadline, clock)
+end
+
+function verify!(
+    manager::Union{Nothing,UserManager}, service::Service;
+    deadline = nothing, clock = Clocks.SystemNanoClock(),
+)
+    Hsm.dispatch!(service, :Verified, (; manager, deadline, clock))
     return service
 end
 
 function same_incarnation(service::Service, values)
     lowercase(get(values, "InvocationID", "")) == service.invocation &&
         get(values, "ControlGroup", "") == service.cgroup &&
-        tryparse(Int, get(values, "MainPID", "")) in (0, service.main_pid)
+        property_pid(get(values, "MainPID", "")) in (0, service.main_pid)
 end
 
 function parse_populated(output::AbstractString)

@@ -519,13 +519,18 @@ _port_counts(info::NodeInfo) = (info.n_input_ports, info.n_output_ports)
 _healthy(::Nothing) = true
 _healthy(info::ObjectInfo) = true
 _healthy(info::NodeInfo) = info.state != PipeWireAO.NODE_STATE_ERROR
-function _core_identity(runtime)
-    info = runtime.core_info
+_core_identity(runtime) = _core_identity(runtime.core_info)
+function _core_identity(info::Union{Nothing,CoreInfo})
     info === nothing && throw(ArgumentError("remote CoreInfo is unavailable"))
     pid = tryparse(UInt32, get(info.properties, "application.process.id", ""))
     pid !== nothing && pid > 0 ||
         throw(ArgumentError("remote core process identity is unavailable"))
     return CoreIdentity(pid, info.cookie, info.name)
+end
+function require_core_pid(info, pid)
+    core = _core_identity(info)
+    core.pid == pid || throw(ArgumentError("declared core process differs from remote core"))
+    return core
 end
 function capture!(runtime, handle::UInt64; core = nothing)
     object = find_object(runtime, handle)

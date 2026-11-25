@@ -63,9 +63,7 @@ function perform!(runtime, job, ::CaptureOwners)
         runtime.client_id != typemax(UInt32) &&
         runtime.controller !== nothing ? true : nothing
     end
-    core = _core_identity(runtime)
-    core.pid == runtime.configuration["core.owner"]["pid"] ||
-        throw(ArgumentError("declared core process differs from remote core"))
+    core = require_core_pid(runtime.core_info, runtime.configuration["core.owner"]["pid"])
     controller = node!(
         runtime, job, runtime.configuration["controller.node.name"], getpid()
     )

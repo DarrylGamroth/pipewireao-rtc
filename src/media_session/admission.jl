@@ -130,19 +130,30 @@ function perform!(session::Session, job, ::ConfirmReady)
     endpoint = admission_endpoint(session)
     close(something(admission.client))
     admission.client = nothing
-    synchronize!(session, job)
-    registry_serial(session, node_id(session.endpoint)) == endpoint.serial ||
-        throw(ArgumentError("RTC endpoint changed before Ready notification"))
-    verify_held_links!(session)
-    return nothing
+    clock = session.source_clock
+    deadline = job.ticket.deadline
+    while true
+        SessionCLI.check_ready_units!(admission.deployment; deadline, clock)
+        synchronize!(session, job)
+        registry_serial(session, node_id(session.endpoint)) == endpoint.serial ||
+            throw(ArgumentError("RTC endpoint changed before Ready notification"))
+        verify_held_links!(session)
+        SessionCLI.units_changed(admission.deployment; deadline, clock) || return nothing
+    end
 end
 
 function after_completion!(session::Session, ::ConfirmReady)
     Hsm.current(session.machine) === :Ready || return nothing
     try
+        SessionCLI.units_changed(session.admission.deployment;
+            deadline = session.machine.deadline, clock = session.source_clock) &&
+            throw(ArgumentError("systemd service changed after the final held Link check"))
         drain!(session)
+        Hsm.current(session.machine) === :Ready || return nothing
         SessionCLI.notify_ready!()
         session.admission.notified = true
+        manager = session.admission.deployment.manager
+        manager === nothing || close(manager)
     catch error
         required_lost!(session.machine, sprint(showerror, error))
     end

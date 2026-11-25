@@ -1,6 +1,6 @@
 # A direct installation keeps its topology on disk. Only service incarnations
 # and the public RTC endpoint identity are resolved for each new connection.
-function direct_attachment(config, activation, unit, root, invocation)
+function with_direct_attachment(f, config, activation, unit, root, invocation)
     package = activation["package"]
     prefix = activation["prefix"]
     config == activation["config"] == joinpath(package, "systemd", "rtc.conf") &&
@@ -19,6 +19,23 @@ function direct_attachment(config, activation, unit, root, invocation)
     request = SessionLaunch.Request(package, prefix, unit, activation["launcher"], root)
     clock = Clocks.SystemNanoClock()
     deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(D.startup_timeout_ms(spec)) * 1_000_000)
+    instance_name = only(match(PipeWireAORTC.SessionRuntime.UNIT, unit).captures)
+    resolved = Dict(role => replace(name, "%i" => instance_name) for (role, name) in services)
+    manager = S.UserManager([unit; collect(values(resolved))]; deadline, clock)
+    try
+        attachment = direct_attachment(config, activation, request, invocation, resolved, external,
+            manager, instance_name; deadline, clock)
+        return f(attachment)
+    finally
+        close(manager)
+    end
+end
+
+function direct_attachment(config, activation, request, invocation, services, external,
+    manager, instance_name; deadline, clock)
+    package, prefix, unit, root = request.package, request.prefix, request.unit, request.runtime_root
+    spec = activation["profile"]
+    source = spec["source-owner"]
     process_binding = D.session_process_binding(activation, config)
     admission = Dict{String,Any}("package" => package, "prefix" => prefix,
         "launcher" => request.launcher, "placement" => spec["placement"]["session"])
@@ -29,7 +46,7 @@ function direct_attachment(config, activation, unit, root, invocation)
         "admission" => admission, "source_role" => source, "name" => spec["name"],
         "remote" => external.socket, "error" => nothing, "owners" => Dict{String,Any}(),
     )
-    process = _main_identity(request, invocation, record, config; deadline, clock)
+    process = _main_identity(request, invocation, record, config; manager, deadline, clock)
     coordinator = S.Coordinator(unit, invocation, process[3], request.launcher)
     source_spec = only(filter(owner -> owner["role"] == source, spec["owners"]))
     SessionLaunch.external_source!(spec, source_spec)
@@ -65,20 +82,19 @@ function direct_attachment(config, activation, unit, root, invocation)
     else
         Dict{String,Any}()
     end
-    instance_name = only(match(PipeWireAORTC.SessionRuntime.UNIT, unit).captures)
     record["scoped_services"] = [
         replace(name, "%i" => instance_name) for name in activation["direct-companions"]
     ]
-    for (role, name) in services
-        service_unit = replace(name, "%i" => instance_name)
-        service = SessionLaunch.record_external_service!(coordinator, record, role, service_unit, spec["placement"][role])
+    for (role, service_unit) in services
+        service = SessionLaunch.record_external_service!(coordinator, record, role, service_unit,
+            spec["placement"][role]; manager, deadline, clock)
         item = record["owners"][role]
         if role == "parameters"
-            SessionLaunch.verify_persistent_service!(service, admission["parameter_service"]; instance_template = true)
+            SessionLaunch.verify_persistent_service!(service, admission["parameter_service"]; manager, deadline, clock, instance_template = true)
         elseif haskey(persistent, role)
             graph = persistent[role]
             graph["unit"] == service_unit || throw(ArgumentError("graph service binding changed: $role"))
-            SessionLaunch.verify_persistent_service!(service, graph)
+            SessionLaunch.verify_persistent_service!(service, graph; manager, deadline, clock)
         end
         haskey(declarations, role) || continue
         owner = declarations[role]
@@ -95,22 +111,17 @@ function direct_attachment(config, activation, unit, root, invocation)
             haskey(owner, field) && !haskey(item, field) && (item[field] = owner[field])
         end
     end
-    # Check the native Core before exposing our endpoints. MediaSession repeats
-    # the identity check on its own live connection during owner capture.
-    paths = activation["paths"]
-    env = merge(Dict(ENV), Dict("LD_LIBRARY_PATH" => paths["library"],
-        "PIPEWIREAO_MODULE_DIR" => paths["modules"], "PIPEWIREAO_SPA_PLUGIN_DIR" => paths["spa"],
-        "PIPEWIREAO_CONFIG_DIR" => joinpath(prefix, "share", "pipewire-ao"),
-        "PIPEWIREAO_CONFIG_NAME" => "client.conf"))
-    SessionLaunch.verify_external_core(prefix, external.socket, record["owners"]["core"]["pid"], env)
-    installed = D.decode(config, prefix)
+    installed = get(activation, "direct-configuration") do
+        D.decode(config, prefix) # Installations created before the normalized configuration was sealed.
+    end
     session = installed["pipewireao.session"]["session"]
     bound = SessionConfiguration.session_configuration(spec, session, bindings, record["owners"];
         node_owners = Dict{String,String}(spec["node-owners"]))
     for section in ("context.properties", "context.modules")
         installed[section] == bound[section] || throw(ArgumentError("installed PipeWire context differs: $section"))
     end
-    return (; config = bound, deployment = InstalledAdmission(request, invocation, config, record, process, nothing, nothing))
+    return (; config = bound, deadline,
+        deployment = InstalledAdmission(request, invocation, config, record, process, nothing, nothing, manager))
 end
 
 function finish_direct_quit!(context::InstalledAdmission)

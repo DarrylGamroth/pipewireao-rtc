@@ -394,18 +394,18 @@ function installed_fragment_matches(path, template, digest, instance)
 end
 
 function verify_persistent_service!(
-    service, item; deadline = nothing, clock = Clocks.SystemNanoClock(),
+    service, item; manager = nothing, deadline = nothing, clock = Clocks.SystemNanoClock(),
     attached = false, instance_template = false,
 )
-    values = S.properties(
-        service.unit; extra = "FragmentPath,DropInPaths,NeedDaemonReload,Type,Restart,KillMode",
+    values = S.unit_properties(
+        manager, service.unit; extra = "FragmentPath,DropInPaths,NeedDaemonReload,Type,Restart,KillMode",
         deadline, clock,
     )
     S.same_incarnation(service, values) && values["LoadState"] == "loaded" &&
-        values["ActiveState"] == "active" && tryparse(Int, values["MainPID"]) == S.pid(service) &&
+        values["ActiveState"] == "active" && S.parsed_pid(values) == S.pid(service) &&
         values["Type"] == "exec" && values["Restart"] == "no" &&
         values["KillMode"] == "control-group" && isempty(values["DropInPaths"]) &&
-        values["NeedDaemonReload"] == "no" &&
+        values["NeedDaemonReload"] in (false, "no") &&
         installed_fragment_matches(values["FragmentPath"], item["fragment"], item["sha256"],
             instance_template ? service.unit : nothing) && S.alive(service) ||
         fail("unit differs from its installed service: $(service.unit)")

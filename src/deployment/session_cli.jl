@@ -86,23 +86,23 @@ function activation_document(package, digest)
     return document
 end
 
-function activate_installed!(config)
+function with_installed_attachment(f, config)
     digest = get(ENV, SessionLaunch.ACTIVATION_ENV, nothing)
-    digest === nothing && return nothing
+    digest === nothing && return f(nothing)
     package = ENV[SessionLaunch.INSTALLATION_ENV]
     unit = ENV[SessionLaunch.ADMISSION_UNIT_ENV]
     root = PipeWireAORTC.SessionRuntime.runtime_directory(unit)
     invocation = S.valid_invocation(ENV["INVOCATION_ID"])
     activation = activation_document(package, digest)
     if haskey(activation, "config")
-        return direct_attachment(config, activation, unit, root, invocation)
+        return with_direct_attachment(f, config, activation, unit, root, invocation)
     end
     config == joinpath(root, invocation, "rtc", "rtc.conf") ||
         throw(ArgumentError("RTC configuration is outside this systemd invocation"))
     D.verify_session_process(getpid(), D.session_process_binding(activation, config))
     request = SessionLaunch.Request(package, activation["prefix"], unit, activation["launcher"], root)
     SessionLaunch.prepare!(request; render!, validate_profile = require_node_owners, activation)
-    return nothing
+    return f(nothing)
 end
 
 mutable struct InstalledAdmission
@@ -113,6 +113,7 @@ mutable struct InstalledAdmission
     process::Tuple{Int,UInt64,String}
     endpoint::Union{Nothing,Tuple{UInt32,UInt64}}
     discovery::Union{Nothing,String}
+    manager::Union{Nothing,S.UserManager}
 end
 
 function _startup_deadline(deadline, clock)
@@ -121,9 +122,9 @@ function _startup_deadline(deadline, clock)
     return nothing
 end
 
-function _main_identity(request, invocation, record, config; deadline, clock)
-    values = S.properties(
-        request.unit;
+function _main_identity(request, invocation, record, config; manager = nothing, deadline, clock)
+    values = S.unit_properties(
+        manager, request.unit;
         extra = "ExecStop,ExecStopPost," * SessionLaunch.LIFETIME_PROPERTIES,
         deadline,
         clock,
@@ -134,7 +135,7 @@ function _main_identity(request, invocation, record, config; deadline, clock)
         throw(ArgumentError("RTC unit has unexpected startup policy"))
     pid = getpid()
     S.valid_invocation(values["InvocationID"]) == invocation &&
-    tryparse(Int, values["MainPID"]) == pid ||
+    S.parsed_pid(values) == pid ||
         throw(ArgumentError("RTC is not this invocation's systemd MainPID"))
     group = values["ControlGroup"]
     ticks = S.start_ticks(pid)
@@ -183,14 +184,14 @@ function installed_admission(config::AbstractString; clock = Clocks.SystemNanoCl
     )
     deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000))
     process = _main_identity(request, invocation, record, config; deadline, clock)
-    return InstalledAdmission(request, invocation, config, record, process, nothing, nothing)
+    return InstalledAdmission(request, invocation, config, record, process, nothing, nothing, nothing)
 end
 
 include("direct_attachment.jl")
 
 function _verify_main(context::InstalledAdmission; deadline, clock)
     _main_identity(
-        context.request, context.invocation, context.record, context.config; deadline, clock
+        context.request, context.invocation, context.record, context.config; manager = context.manager, deadline, clock
     ) == context.process || throw(ArgumentError("installed RTC process changed during startup"))
     return nothing
 end
@@ -260,17 +261,17 @@ function _placement_snapshot(context::InstalledAdmission; deadline, clock)
         item["role"] == role && item["state"] == "running" ||
             throw(ArgumentError("recorded owner is not running at session publication"))
         service = SessionLaunch.recorded_service(owner, role, item)
-        S.verify!(service; deadline, clock)
+        S.verify!(context.manager, service; deadline, clock)
         snapshots[role] = P.snapshot(service.main_pid, item["placement"])
-        S.verify!(service; deadline, clock)
+        S.verify!(context.manager, service; deadline, clock)
         if role == "parameters" && haskey(record["admission"], "parameter_service")
             SessionLaunch.verify_persistent_service!(
-                service, record["admission"]["parameter_service"]; deadline, clock,
+                service, record["admission"]["parameter_service"]; manager = context.manager, deadline, clock,
                 attached = true, instance_template = true,
             )
         elseif persistent !== nothing && haskey(persistent, role)
             SessionLaunch.verify_persistent_service!(
-                service, persistent[role]; deadline, clock, attached = true
+                service, persistent[role]; manager = context.manager, deadline, clock, attached = true
             )
         elseif get(item, "persistent", false) && !get(record, "direct_attach", false)
             throw(ArgumentError("persistent owner lacks an installed graph manifest"))
@@ -279,6 +280,20 @@ function _placement_snapshot(context::InstalledAdmission; deadline, clock)
     snapshots["session"] = P.snapshot(pid, record["admission"]["placement"])
     _startup_deadline(deadline, clock)
     return snapshots
+end
+
+units_changed(context::InstalledAdmission; deadline, clock) = context.manager !== nothing &&
+    S.check_unit_changes!(context.manager; deadline, clock)
+
+# A unit can change while the native Status reply and publication are in flight.
+# Recheck identity, placement and installed graph bindings for a dirty snapshot.
+function check_ready_units!(context::InstalledAdmission; deadline, clock)
+    while units_changed(context; deadline, clock)
+        _startup_deadline(deadline, clock)
+        _verify_main(context; deadline, clock)
+        context.record["placement_snapshot"] = _placement_snapshot(context; deadline, clock)
+    end
+    return nothing
 end
 
 """
@@ -313,6 +328,7 @@ function publish_ready!(check, context::InstalledAdmission, endpoint; deadline, 
     record = context.record
     record["placement_snapshot"] = _placement_snapshot(context; deadline, clock)
     _verify_main(context; deadline, clock)
+    check_ready_units!(context; deadline, clock)
     session_record = Discovery.SessionRecord(
         record["name"], endpoint.session_id, UInt32(pid), Int64(endpoint.instance),
         endpoint.remote, endpoint.node_name,

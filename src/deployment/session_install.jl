@@ -177,7 +177,7 @@ function install_direct!(
             throw(ArgumentError("invalid RTC environment declaration: $key"))
         environment[key] = resolved
     end
-    return (; config, services, socket = remote, graphs, parameters, wants, requisite, environment, files)
+    return (; config, configuration, services, socket = remote, graphs, parameters, wants, requisite, environment, files)
 end
 
 function install_direct_analysis!(package, prefix, julia, project, spec, external)
@@ -256,6 +256,7 @@ function install_activation!(
     )
     if direct !== nothing
         document["config"] = direct.config
+        document["direct-configuration"] = direct.configuration
         for file in direct.files
             document["files"][file] = launch.graph_file_identity(file)
         end
