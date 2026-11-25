@@ -1,3 +1,4 @@
+import PipeWireAO
 using Test, PipeWireAORTC
 
 const Launch = PipeWireAORTC.SessionLaunch
@@ -96,7 +97,7 @@ end
 
 @testset "Direct installation fixes topology and binds separately supervised services" begin
     mktempdir() do package
-        prefix = Launch.LibPipeWire.PipeWireAO_jll.artifact_dir
+        prefix = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         julia = realpath(Base.julia_cmd().exec[1])
         systemd = mkdir(joinpath(package, "systemd"))
         source = "camera"
@@ -181,7 +182,7 @@ end
 
 @testset "Parameter deployment preserves the bound graph inlet and preload" begin
     mktempdir() do package
-        prefix = Launch.LibPipeWire.PipeWireAO_jll.artifact_dir
+        prefix = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         julia = realpath(Base.julia_cmd().exec[1])
         systemd = mkdir(joinpath(package, "systemd"))
         payload = joinpath(package, "reference.bin")
@@ -333,7 +334,7 @@ end
 
 @testset "Installation generates static graph arguments and a retained unit manifest" begin
     mktempdir() do package
-        prefix = Launch.LibPipeWire.PipeWireAO_jll.artifact_dir
+        prefix = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         write(joinpath(package, "Project.toml"), """
         [deps]
         PipeWireAORTC = "a3e2c7da-f73f-4284-8482-36ac422b34e6"

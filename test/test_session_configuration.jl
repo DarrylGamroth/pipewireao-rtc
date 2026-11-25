@@ -1,3 +1,4 @@
+import PipeWireAO
 using Test, PipeWireAORTC, Sockets
 using PipeWireAORTC: SessionConfiguration
 
@@ -157,7 +158,7 @@ using PipeWireAORTC: SessionConfiguration
         )
         @test path == joinpath(runtime, "rtc/rtc.conf")
         @test isfile(path)
-        prefix = String(PipeWireAORTC.SessionLaunch.LibPipeWire.PipeWireAO_jll.artifact_dir)
+        prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
         saved = D.decode(path, prefix)["pipewireao.session"]["session"]
         @test saved["links"] == session["links"]
     end
@@ -615,7 +616,7 @@ end
 
 @testset "Registered SDK uses its original artifact" begin
     launch = PipeWireAORTC.SessionLaunch
-    sdk = String(launch.LibPipeWire.PipeWireAO_jll.artifact_dir)
+    sdk = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
     paths = PipeWireAORTC.DeploymentConfiguration.installed_paths(sdk)
     spec = Dict("owners" => ["simulator"])
     mktempdir() do runtime

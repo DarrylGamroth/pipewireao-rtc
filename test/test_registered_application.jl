@@ -1,3 +1,4 @@
+import PipeWireAO
 using Test, TOML, JSON, PipeWireAORTC
 
 const D = PipeWireAORTC.DeploymentConfiguration
@@ -171,7 +172,7 @@ end
 
 @testset "installed activation pins the configuration, executable and calibration" begin
     mktempdir() do package
-        prefix = PipeWireAORTC.SessionLaunch.LibPipeWire.PipeWireAO_jll.artifact_dir
+        prefix = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         rtc = joinpath(package, "rtc/bin/pipewireao-rtc")
         launcher = joinpath(package, "session-launcher")
         mkpath(dirname(rtc))
