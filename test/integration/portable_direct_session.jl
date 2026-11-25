@@ -2,7 +2,7 @@
 # Requires a reachable Linux systemd user manager and a matching PipeWireAO SDK.
 module PortableDirectSessionTests
 
-using Test, PipeWireAO, PipeWireAORTC, UUIDs
+using Clocks, Test, PipeWireAO, PipeWireAORTC, UUIDs
 
 include(joinpath(@__DIR__, "..", "control_private_core.jl"))
 
@@ -160,6 +160,27 @@ function operator_cli(args...)
     end
 end
 
+function observed_placement(record, attached)
+    admission = record["admission"]
+    request = RTC.SessionLaunch.Request(
+        admission["package"], admission["prefix"], record["unit"], admission["launcher"],
+        record["runtime"],
+    )
+    process = (attached.main_pid, attached.start_ticks, attached.cgroup)
+    clock = Clocks.SystemNanoClock()
+    expires = Clocks.time_nanos(clock) + Int64(20_000_000_000)
+    units = [owner["unit"] for owner in values(record["owners"])]
+    manager = Systemd.UserManager(units; deadline = expires, clock)
+    try
+        context = RTC.SessionAdmission.InstalledAdmission(
+            request, record["invocation"], record["config"], record, process, nothing, nothing, manager,
+        )
+        return RTC.SessionAdmission._placement_snapshot(context; deadline = expires, clock)
+    finally
+        close(manager)
+    end
+end
+
 function check_attachment(seed, root; reject_placement = false)
     prefix = get(ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
     paths = D.installed_paths(prefix)
@@ -177,6 +198,8 @@ function check_attachment(seed, root; reject_placement = false)
     julia = D.selected_julia_executable(Base.julia_cmd().exec[1])
     project = dirname(Base.active_project())
     provider = joinpath(@__DIR__, "portable_direct_provider.jl")
+    provider_command = `$julia --startup-file=no --threads=1,0 --project=$project
+        $provider $socket $SOURCE $SINK $SCHEMA`
     stage = joinpath(root, "stage")
     handle = nothing
     # Resolve the cold package image before the start helper's installer budget.
@@ -186,8 +209,7 @@ function check_attachment(seed, root; reject_placement = false)
     try
         start_unit(core_unit, cpu, `$(paths["daemon"]) -c core.conf`, environment)
         wait_proof(() -> ispath(socket), 10, "independent core socket")
-        start_unit(provider_unit, cpu, `$julia --startup-file=no --threads=1,0 --project=$project
-            $provider $socket $SOURCE $SINK $SCHEMA`, environment)
+        start_unit(provider_unit, cpu, provider_command, environment)
         ports = Ref{Tuple{String,String}}()
         wait_proof(40, "independent detector and sink Ports") do
             objects = native_registry(socket, prefix, environment)
@@ -250,10 +272,16 @@ function check_attachment(seed, root; reject_placement = false)
         @test ready["observation_remote"] == socket
         @test ready["processes"]["core"]["pid"] == parse(Int, core["MainPID"])
         @test ready["processes"]["detector"]["pid"] == parse(Int, provider_identity["MainPID"])
+        ready_record = RTC.Common.read_json(joinpath(attached.runtime_root, "launch.json"))
         @testset "Ready retains observed owner placement" begin
-            record = RTC.Common.read_json(joinpath(attached.runtime_root, "launch.json"))
+            @test (ready_record["unit"], ready_record["invocation"], ready_record["runtime"]) ==
+                  (attached.unit, attached.invocation, attached.runtime_root)
+            @test (ready_record["session_pid"], ready_record["session_start_ticks"]) ==
+                  (attached.main_pid, attached.start_ticks)
+            record = ready_record
             placement = record["placement_snapshot"]
-            @test Set(keys(placement)) == Set(("core", "detector", "session"))
+            live = observed_placement(record, attached)
+            @test Set(keys(live)) == Set(keys(placement)) == Set(("core", "detector", "session"))
             for (role, pid) in (
                 ("core", parse(Int, core["MainPID"])),
                 ("detector", parse(Int, provider_identity["MainPID"])),
@@ -266,8 +294,8 @@ function check_attachment(seed, root; reject_placement = false)
                 @test all(thread -> thread["cpus"] == [cpu], observed["threads"])
                 contract = role == "session" ? record["admission"]["placement"] :
                     record["owners"][role]["placement"]
-                live = RTC.Placement.snapshot(pid, contract)
-                @test leader == only(filter(thread -> thread["tid"] == pid, live["threads"]))
+                @test live[role]["pid"] == pid
+                @test leader == only(filter(thread -> thread["tid"] == pid, live[role]["threads"]))
                 @test observed["locked_bytes"] >= contract["locked-bytes"]
             end
         end
@@ -360,6 +388,29 @@ function check_attachment(seed, root; reject_placement = false)
         registry = native_registry(socket, prefix, environment)
         @test !any(item -> item["type"] == "PipeWire:Interface:Link", registry)
         @test exported_port(registry, SOURCE, "out") == ports[][1]
+
+        @testset "Published placement refuses a replacement detector invocation" begin
+            detector = ready_record["owners"]["detector"]
+            @test detector["unit"] == provider_unit
+            @test detector["invocation"] == provider_identity["InvocationID"]
+            run(systemctl("stop", provider_unit))
+            wait_proof(10, "collect stopped detector unit") do
+                readchomp(systemctl("show", "--property=LoadState", "--value", provider_unit)) == "not-found"
+            end
+            @test !Systemd.old_process_exists(detector["pid"], UInt64(detector["start-ticks"]))
+            start_unit(provider_unit, cpu, provider_command, environment)
+            wait_proof(40, "replacement detector and sink Ports") do
+                objects = native_registry(socket, prefix, environment)
+                exported_port(objects, SOURCE, "out") == ports[][1] &&
+                    exported_port(objects, SINK, "in") == ports[][2]
+            end
+            replacement = Systemd.properties(provider_unit)
+            @test replacement["ActiveState"] == "active"
+            @test replacement["InvocationID"] != detector["invocation"]
+            @test_throws "owner systemd identity differs from retained incarnation" observed_placement(
+                ready_record, attached,
+            )
+        end
     catch
         session_unit = if handle !== nothing
             handle.unit
