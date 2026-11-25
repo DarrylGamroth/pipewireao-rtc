@@ -59,6 +59,7 @@ withenv(
 ) do
     @testset "CPU science ($SELECTION)" verbose = true begin
         for name in getproperty(SELECTIONS, SELECTION)
+            @info "Running science test" selector=SELECTION test=name
             @testset "$name" begin
                 suite = Module(gensym(:ScienceTests))
                 Core.eval(suite, :(include(path) = Base.include($suite, path)))

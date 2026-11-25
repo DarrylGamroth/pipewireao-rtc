@@ -143,13 +143,16 @@ jobs:
           RTC_HIL_DEPLOY_KEY: ${{ secrets.RTC_HIL_DEPLOY_KEY }}
           RTC_GRAPH_DEPLOY_KEY: ${{ secrets.RTC_GRAPH_DEPLOY_KEY }}
         run: bash .github/instantiate_science.sh
-      - name: Exercise the science extensions on CPU
-        run: |
-          julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl cold
-          julia --startup-file=no --code-coverage=@ --threads=4,1 --project=test/science test/science/runtests.jl private_core
-          julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl retained_owner
-          julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl physical_offset_inputs
-          julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl physical_offsets
+      - name: Test optical export and calibration on CPU
+        run: julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl cold
+      - name: Test live calibration, metadata and analysis on private cores
+        run: julia --startup-file=no --code-coverage=@ --threads=4,1 --project=test/science test/science/runtests.jl private_core
+      - name: Test retained graph owners
+        run: julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl retained_owner
+      - name: Test physical offset inputs
+        run: julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl physical_offset_inputs
+      - name: Test physical offset observations
+        run: julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl physical_offsets
       - uses: julia-actions/julia-processcoverage@v1
         with:
           directories: src,ext
