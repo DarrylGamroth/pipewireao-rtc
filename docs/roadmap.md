@@ -6,11 +6,19 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-24 UTC. This section is the current delivery summary. Later sections
+Updated 2026-11-25 UTC. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Installed session maintenance review — 2026-11-25
+
+The [maintenance review](reviews/20261125-installed-session/REVIEW.md) identifies
+a missed direct-stop deadline during bus authentication, a cache-policy mismatch
+for preserved shutdown launchers and ignored identity arguments in staged final
+reports. Their fixes and the proposed separation of installed admission from
+the operator CLI are pending.
 
 ### Qualify the installed RTC package cache — 2026-11-24
 
