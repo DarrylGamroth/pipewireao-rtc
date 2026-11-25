@@ -64,9 +64,10 @@ flowchart LR
    cache, native Ready, a fresh attachment after graceful and abrupt RTC
    exit, and explicit retained-graph stop. Confirm withdrawal of RTC-owned
    Links and scoped companion exit while the independent provider and core
-   keep running. Before updating CAL2 pins, include the native queue fix
-   that returns pending capture loans and verify continuous LLOWFS and SCC
-   acquisition across Quit.
+   keep running. PipeWireAO 4.0.10 ships the capture-loan withdrawal fix and
+   the discard SPA factory. An installed CPU CAL2 session verified LLOWFS and
+   SCC publication through native Quit and reattachment with the integrators
+   open. [Bundled queue and CAL2 lifecycle evidence](validation/cal2-bundled-queue-20261125/README.md) ·
    [RTC-DEV-021](operations.md#rtc-dev-021--admission-and-coherent-lifecycle) ·
    [CAL2 capture buffer evidence](validation/cal2-ready-and-buffer-lifetime-20261124/README.md)
 2. **Verify affected native consumers.** Cover short Collect/Capture,

@@ -3,6 +3,7 @@
 | Engineering question | Verification record |
 | --- | --- |
 | Does an installed RTC admit its declared Links, quit cleanly and release its retained graph? | [Classic CPU admission and service shutdown](reviews/20261125-installed-session/REVIEW.md) |
+| Does CAL2 keep publishing through native Quit and RTC reattachment with the bundled queue? | [Installed CAL2 camera sequences, open-loop priming and buffer withdrawal](validation/cal2-bundled-queue-20261125/README.md) |
 | How quickly can CAL2 attach to a publishing simulator and detach? | [Installed package cache](validation/native-admission-queries-20261124/README.md#installed-package-cache) and [direct attachment measurements](validation/cal2-installed-attach-20261124/README.md) |
 | What was the latency from the first live LLOWFS input to output? | [First-frame and steady-state measurements](validation/cal2-open-frame-latency-20261124/README.md) |
 | How was open-loop startup exercised across instruments? | [Classic, GPI2 and SPIDERS graph checks](validation/direct-session-launch-20261124/instruments.md) and [CAL2 live priming and first corrections](validation/open-loop-startup-20261123/README.md) |
