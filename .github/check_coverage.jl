@@ -43,7 +43,16 @@ function write_report(output, files)
     end
     lines > 0 || error("no executable lines in coverage reports")
     println("Project line coverage: $hits/$lines (", round(100 * hits / lines; digits=3), "%)")
-    10 * hits > 9 * lines || error("project line coverage must exceed 90%")
+    required = fld(9 * lines, 10) + 1
+    if hits < required
+        missing = sort([(count(iszero, values(counts)), file) for (file, counts) in files]; rev=true)
+        println("Largest gaps in executable line coverage:")
+        for (uncovered, file) in Iterators.take(missing, 10)
+            iszero(uncovered) && break
+            println("  $file: $uncovered uncovered")
+        end
+        error("project line coverage must exceed 90% ($hits covered, $required required)")
+    end
 end
 
 length(ARGS) >= 2 || error("usage: julia check_coverage.jl OUTPUT.info INPUT.info ...")
