@@ -262,6 +262,50 @@ function authenticate_bus!(bus; deadline, clock)
     end
 end
 
+close_user_bus(bus) =
+    ccall((:sd_bus_close_unref, LIBSYSTEMD), Ptr{Cvoid}, (Ptr{Cvoid},), bus)
+
+function open_user_bus(; deadline, clock)
+    bus_timeout(deadline, clock)
+    bus = Ref{Ptr{Cvoid}}(C_NULL)
+    bus_checked(
+        ccall((:sd_bus_open_user, LIBSYSTEMD), Cint, (Ref{Ptr{Cvoid}},), bus),
+        "open user manager",
+    )
+    try
+        authenticate_bus!(bus[]; deadline, clock)
+        return bus[]
+    catch
+        close_user_bus(bus[])
+        rethrow()
+    end
+end
+
+"""
+    with_unit_reference(f, unit; deadline, clock)
+
+Keep the unit's exit properties available while `f` runs. Bound connection
+and reference acquisition to five seconds within `deadline`. Closing the
+dedicated bus connection releases the reference.
+"""
+function with_unit_reference(f, unit; deadline, clock)
+    deadline = deadline_ns(deadline)
+    current = Clocks.time_nanos(clock)
+    if Base.checked_sub(deadline, current) > 5_000_000_000
+        deadline = Base.checked_add(current, Int64(5_000_000_000))
+    end
+    bus = open_user_bus(; deadline, clock)
+    try
+        bus_call(
+            _ -> nothing, bus, SYSTEMD, MANAGER_PATH, MANAGER_INTERFACE, "RefUnit", unit;
+            deadline, clock,
+        )
+        return f()
+    finally
+        close_user_bus(bus)
+    end
+end
+
 """
     UserManager(watch; deadline=nothing, clock=Clocks.SystemNanoClock())
 
@@ -274,51 +318,45 @@ function UserManager(
 )
     isempty(watch) && fail("systemd unit watch is empty")
     deadline = bus_deadline(deadline, clock)
-    bus_timeout(deadline, clock)
-    bus = Ref{Ptr{Cvoid}}(C_NULL)
-    bus_checked(
-        ccall((:sd_bus_open_user, LIBSYSTEMD), Cint, (Ref{Ptr{Cvoid}},), bus),
-        "open user manager",
-    )
+    bus = open_user_bus(; deadline, clock)
     try
-        authenticate_bus!(bus[]; deadline, clock)
         add_bus_match(
-            bus[],
+            bus,
             "type='signal',sender='$DBUS',path='$DBUS_PATH',interface='$DBUS'," *
             "member='NameOwnerChanged',arg0='$SYSTEMD'";
             deadline, clock,
         )
-        owner = systemd_bus_owner(bus[]; deadline, clock)
+        owner = systemd_bus_owner(bus; deadline, clock)
         watched_units = Dict{String,String}(bus_unit_path(unit) => unit for unit in watch)
         manager = UserManager(
-            bus[], owner, watched_units, Dict{String,String}(), Set{String}(), nothing,
+            bus, owner, watched_units, Dict{String,String}(), Set{String}(), nothing,
         )
         add_bus_match(
-            bus[],
+            bus,
             "type='signal',sender='$owner',path_namespace='$UNIT_PATH'," *
             "interface='$PROPERTIES_INTERFACE',member='PropertiesChanged'";
             deadline, clock,
         )
         add_bus_match(
-            bus[],
+            bus,
             "type='signal',sender='$owner',path='$MANAGER_PATH',interface='$MANAGER_INTERFACE'";
             deadline, clock,
         )
         bus_call(
-            _ -> nothing, bus[], owner, MANAGER_PATH, MANAGER_INTERFACE, "Subscribe", nothing;
+            _ -> nothing, bus, owner, MANAGER_PATH, MANAGER_INTERFACE, "Subscribe", nothing;
             deadline, clock,
         )
         drain_unit_changes!(manager; deadline, clock)
         return manager
     catch
-        ccall((:sd_bus_close_unref, LIBSYSTEMD), Ptr{Cvoid}, (Ptr{Cvoid},), bus[])
+        close_user_bus(bus)
         rethrow()
     end
 end
 
 function Base.close(manager::UserManager)
     manager.bus == C_NULL && return nothing
-    ccall((:sd_bus_close_unref, LIBSYSTEMD), Ptr{Cvoid}, (Ptr{Cvoid},), manager.bus)
+    close_user_bus(manager.bus)
     manager.bus = C_NULL
     return nothing
 end

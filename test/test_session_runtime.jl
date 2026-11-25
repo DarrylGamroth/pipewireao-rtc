@@ -50,6 +50,48 @@ const Runtime = PipeWireAORTC.SessionRuntime
     end
 end
 
+@testset "Final reports honor the supplied unit and invocation" begin
+    C = PipeWireAORTC.Common
+    mktempdir() do directory
+        withenv("XDG_RUNTIME_DIR" => directory) do
+            unit = "pipewireao-session@report.service"
+            wrong_unit = "pipewireao-session@other.service"
+            invocation = "a"^32
+            wrong_invocation = "b"^32
+            root = mkdir(Runtime.runtime_directory(unit))
+            stage = mkdir(joinpath(directory, "stage"))
+            record = Dict(
+                "version" => 2, "direct_attach" => true, "phase" => "stopped",
+                "unit" => unit, "invocation" => invocation, "runtime" => root,
+            )
+            C.write_json(joinpath(root, "launch.json"), record)
+            C.write_json(joinpath(stage, "session.json"), Dict(
+                "unit" => unit, "invocation" => invocation, "runtime_root" => root,
+            ))
+
+            @test Runtime.final_record(root; unit, invocation) == record
+            @test_throws ArgumentError Runtime.final_record(root)
+            @test_throws ArgumentError Runtime.final_record(root; unit)
+            @test_throws ArgumentError Runtime.final_record(root; invocation)
+            @test_throws ArgumentError Runtime.final_record(root; unit = wrong_unit, invocation)
+            @test_throws ArgumentError Runtime.final_record(root; unit, invocation = wrong_invocation)
+
+            for retained in (false, true)
+                if retained
+                    record["service_result"] = "success"
+                    C.write_json(joinpath(stage, "final-launch.json"), record)
+                end
+                @test Runtime.final_record(stage) == record
+                @test Runtime.final_record(stage; unit) == record
+                @test Runtime.final_record(stage; invocation) == record
+                @test Runtime.final_record(stage; unit, invocation = uppercase(invocation)) == record
+                @test_throws ArgumentError Runtime.final_record(stage; unit = wrong_unit)
+                @test_throws ArgumentError Runtime.final_record(stage; invocation = wrong_invocation)
+            end
+        end
+    end
+end
+
 @testset "staging uses exact instance names for installed support units" begin
     mktempdir() do directory
         unit = joinpath(directory, "pipewireao-session@fixture.service")
@@ -162,6 +204,11 @@ end
     end
     @test_throws OverflowError PipeWireAORTC.SessionCLI.control_session(
         "unused", ["status"]; timeout = 1, clock = Clocks.CachedNanoClock(typemax(Int64))
+    )
+    S = PipeWireAORTC.SystemdOwners
+    @test_throws S.OwnerError S.with_unit_reference(
+        () -> error("expired reference invoked its callback"), "unused.service";
+        deadline = typemax(Int64), clock = Clocks.CachedNanoClock(typemax(Int64)),
     )
 end
 

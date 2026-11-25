@@ -971,28 +971,6 @@ function source_status(
     end
 end
 
-# Keep systemd's exact exit fields available after the unit becomes inactive.
-# The manager releases this reference when the dedicated bus connection closes.
-function _with_unit_reference(f, unit, deadline; clock)
-    bus = Ref{Ptr{Cvoid}}(C_NULL)
-    ccall((:sd_bus_open_user, "libsystemd.so.0"), Cint, (Ref{Ptr{Cvoid}},), bus) >= 0 ||
-        throw(ArgumentError("cannot open the user systemd manager bus"))
-    try
-        timeout = max(UInt64(1), round(UInt64, remaining(deadline, 5; clock) * 1.0e6))
-        ccall((:sd_bus_set_method_call_timeout, "libsystemd.so.0"), Cint,
-            (Ptr{Cvoid}, UInt64), bus[], timeout) >= 0 ||
-            throw(ArgumentError("cannot bound the systemd unit reference request"))
-        ccall((:sd_bus_call_method, "libsystemd.so.0"), Cint,
-            (Ptr{Cvoid}, Cstring, Cstring, Cstring, Cstring, Ptr{Cvoid}, Ptr{Cvoid}, Cstring, Cstring...),
-            bus[], "org.freedesktop.systemd1", "/org/freedesktop/systemd1",
-            "org.freedesktop.systemd1.Manager", "RefUnit", C_NULL, C_NULL, "s", unit) >= 0 ||
-            throw(ArgumentError("cannot retain systemd's RTC unit observations"))
-        return f()
-    finally
-        ccall((:sd_bus_close_unref, "libsystemd.so.0"), Ptr{Cvoid}, (Ptr{Cvoid},), bus[])
-    end
-end
-
 function _verify_direct_unit_exit(handle, values)
     values["InvocationID"] == handle.invocation &&
     tryparse(Int, values["ExecMainPID"]) == handle.main_pid ||
@@ -1120,7 +1098,7 @@ function reconcile_stop!(
     deadline = S.deadline_ns(deadline)
     handle.stop_attempted || throw(ArgumentError("session stop has not been submitted"))
     if get(_retained_ledger(handle), "direct_attach", false) === true
-        return _with_unit_reference(handle.unit, deadline; clock) do
+        return S.with_unit_reference(handle.unit; deadline, clock) do
             _retain_stopped!(handle, deadline; clock)
         end
     end
@@ -1148,7 +1126,7 @@ function stop!(
     (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
         throw(ArgumentError("RTC unit incarnation changed before stop"))
     if get(record, "direct_attach", false) === true
-        return _with_unit_reference(handle.unit, deadline; clock) do
+        return S.with_unit_reference(handle.unit; deadline, clock) do
             current = Clocks.time_nanos(clock)
             remaining(deadline, 8, current)
             quit_deadline = min(deadline, Base.checked_add(current, Int64(8_000_000_000)))
@@ -1197,15 +1175,23 @@ end
 
 Read the retained stopped ledger, including its invocation identity.
 The direct RTC stores its native cleanup proof. A staged stop also saves the
-manager exit result observed during reconciliation.
+manager exit result observed during reconciliation. A staged receipt supplies
+omitted identities. Supplied identities must match the receipt. Reading a
+runtime directory requires both identities.
 """
 function final_record(path::AbstractString; invocation = nothing, unit = nothing)
     base = abspath(path)
     receipt_path = joinpath(base, "session.json")
     if isfile(receipt_path)
         receipt = Common.read_json(receipt_path; maximum = 4096)
-        unit = String(receipt["unit"])
-        invocation = receipt["invocation"]
+        receipt_unit = String(receipt["unit"])
+        unit === nothing || isequal(unit, receipt_unit) ||
+            throw(ArgumentError("requested unit differs from the session receipt"))
+        unit = receipt_unit
+        id = S.valid_invocation(receipt["invocation"])
+        invocation === nothing ||
+        (invocation isa AbstractString && S.valid_invocation(invocation) == id) ||
+            throw(ArgumentError("requested invocation differs from the session receipt"))
         matched = match(UNIT, unit)
         matched === nothing && throw(ArgumentError("session receipt has an invalid unit"))
         root = String(receipt["runtime_root"])
@@ -1216,8 +1202,8 @@ function final_record(path::AbstractString; invocation = nothing, unit = nothing
         root = runtime_directory(unit)
         base == root ||
             throw(ArgumentError("stopped runtime differs from the captured unit"))
+        id = S.valid_invocation(invocation)
     end
-    id = S.valid_invocation(invocation)
     retained = joinpath(base, "final-launch.json")
     record = isfile(retained) ? Common.read_json(retained; maximum = 1024 * 1024) :
              _launch_record(root, id)
