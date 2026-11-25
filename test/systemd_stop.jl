@@ -1,11 +1,14 @@
 # Opt-in integration: owns only its uniquely named user units/private core.
-# CPU 12/13, no CUDA, no science/hardware or installed live sessions.
+# The fixture binds its services to CPUs available to the test process.
 using Test, PipeWireAORTC, JSON
 include("control_private_core.jl")
 const C = PipeWireAORTC.Common
 const S = PipeWireAORTC.SystemdOwners
 const repo = dirname(@__DIR__)
-const julia = Base.julia_cmd().exec[1]
+const julia_command = Base.julia_cmd().exec
+const coverage_args = filter(startswith("--code-coverage="), julia_command)
+const julia = join(S.unit_argument.([first(julia_command); coverage_args]), ' ')
+const cpus = sort!(collect(PipeWireAORTC.Placement.inherited_cpus()))
 const user_runtime = ENV["XDG_RUNTIME_DIR"]
 const user_bus = get(
     ENV, "DBUS_SESSION_BUS_ADDRESS", "unix:path=" * joinpath(ENV["XDG_RUNTIME_DIR"], "bus")
@@ -50,7 +53,7 @@ KillMode=control-group
 # Test-only forced revocation: Julia signal diagnostics/finalizers are a
 # separate behavior from retaining authority through the native request.
 KillSignal=SIGKILL
-CPUAffinity=12 13
+CPUAffinity=$(join(first(cpus, 2), " "))
 # The stand-in reports ready after Julia loads the package. Leave time
 # for cold precompilation without changing the tested stop deadline.
 TimeoutStartSec=180
