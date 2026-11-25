@@ -4,6 +4,9 @@ module CalibrationTypeDispatchTests
 using Test, PipeWireAO, PipeWireAORTC, FilterGraphAlgorithms, FilterGraphPipeWire
 using FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
+using AdaptiveOpticsSim.AlgorithmGraphs: hil_boundary_status, hil_frame_buffer
+
+include("aos_graph_documents.jl")
 const C = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 const G = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
 const FGA = FilterGraphAlgorithms
@@ -274,6 +277,97 @@ end
             @test all(sample -> sample.expected === nothing, samples)
         finally
             FilterGraphPipeWire.close_execution(graph)
+        end
+    end
+end
+
+function named_calibration_document!(path, secondary_basis)
+    common = PipeWireAORTC.Common
+    document = common.read_yaml(path)
+    graph = document["graphs"]["calibration"]
+    secondary = deepcopy(only(graph["nodes"]))
+    secondary["name"] = "secondary"
+    secondary["config"]["mode_count"] = 1
+    push!(graph["nodes"], secondary, Dict(
+        "name" => "combined", "type" => "pupil_opd_composition_f32",
+        "config" => Dict(
+            "resolution" => 2, "uncompensated_opd_schema" => "test.export.opd/1",
+            "surface_opd_schema" => "test.export.opd/1",
+            "pupil_opd_schema" => "test.export.opd/1",
+        ),
+    ))
+    push!(graph["inputs"], Dict(
+        "name" => "secondary", "binding" => "secondary_command",
+        "destination" => "secondary.coefficients",
+    ))
+    append!(graph["parameters"], [
+        Dict("destination" => "secondary.basis", "binding" => "secondary_basis"),
+        Dict("destination" => "secondary.pupil_support", "binding" => "support"),
+    ])
+    graph["links"] = [
+        Dict("source" => "modal.opd", "destination" => "combined.uncompensated_opd"),
+        Dict("source" => "secondary.opd", "destination" => "combined.surface_opd"),
+    ]
+    only(graph["outputs"])["source"] = "combined.pupil_opd"
+    document["graphs"]["production"] = deepcopy(graph)
+    document["hil"] = Dict(
+        "command" => ["modal.coefficients", "secondary.coefficients"],
+        "frame" => "combined.pupil_opd",
+    )
+    wire = only(document["wire_contracts"])
+    for field in ("command_schema", "command_scale")
+        wire[field] = Dict("command" => wire[field], "secondary" => wire[field])
+    end
+    bindings = document["bindings"]
+    bindings["secondary_command"] = merge(bindings["command"], Dict("shape" => [1]))
+    bindings["secondary_basis"] = merge(bindings["basis"], Dict(
+        "path" => "secondary.fits", "shape" => [2, 2, 1],
+    ))
+    fits_path = joinpath(dirname(dirname(path)), "secondary.fits")
+    PipeWireAORTC.Artifacts.FITSIO.FITS(fits_path, "w") do fits
+        write(fits, secondary_basis)
+    end
+    common.write_yaml(path, document)
+end
+
+@testset "offline HIL calibration frames adopt scalar and named figures" begin
+    mktempdir() do directory
+        (; path, basis) = modal_simulation_source(directory)
+        configuration = PipeWireAORTC.InstrumentConfiguration
+        calibration_frame! = PipeWireAORTC.InstrumentCalibration.calibration_frame!
+        support = Bool[1 0; 1 1]
+        primary(figure) = (basis[:, :, 1] .* figure[1] .+ basis[:, :, 2] .* figure[2]) .* support
+        first = Float32[1, -2]
+        second = Float32[-3, 4]
+
+        scalar = configuration.prepare_system(path; calibration = true)
+        @test_throws "first calibration frame must be flat" calibration_frame!(scalar, first)
+        @test hil_boundary_status(scalar.boundary).frame_sequence == 0
+        flat = calibration_frame!(scalar, zeros(Float32, 2))
+        @test flat === hil_frame_buffer(scalar.boundary) && all(iszero, flat)
+        for (sequence, figure) in enumerate((first, second))
+            frame = calibration_frame!(scalar, figure)
+            @test frame === flat && frame == primary(figure)
+            status = hil_boundary_status(scalar.boundary)
+            @test (status.frame_sequence, status.active_command_sequence) == (sequence + 1, sequence)
+        end
+
+        secondary_basis = -2 .* basis[:, :, 1:1]
+        named_calibration_document!(path, secondary_basis)
+        named = configuration.prepare_system(path; calibration = true)
+        @test_throws "initial calibration frame must be flat" calibration_frame!(
+            named, (command = zeros(Float32, 2), secondary = Float32[1]),
+        )
+        @test hil_boundary_status(named.boundary).frame_sequence == 0
+        flat = calibration_frame!(named, (command = zeros(Float32, 2), secondary = Float32[0]))
+        @test flat === hil_frame_buffer(named.boundary) && all(iszero, flat)
+        for (sequence, figure, secondary) in ((1, first, 2f0), (2, second, -1f0))
+            # Reverse the literal field order to prove the boundary adopts by name.
+            frame = calibration_frame!(named, (secondary = [secondary], command = figure))
+            expected = primary(figure) .+ secondary .* secondary_basis[:, :, 1] .* support
+            @test frame === flat && frame == expected
+            status = hil_boundary_status(named.boundary)
+            @test (status.frame_sequence, status.active_command_sequence) == (sequence + 1, sequence)
         end
     end
 end
