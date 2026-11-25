@@ -1,4 +1,11 @@
 using Test, PipeWireAORTC
+import PipeWireAO
+
+get!(ENV, "PIPEWIREAO_PREFIX") do
+    String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
+end
+
+include("test_aqua.jl")
 
 Base.include(Module(:MediaSessionMachineTests), joinpath(@__DIR__, "test_media_session.jl"))
 Base.include(

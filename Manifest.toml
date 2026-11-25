@@ -2,7 +2,7 @@
 
 julia_version = "1.13.4"
 manifest_format = "2.1"
-project_hash = "547b707b6f71ad1b6afd65b9963b1c29ee3c5710"
+project_hash = "3dd01f246aa2dd1902e7c02fc866ef8877fcd486"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
@@ -14,6 +14,13 @@ weakdeps = ["ThreadPinning"]
 
     [deps.Agent.extensions]
     AgentThreadPinningExt = "ThreadPinning"
+
+[[deps.Aqua]]
+deps = ["Compat", "Pkg", "Test"]
+git-tree-sha1 = "dcef9d014ddd0904947ccc0bec8f5c14f8b8add1"
+registries = "General"
+uuid = "4c88cf16-eb10-579e-8560-4a9242c79595"
+version = "0.8.19"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -59,6 +66,17 @@ git-tree-sha1 = "89539d1efa5ea79acc58e8cbd8f9a6ea381fc148"
 registries = "DarrylGamrothRegistry"
 uuid = "6b5ade5d-6e95-4584-b343-73eec2e8782b"
 version = "0.4.0"
+
+[[deps.Compat]]
+deps = ["TOML", "UUIDs"]
+git-tree-sha1 = "9d8a54ce4b17aa5bdce0ea5c34bc5e7c340d16ad"
+registries = "General"
+uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
+version = "4.18.1"
+weakdeps = ["Dates", "LinearAlgebra"]
+
+    [deps.Compat.extensions]
+    CompatLinearAlgebraExt = "LinearAlgebra"
 
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
