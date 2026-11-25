@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Qualify the installed RTC package cache — 2026-11-24
+
+The shared installer keeps the RTC and its imported dependency images with
+each application and verifies they load before the service can be selected.
+Installed startup and shutdown use Julia's strict cache mode. In a CAL2
+restart with its CUDA simulator publishing, held Ready took 5.933 s and
+clean detach took 3.337 s with both integrators open.
+[Installation procedure](SYSTEMD_SESSION_STARTUP.md#startup) ·
+[Verification](validation/native-admission-queries-20261124/README.md#installed-package-cache)
+
 ### Native queries during direct RTC admission — 2026-11-24
 
 MediaSession verifies CoreInfo on its own PipeWire connection and subscribes

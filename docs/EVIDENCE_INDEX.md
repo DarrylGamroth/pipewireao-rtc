@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Installed RTC package cache — 2026-11-24
+
+A fresh CAL2 installation reached held Ready in 5.933 s using the ordinary
+Julia distribution image. The software regression covers cold installation,
+shared cache removal, fresh-process start and stop, and rejection when both
+caches are absent. [Cache and restart checks](validation/native-admission-queries-20261124/README.md#installed-package-cache)
+
 ## Direct RTC admission through libsystemd and PipeWireAO — 2026-11-24
 
 Nine cache-present CAL2 restarts cover held Ready, live open-loop frames and

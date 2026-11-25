@@ -302,6 +302,13 @@ define application configuration, calibration bindings and one-shot deployment
 and control commands. The GUI observes these owners and submits operator
 requests.
 
+The installed service uses the systemd user manager for process supervision.
+Direct attachment uses that manager's public D-Bus API to identify the running
+services. A foreground MediaSession can use a private PipeWire core without
+a service manager or user bus. PipeWire carries RTC commands, status and
+detector frames in both cases. Only the installed service performs admission
+against systemd service identities.
+
 Standalone HIL owns simulation startup configuration and execution. With an
 independent input, systemd supervises the core and HIL separately from the RTC.
 MediaSession verifies the live provider and owns the Links to its controllers.

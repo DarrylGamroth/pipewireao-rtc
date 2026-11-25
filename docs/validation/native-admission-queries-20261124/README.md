@@ -57,7 +57,12 @@ children. The admission code establishes which calls were removed.
 
 Switching the shared validation depot back to the original build produced
 **one 167.875 s start**. The running service spawned a Julia package-image
-compiler. This trial is recorded separately from the cache-present comparison.
+compiler. At 141 s into the service process, its compiler child had accumulated
+140 s of elapsed time at 99.4% CPU and was writing the RTC object and
+serialized package cache. The parent was waiting. The later RTC log measured
+22 µs for control dispatch preparation and zero compilation time in that step.
+The trace does not establish why Julia rejected or lacked the earlier cache.
+This trial is recorded separately from the cache-present comparison.
 Another original start reached Ready in 6.082 s and systemd stop returned
 success, but its exact invocation journal lacked the native Quit receipt.
 It is excluded. The operator's original installation subsequently loaded
@@ -103,3 +108,34 @@ TMPDIR=/var/tmp julia --startup-file=no --project=. test/systemd_bus.jl
 The complete RTC suite passed 561 testsets and 11,968 assertions on Julia
 1.13.4. The number of assertions in the concurrent snapshot test depends
 on how many samples its reader obtains. [Full test log](rtc-full-suite.log.gz)
+
+## Installed package cache
+
+The common installer at `43d2e14` retains the loaded RTC package images under
+the installed project and verifies a fresh strict import. In a two-package test,
+retaining just the RTC image allowed installation to succeed while start and
+stop both failed after removal of the shared dependency cache. Retaining the
+dependency images allowed both commands to complete. The test also exercises
+a cold installation, a session-specific depot and refusal to rebuild at start
+when both caches are missing. [Regression test](../../../test/test_registered_application.jl)
+
+One isolated CAL2 installation used Julia 1.13.3, its distribution image and
+the existing CUDA simulator, private core and two retained graphs. The interval
+from the systemd start request through held Ready was **5.933 s**. The interval
+from the stop request through successful return was **3.337 s**. The session
+verified ten exact Links. After Start, SCC and LLOWFS published fresh residuals
+and zero physical offsets with both integrators open. Native Quit completed and
+camera sequences continued advancing. All 80 mapped package images came from
+the installation. A second, offline import succeeded after every other
+compiled directory in the disposable depots was hidden. The registered sources
+and native artifacts remained available in both cases. The evidence archive
+has SHA-256 `a8fc0f07f4c09f970eaecb9d7e238e03079ba9c1001924197faf690ab0cb294f`.
+[Live and offline cache evidence](cal2-installed-private-cache-43d2e14.tar.gz)
+
+This single run checks the deployment
+and admission behavior. The table above gives the previous repeated timings.
+A separate foreground process test with an unreachable user bus passed 22
+assertions across Quit, interrupt and publisher exit. [Foreground results](foreground-without-bus.log.gz)
+
+On Julia 1.13.4 the complete suite passed 562 testsets and 11,947 assertions.
+[Full RTC test log](installed-cache-full-suite.log.gz)

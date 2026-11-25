@@ -11,6 +11,29 @@ digest into the generated session unit. The document records the installed
 paths, validated profile and file identities, including the calibration and
 application manifests. Reinstall after changing these inputs.
 
+The installer loads the pinned RTC with the selected Julia executable and
+retains the package images loaded by that import under `rtc-package-cache/`
+in the installed Julia project. Files already built on the same filesystem
+can be hard-linked. The installer builds missing images and checks the
+result in a fresh Julia process using `--compiled-modules=strict`. This
+check runs offline, before the operator selects the service. It starts no
+graph, exercises no simulated input and requires no custom sysimage.
+
+The RTC and its service stop and cleanup commands use strict cache loading.
+If Julia cannot use the required images, the command exits and Julia reports
+which package it could not load. Install a fresh copy under the deployment's
+Julia environment before selecting it. Keep the sources and native artifacts
+from the pinned Manifest available. Static profile settings for
+`JULIA_DEPOT_PATH`, `JULIA_LOAD_PATH` and `JULIA_CPU_TARGET` are checked
+during installation. Supply any manager-level overrides to the installer too.
+Settings that depend on an invocation become known at service start.
+Julia can still compile individual methods on their first call. If that causes
+a missed startup or command deadline with a verified cache, trace the affected
+call in a fresh process. Add the concrete method signatures or a representative
+call to the existing package build workload and repeat the measurement.
+[MediaSession workload](../src/media_session/session.jl) ·
+[Julia package precompilation](https://docs.julialang.org/en/v1/manual/modules/#Module-initialization-and-precompilation)
+
 Pass `--julia-sysimage /absolute/path/to/image.so` to install with an application
 sysimage. Build it with the selected Julia runtime from the exact application
 Project and Manifest, with `PipeWireAORTC` preloaded. Use the same registered
