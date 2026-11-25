@@ -9,6 +9,9 @@ export install, main
 
 const D = PipeWireAORTC.DeploymentConfiguration
 const C = PipeWireAORTC.Common
+const RTC_RUNTIME_UNIT_PATH = "%t/pipewireao-session-%i"
+
+escape_unit_specifiers(value) = replace(String(value), "%" => "%%")
 
 "Generate a one-shot client launcher bound to the installed application environment."
 function installed_launcher(
@@ -76,11 +79,155 @@ function session_assets(spec, package, prefix)
     return nothing
 end
 
+function external_owner_bindings(entries)
+    launch = PipeWireAORTC.SessionLaunch
+    owners = Dict{String,String}()
+    for entry in entries
+        fields = split(entry, '='; limit = 2)
+        length(fields) == 2 && occursin(launch.S.ROLE, first(fields)) ||
+            throw(ArgumentError("--external-owner requires role=unit.service"))
+        role, unit = String.(fields)
+        !haskey(owners, role) || throw(ArgumentError("duplicate external owner role $role"))
+        !startswith(unit, "pipewireao-graph-") ||
+            throw(ArgumentError("select generated graph units with --graph-installation"))
+        owners[role] = launch.external_unit(unit)
+    end
+    return owners
+end
+
+function validate_external_owner_roles(spec, external_owners)
+    owners = PipeWireAORTC.SessionConfiguration.owner_specs(spec)
+    for role in keys(external_owners)
+        haskey(owners, role) && role != spec["source-owner"] &&
+            D.uses_bootstrap_protocol(owners[role]) && !haskey(owners[role], "control-protocol") ||
+            throw(ArgumentError("external owner $role requires a declared persistent bootstrap role"))
+    end
+    return nothing
+end
+
+function install_direct!(
+    package, prefix, julia, project, spec, external, external_owners, graphs;
+    generated_graphs, explicit = false,
+)
+    launch = PipeWireAORTC.SessionLaunch
+    source_role = spec["source-owner"]
+    owners = PipeWireAORTC.SessionConfiguration.owner_specs(spec)
+    graph_units = graphs === nothing ? Dict{String,String}() : graphs.owners
+    conflicts = intersect(keys(external_owners), keys(graph_units))
+    isempty(conflicts) ||
+        throw(ArgumentError("external owner roles already have selected graph units: $(join(sort!(collect(conflicts)), ", "))"))
+    services = merge(Dict("core" => external.core, source_role => external.source),
+        graph_units, external_owners)
+    length(unique(values(services))) == length(services) ||
+        throw(ArgumentError("direct RTC owner roles require distinct services"))
+    all(haskey(services, role) for role in keys(owners)) || return nothing
+    all(role in ("fgn", "parameters") || haskey(services, role) for role in
+        values(spec["node-owners"])) ||
+        throw(ArgumentError("missing service for a directly attached node"))
+    # Native FGN modules still need the invocation-owned host.
+    "fgn" in values(spec["node-owners"]) && return nothing
+    launch.external_source!(spec, deepcopy(owners[source_role]))
+
+    systemd = joinpath(package, "systemd")
+    config = joinpath(systemd, "rtc.conf")
+    !(ispath(config) || islink(config)) || throw(ArgumentError("reserved RTC configuration: $config"))
+    remote = external.socket
+    !isempty(basename(remote)) && ncodeunits(remote) <= 100 ||
+        throw(ArgumentError("private core socket path exceeds the Unix socket bound or has no name"))
+    bindings = Dict("PACKAGE" => package, "PREFIX" => prefix, "REMOTE" => remote)
+    source = D.relative_asset(package, spec["session"])
+    topology = replace(read(source, String), "@RUNTIME@/@REMOTE@" => "@REMOTE@")
+    if occursin("@RUNTIME@", topology)
+        explicit && throw(ArgumentError("RTC topology requires invocation-dependent runtime paths"))
+        return nothing
+    end
+    rendered = D.substitute(topology, bindings; quoted = true)
+    session = mktemp() do path, io
+        write(io, rendered)
+        close(io)
+        D.decode(path, prefix)
+    end
+    links = D.validate_session_links(session)
+    isempty(links) && throw(ArgumentError("native session requires at least one declared connection"))
+    D.validate_execution_groups(session, links)
+    configuration = PipeWireAORTC.SessionConfiguration.runtime_configuration(
+        remote, Dict("session" => session),
+    )
+    PipeWireAORTC.ScienceExport.write_spa_config(config, configuration)
+
+    wants = generated_graphs ? copy(graphs.units) : String[]
+    requisite = setdiff(collect(values(services)), wants)
+    parameters = launch.install_direct_parameters!(package, prefix, project, spec, session, external, julia)
+    if parameters !== nothing
+        services["parameters"] = parameters.unit
+        push!(wants, parameters.unit)
+    end
+    analysis = install_direct_analysis!(package, prefix, julia, project, spec, external)
+    append!(wants, analysis.units)
+    files = [config; analysis.files]
+    parameters === nothing || append!(files, parameters.files)
+    # Escape literal specifiers first, then substitute the two unit specifiers
+    # that systemd resolves for the stable RTC runtime directory.
+    unit_bindings = Dict(key => escape_unit_specifiers(value) for (key, value) in bindings)
+    unit_bindings["RUNTIME"] = RTC_RUNTIME_UNIT_PATH
+    environment = Dict{String,String}()
+    for (key, value) in spec["session-runtime"]["environment"]
+        resolved = D.substitute(escape_unit_specifiers(value), unit_bindings)
+        occursin(r"^[A-Za-z_][A-Za-z0-9_]*$", key) && !occursin(r"[\n\r\0]", resolved) ||
+            throw(ArgumentError("invalid RTC environment declaration: $key"))
+        environment[key] = resolved
+    end
+    return (; config, services, socket = remote, graphs, parameters, wants, requisite, environment, files)
+end
+
+function install_direct_analysis!(package, prefix, julia, project, spec, external)
+    launch = PipeWireAORTC.SessionLaunch
+    entries = get(spec, "analysis", [])
+    isempty(entries) && return (; units = String[], files = String[])
+    paths = D.installed_paths(prefix)
+    systemd = joinpath(package, "systemd")
+    directory = mkdir(joinpath(systemd, "analysis"); mode = 0o700)
+    client = D.relative_asset(package, spec["client"]["analysis"])
+    bindings = Dict(
+        "PACKAGE" => package, "PREFIX" => prefix, "RUNTIME" => directory, "REMOTE" => external.socket,
+    )
+    rendered = D.substitute(read(client, String), bindings; quoted = true)
+    units = String[]
+    depot, files = launch.installed_owner_depot!(prefix, paths, spec, directory)
+    for entry in entries
+        role = "analysis-" * entry["name"]
+        config_dir = mkdir(joinpath(directory, role); mode = 0o700)
+        config_path = joinpath(config_dir, "client.conf")
+        write(config_path, rendered)
+        push!(files, config_path)
+        placement = Dict("cpus" => entry["cpus"], "leader-cpu" => first(entry["cpus"]))
+        argv = [
+            julia, "--startup-file=no", "--project=" * project,
+            "-e", "using PipeWireAORTC; exit(PipeWireAORTC.Analysis.main(ARGS))", "--",
+            "--config", D.relative_asset(package, entry["config"]), "--remote", external.socket,
+        ]
+        env = launch.analysis_environment(paths, directory, role, prefix, external.socket)
+        env["JULIA_DEPOT_PATH"] = depot
+        unit = launch.S.owner_service_unit(
+            role, argv, env, package, placement; ordinary = true, stop_signal = "SIGHUP",
+        )
+        rtc = "pipewireao-session@%i.service"
+        unit = replace(unit, "[Unit]\n" => "[Unit]\nAfter=$rtc\nBindsTo=$rtc\nPartOf=$rtc\n"; count = 1)
+        name = launch.support_unit_name(role, spec["name"], package)
+        path = joinpath(systemd, name)
+        !(ispath(path) || islink(path)) || throw(ArgumentError("reserved analysis service: $path"))
+        write(path, "# Generated by PipeWireAORTC.SessionInstall. Reinstall to change this unit.\n" * unit)
+        push!(units, replace(name, "@." => "@%i."))
+        push!(files, path)
+    end
+    return (; units, files)
+end
+
 # Record the installation selected by this unit. Replacements read one bounded
 # JSON document and check the installed files before acquiring any owners.
 function install_activation!(
     package, prefix, julia, project, launcher, spec, commit;
-    sysimage = nothing, validated_image = nothing,
+    sysimage = nothing, validated_image = nothing, direct = nothing,
 )
     launch = PipeWireAORTC.SessionLaunch
     path = joinpath(package, "systemd", launch.ACTIVATION_FILE)
@@ -107,6 +254,24 @@ function install_activation!(
         "files" => Dict(file => launch.graph_file_identity(file) for file in unique(files)),
         "export-commit" => commit, "graph-templates" => graphs,
     )
+    if direct !== nothing
+        document["config"] = direct.config
+        for file in direct.files
+            document["files"][file] = launch.graph_file_identity(file)
+        end
+        document["direct-services"] = direct.services
+        document["direct-companions"] = filter(name -> endswith(name, "@%i.service"), direct.wants)
+        document["direct-socket"] = direct.socket
+        if direct.graphs !== nothing
+            document["graph-manifest"] = direct.graphs.manifest
+            document["graph-manifest-sha256"] = direct.graphs.digest
+        end
+        if direct.parameters !== nothing
+            document["direct-parameter-owner"] = direct.parameters.owner
+            document["direct-parameter-placement"] = direct.parameters.placement
+            document["direct-parameter-service"] = direct.parameters.service
+        end
+    end
     if sysimage !== nothing
         identity = document["files"][sysimage]
         validated_image === nothing || validated_image == identity ||
@@ -123,9 +288,9 @@ end
 
 function installed_unit(
     template, spec; launcher, package, prefix, executable, external = nothing,
-    persistent = nothing, activation = nothing,
+    persistent = nothing, activation = nothing, direct = nothing,
 )
-    quote_unit(value) = String(JSON.json(replace(String(value), "%" => "%%")))
+    quote_unit(value) = String(JSON.json(escape_unit_specifiers(value)))
     lines = String[]
     if occursin("@ACTIVATION_ENVIRONMENT@", template)
         activation === nothing && throw(ArgumentError("RTC unit requires its installed activation"))
@@ -133,6 +298,11 @@ function installed_unit(
         env = Dict(launch.ACTIVATION_ENV => activation.digest, launch.INSTALLATION_ENV => package,
                    "PIPEWIREAORTC_JULIA" => activation.julia, "PIPEWIREAORTC_PROJECT" => activation.project)
         append!(lines, ["Environment=" * quote_unit(key * "=" * env[key]) for key in sort!(collect(keys(env)))])
+        if direct !== nothing
+            for key in sort!(collect(keys(direct.environment)))
+                push!(lines, "Environment=" * String(JSON.json(key * "=" * direct.environment[key])))
+            end
+        end
     end
     command = quote_unit(executable)
     sysimage = activation === nothing ? nothing : get(activation, :sysimage, nothing)
@@ -145,6 +315,15 @@ function installed_unit(
         command = join((quote_unit(replace(argument, "\$" => "\$\$")) for argument in arguments), " ")
     end
     leader = spec["placement"]["session"]["leader-cpu"]
+    config = direct === nothing ? "" : quote_unit(replace(direct.config, "\$" => "\$\$"))
+    dependencies = String[]
+    if direct !== nothing
+        ordered = sort!(collect(values(direct.services)))
+        push!(dependencies, "After=" * join(ordered, " "))
+        isempty(direct.requisite) ||
+            push!(dependencies, "Requisite=" * join(sort(direct.requisite), " "))
+        isempty(direct.wants) || push!(dependencies, "Wants=" * join(sort(direct.wants), " "))
+    end
     unit = replace(
         template,
         "@ACTIVATION_ENVIRONMENT@" => join(lines, "\n"),
@@ -152,6 +331,8 @@ function installed_unit(
         "@PACKAGE@" => quote_unit(package),
         "@PIPEWIRE_PREFIX@" => quote_unit(prefix),
         "@RTC_COMMAND@" => command,
+        "@RTC_CONFIGURATION@" => config,
+        "@DIRECT_DEPENDENCIES@" => join(dependencies, "\n"),
         "@RTC_EXECUTABLE@" => quote_unit(executable),
         "@SOURCE_ROLE@" => spec["source-owner"],
         "@CPUS@" => string(leader),
@@ -166,7 +347,7 @@ function installed_unit(
             unit *= "Environment=" * quote_unit(key * "=" * value) * "\n"
         end
     end
-    if persistent !== nothing
+    if persistent !== nothing && direct === nothing
         units = join(persistent.units, " ")
         unit = replace(
             unit, "[Unit]\n" => "[Unit]\nWants=$units\nAfter=$units $(external.core) $(external.source)\n";
@@ -189,6 +370,9 @@ and `git_commit` (the full export commit ID) to select an explicit Git snapshot.
 Otherwise use the sibling `<package>.git` repository when Git is available.
 Optionally select `persistent_graph_owners = true` with the independent core
 and source bindings to generate separately supervised graph units.
+Pass `graph_installation` to attach to matching graph units from an existing
+installation, or use `external_owner` entries of the form `role=unit.service`
+to bind declared bootstrap roles to services supplied by the site.
 Return the installation path. Service activation remains a separate operator action.
 """
 function install(options)
@@ -208,6 +392,10 @@ function install(options)
         get(options, :julia_executable, Base.julia_cmd().exec[1])
     )
     persistent_graph_owners = get(options, :persistent_graph_owners, false)
+    graph_installation = get(options, :graph_installation, nothing)
+    external_owners = external_owner_bindings(get(options, :external_owner, String[]))
+    persistent_graph_owners && graph_installation !== nothing &&
+        throw(ArgumentError("choose generated graph owners or an existing graph installation"))
     sysimage = selected_sysimage(get(options, :julia_sysimage, nothing))
     for name in (".git", GitExport.DIRECTORY)
         entry = joinpath(source, name)
@@ -239,7 +427,10 @@ function install(options)
                 throw(ArgumentError("installed export asset must be a regular file: $file"))
         end
         follow_symlinks || GitExport.verify_install!(destination, realpath(repository), commit)
-        return finish_install(destination, prefix, julia, commit; persistent_graph_owners, sysimage)
+        return finish_install(
+            destination, prefix, julia, commit;
+            persistent_graph_owners, graph_installation, external_owners, sysimage,
+        )
     catch
         Base.samefile(created, lstat(destination)) && rm(destination; recursive = true)
         rethrow()
@@ -255,10 +446,11 @@ function resolved_package(environment)
     return dirname(dirname(entry))
 end
 
-resolved_unit_template(environment) = read(
-    joinpath(resolved_package(environment), "assets", "deployment", "pipewireao-session@.service.in"),
-    String,
-)
+unit_template_path(environment, name) =
+    joinpath(resolved_package(environment), "assets", "deployment", name)
+
+resolved_unit_template(environment) =
+    read(unit_template_path(environment, "pipewireao-session@.service.in"), String)
 
 selected_sysimage(::Nothing) = nothing
 function selected_sysimage(path::AbstractString)
@@ -309,7 +501,11 @@ function validate_sysimage(julia, project, sysimage)
     return nothing
 end
 
-function finish_install(destination, prefix, julia, commit; persistent_graph_owners = false, sysimage = nothing)
+function finish_install(
+    destination, prefix, julia, commit;
+    persistent_graph_owners = false, graph_installation = nothing,
+    external_owners = Dict{String,String}(), sysimage = nothing,
+)
     installed_spec = session_spec(destination, prefix)
     haskey(installed_spec["artifacts"], "systemd/pipewireao-session@.service") &&
         throw(ArgumentError("export must not seal an installation-specific session unit"))
@@ -329,7 +525,14 @@ function finish_install(destination, prefix, julia, commit; persistent_graph_own
         validate_sysimage(julia, environment, sysimage)
         identity
     end
-    external = PipeWireAORTC.SessionLaunch.external_services()
+    launch = PipeWireAORTC.SessionLaunch
+    external = launch.external_services()
+    explicit_attach = graph_installation !== nothing || !isempty(external_owners)
+    direct_template = unit_template_path(environment, "pipewireao-session-direct@.service.in")
+    explicit_attach && (external === nothing || !isfile(direct_template)) && throw(
+        ArgumentError("external graph services require independent core and source bindings and direct RTC support"),
+    )
+    validate_external_owner_roles(installed_spec, external_owners)
     if persistent_graph_owners
         external === nothing &&
             throw(ArgumentError("persistent graph owners require independent core and source bindings"))
@@ -356,25 +559,42 @@ function finish_install(destination, prefix, julia, commit; persistent_graph_own
         write(launcher, script)
     end
     chmod(launcher, 0o755)
+    systemd = joinpath(destination, "systemd")
+    mkpath(systemd)
+    referenced = graph_installation === nothing ? nothing :
+        launch.reference_persistent_graphs(graph_installation, destination, prefix, installed_spec, external)
+    # An existing graph service has already qualified its declared inputs.
+    prepare_owners = filter(installed_spec["owners"]) do owner
+        role = owner["role"]
+        !haskey(external_owners, role) && (referenced === nothing || !haskey(referenced.owners, role))
+    end
     # Graph preparation validates controller recovery before the optical image build.
-    PipeWireAORTC.GraphStartup.precompile!(julia, destination, environment, installed_spec["owners"])
+    PipeWireAORTC.GraphStartup.precompile!(julia, destination, environment, prepare_owners)
     if external === nothing
         owners = filter(!D.uses_external_stream, installed_spec["owners"])
         PipeWireAORTC.HILStartup.install!(environment, destination, owners, prefix)
     end
-    systemd = joinpath(destination, "systemd")
-    mkpath(systemd)
-    persistent = persistent_graph_owners ? PipeWireAORTC.SessionLaunch.install_persistent_graphs!(
+    persistent = persistent_graph_owners ? launch.install_persistent_graphs!(
         destination, prefix, installed_spec, external
     ) : nothing
+    graphs = referenced === nothing ? persistent : referenced
+    direct = if external !== nothing && isfile(direct_template)
+        install_direct!(
+            destination, prefix, julia, environment, installed_spec, external, external_owners, graphs;
+            generated_graphs = persistent !== nothing, explicit = explicit_attach,
+        )
+    end
+    explicit_attach && direct === nothing &&
+        throw(ArgumentError("direct RTC installation requires independently supplied controller graph services"))
+    direct === nothing || (template = read(direct_template, String))
     activation = occursin("@ACTIVATION_ENVIRONMENT@", template) ?
         install_activation!(
             destination, prefix, julia, environment, launcher, installed_spec, commit;
-            sysimage, validated_image,
+            sysimage, validated_image, direct,
         ) : nothing
     unit = installed_unit(
         template, installed_spec;
-        launcher, package = destination, prefix, executable, external, persistent, activation,
+        launcher, package = destination, prefix, executable, external, persistent, activation, direct,
     )
     write(joinpath(systemd, "pipewireao-session@.service"), unit)
     return destination
@@ -387,13 +607,16 @@ Parse installer arguments and return the installed package path. Required flags
 are `--package`, `--destination` and `--pipewire-prefix`. Use the optional
 `--julia-sysimage` option to pin a main-process image and
 `--persistent-graph-owners` to select separately supervised graph units.
+Use `--graph-installation` to select an existing graph installation or repeat
+`--external-owner role=unit.service` for site-owned services.
 """
 function main(argv = ARGS)
     args = C.cli_arguments(
         argv;
         required = ["package", "destination", "pipewire-prefix"],
-        allowed = ["julia-executable", "julia-sysimage", "git-repository", "git-commit"],
+        allowed = ["julia-executable", "julia-sysimage", "git-repository", "git-commit", "graph-installation"],
         flags = ["persistent-graph-owners"],
+        repeats = ["external-owner"],
     )
     return install(args)
 end

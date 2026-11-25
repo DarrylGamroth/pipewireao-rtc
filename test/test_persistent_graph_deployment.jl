@@ -94,6 +94,89 @@ end
     @test_throws Launch.LaunchError Launch.cleanup_role!(record, "controller", 0)
 end
 
+@testset "Direct installation fixes topology and binds separately supervised services" begin
+    mktempdir() do package
+        prefix = Launch.LibPipeWire.PipeWireAO_jll.artifact_dir
+        julia = realpath(Base.julia_cmd().exec[1])
+        systemd = mkdir(joinpath(package, "systemd"))
+        source = "camera"
+        controller = "control"
+        session = Dict{String,Any}(
+            "sources" => [Dict("node.name" => source)],
+            "sinks" => [Dict("node.name" => controller)],
+            "graphs" => [],
+            "links" => [Dict("output" => "$source:out", "input" => "$controller:in")],
+        )
+        write(joinpath(package, "client.conf"), "{}")
+        write(joinpath(package, "analysis.conf"), "{}")
+        Common.write_json(joinpath(package, "session.conf"), session)
+        spec = Dict(
+            "name" => "instrument", "source-owner" => "detector", "session" => "session.conf",
+            "owners" => [Dict("role" => "detector"), graph_deployment_owner(["--session-run-control"])],
+            "node-owners" => Dict(source => "detector", controller => "controller"),
+            "placement" => Dict("session" => Dict("leader-cpu" => 2)),
+            "session-runtime" => Dict("environment" => Dict(
+                "RTC_LOG" => "@PACKAGE@/log",
+                "RTC_RUNTIME_LOG" => "@RUNTIME@/100% \$rtc.log",
+            )),
+            "client" => Dict("analysis" => "client.conf"),
+            "analysis" => [Dict("name" => "pupil", "cpus" => [2, 3], "config" => "analysis.conf")],
+        )
+        external = (; core = "core.service", socket = "/run/user/1000/private", source = "source.service")
+        owners = Install.external_owner_bindings(["controller=site-controller.service"])
+        @test owners == Dict("controller" => "site-controller.service")
+        @test Install.validate_external_owner_roles(spec, owners) === nothing
+        @test_throws ArgumentError Install.validate_external_owner_roles(spec, Dict("detector" => "source.service"))
+        @test_throws ArgumentError Install.validate_external_owner_roles(spec, Dict("unknown" => "site.service"))
+        @test_throws ArgumentError Install.external_owner_bindings(["controller=site.service", "controller=again.service"])
+        @test_throws ArgumentError Install.external_owner_bindings(["controller=pipewireao-graph-instrument-controller.service"])
+        @test Install.install_direct!(
+            package, prefix, julia, package, spec, external, Dict{String,String}(), nothing;
+            generated_graphs = false,
+        ) === nothing
+        @test isempty(readdir(systemd))
+        direct = Install.install_direct!(
+            package, prefix, julia, package, spec, external, owners, nothing; generated_graphs = false,
+        )
+        @test direct.services == merge(owners, Dict("core" => external.core, "detector" => external.source))
+        @test direct.config == joinpath(systemd, "rtc.conf")
+        fixed = Launch.D.decode(direct.config, prefix)
+        @test fixed["context.properties"]["remote.name"] == external.socket
+        @test fixed["pipewireao.session"] == Dict("session" => session)
+        @test all(isfile, direct.files)
+        analysis_unit = Launch.support_unit_name("analysis-pupil", spec["name"], package)
+        analysis = read(joinpath(systemd, analysis_unit), String)
+        @test occursin("After=pipewireao-session@%i.service", analysis)
+        @test occursin("BindsTo=pipewireao-session@%i.service", analysis)
+        template = read(joinpath(PipeWireAORTC.resource_root(), "pipewireao-session-direct@.service.in"), String)
+        activation = (; julia, project = package, digest = "a"^64)
+        unit = Install.installed_unit(template, spec; launcher = "/launcher", package, prefix,
+            executable = "/rtc", activation, external, direct)
+        @test occursin("ExecStart=\"/rtc\" -c \"$(direct.config)\"", unit)
+        @test occursin("--runtime-root %t/pipewireao-session-%i --direct", unit)
+        @test occursin("After=core.service site-controller.service source.service", unit)
+        @test occursin("Requisite=core.service site-controller.service source.service", unit)
+        @test occursin("Wants=" * replace(analysis_unit, "@." => "@%i."), unit)
+        @test occursin("Environment=\"RTC_LOG=$package/log\"", unit)
+        @test !occursin("ExecStopPost=", unit)
+        @test !occursin("INVOCATION_ID", unit)
+        @test occursin("Environment=\"RTC_RUNTIME_LOG=%t/pipewireao-session-%i/100%% \$rtc.log\"", unit)
+
+        # Only the managed cohort can supply an invocation-specific topology path.
+        rm(direct.config)
+        session["path"] = "@RUNTIME@/input"
+        Common.write_json(joinpath(package, "session.conf"), session)
+        @test Install.install_direct!(
+            package, prefix, julia, package, spec, external, owners, nothing; generated_graphs = false,
+        ) === nothing
+        @test_throws "requires invocation-dependent runtime paths" Install.install_direct!(
+            package, prefix, julia, package, spec, external, owners, nothing;
+            generated_graphs = false, explicit = true,
+        )
+        @test !isfile(direct.config)
+    end
+end
+
 @testset "Graph attachment executable pins calibration to its invocation" begin
     mktempdir() do directory
         calibration = joinpath(directory, "reconstructor.fits")

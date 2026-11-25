@@ -2,6 +2,93 @@ using Test, PipeWireAORTC
 import Clocks
 const Runtime = PipeWireAORTC.SessionRuntime
 
+@testset "direct attach retains only the current unit incarnation" begin
+    CLI = PipeWireAORTC.SessionCLI
+    C = PipeWireAORTC.Common
+    mktempdir() do directory
+        withenv("XDG_RUNTIME_DIR" => directory) do
+            unit = "pipewireao-session@fixture.service"
+            root = mkdir(Runtime.runtime_directory(unit))
+            invocation = "a"^32
+            replacement = "b"^32
+            handle = Runtime.Handle(unit, root, invocation, 120, UInt64(7), "/fixture", false, nothing)
+            args = (; unit, runtime_root = root, direct = true)
+            path = joinpath(root, "launch.json")
+            record = Dict{String,Any}(
+                "version" => 2,
+                "direct_attach" => true,
+                "unit" => unit,
+                "invocation" => invocation,
+                "runtime" => root,
+                "session_pid" => handle.main_pid,
+                "session_start_ticks" => handle.start_ticks,
+                "phase" => "prepared",
+            )
+
+            @test CLI._direct_stop_record(args, invocation; missing_ok = true) === nothing
+            C.write_json(path, record; atomic = true)
+            @test Runtime._retained_ledger(handle) == record
+            @test CLI._direct_stop_record(args, replacement; missing_ok = true) === nothing
+            @test_throws ArgumentError CLI._record_direct_stop!(args, replacement, 120, UInt64(7))
+            @test_throws ArgumentError CLI._record_direct_stop!(args, invocation, 120, UInt64(7))
+            @test C.read_json(path) == record
+
+            record["phase"] = "stopped"
+            record["cleanup_complete"] = true
+            C.write_json(path, record; atomic = true)
+            @test_throws ArgumentError CLI._record_direct_stop!(args, invocation, 120, UInt64(9))
+            @test CLI._record_direct_stop!(args, invocation, 120, UInt64(7)) === nothing
+            stopped = Runtime.final_record(root; invocation, unit)
+            @test stopped["systemd_quit"] == Dict("attempted" => true, "accepted" => true)
+
+            record["invocation"] = replacement
+            C.write_json(path, record; atomic = true)
+            @test_throws ArgumentError Runtime._retained_ledger(handle)
+            @test_throws ArgumentError Runtime.final_record(root; invocation, unit)
+            @test readdir(root) == ["launch.json"]
+        end
+    end
+end
+
+@testset "staging uses exact instance names for installed support units" begin
+    mktempdir() do directory
+        unit = joinpath(directory, "pipewireao-session@fixture.service")
+        template = joinpath(directory, "pipewireao-parameters-instrument@.service")
+        write(unit, "[Unit]\nWants=pipewireao-parameters-instrument@%i.service unrelated.service\n")
+        @test Runtime._stage_support_units(unit) == [
+            "pipewireao-parameters-instrument@fixture.service" => template,
+        ]
+    end
+end
+
+@testset "direct manager exit and scoped-service cleanup require live proof" begin
+    handle = Runtime.Handle("pipewireao-session@fixture.service", "/runtime", "a"^32,
+        120, UInt64(7), "/fixture", true, nothing)
+    stopped = Dict("LoadState" => "loaded", "ActiveState" => "inactive", "MainPID" => "0",
+        "InvocationID" => handle.invocation, "ExecMainPID" => "120", "ExecMainCode" => "1",
+        "ExecMainStatus" => "0", "Result" => "success")
+    @test Runtime._verify_direct_unit_exit(handle, stopped) === nothing
+    for pair in ("Result" => "exit-code", "ActiveState" => "failed", "InvocationID" => "",
+                 "InvocationID" => "b"^32, "ExecMainPID" => "0", "ExecMainStatus" => "1")
+        @test_throws ArgumentError Runtime._verify_direct_unit_exit(handle, merge(stopped, Dict(pair)))
+    end
+    analysis = "pipewireao-analysis-instrument-observer@fixture.service"
+    # A manager reload may replace Wants while this invocation is shutting down.
+    receipt = Dict("scoped_services" => [analysis])
+    stopped["Wants"] = "pipewireao-analysis-replacement@fixture.service"
+    @test Runtime._direct_scoped_units(handle, receipt) == [analysis]
+    @test_throws ArgumentError Runtime._direct_scoped_units(handle,
+        Dict("scoped_services" => [replace(analysis, "@fixture" => "@other")]))
+    owner = Dict("LoadState" => "loaded", "ActiveState" => "deactivating", "MainPID" => "121",
+        "PartOf" => handle.unit, "ControlGroup" => "/fixture-analysis")
+    @test !Runtime._scoped_unit_quiet(handle, owner)
+    @test !Runtime._scoped_unit_quiet(handle, merge(owner, Dict("MainPID" => "0")))
+    @test Runtime._scoped_unit_quiet(handle, merge(owner, Dict("ActiveState" => "inactive",
+        "MainPID" => "0", "ControlGroup" => "")))
+    @test_throws ArgumentError Runtime._scoped_unit_quiet(handle,
+        merge(owner, Dict("PartOf" => "pipewireao-session@other.service")))
+end
+
 source_endpoint(profile, instance) = Dict{String,Any}(
     "control-protocol" => profile,
     "control-node" => "simulator-wfs",

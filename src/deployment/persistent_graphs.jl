@@ -272,11 +272,71 @@ function install_persistent_graphs!(package, prefix, spec, external)
         "asset-sha256" => digest, "core" => external.core, "source" => external.source,
         "socket" => external.socket, "owners" => entries,
     ); atomic = true)
-    return (; digest = C.sha256_file(manifest), units = sort([item["unit"] for item in values(entries)]))
+    owner_units = Dict(role => item["unit"] for (role, item) in entries)
+    return (; manifest, digest = C.sha256_file(manifest), owners = owner_units,
+        units = sort!(collect(values(owner_units))))
 end
 
-function installed_graphs(package, prefix, spec, external)
-    digest = get(ENV, GRAPH_MANIFEST_ENV, nothing)
+function reference_persistent_graphs(installation, package, prefix, spec, external)
+    provider = realpath(installation)
+    manifest = D.relative_asset(provider, joinpath("systemd", GRAPH_MANIFEST))
+    filesize(manifest) <= D.MAX_CONFIG_BYTES || fail("referenced graph manifest exceeds size bound")
+    digest = C.sha256_file(manifest)
+    provider_spec = D.profile(joinpath(provider, "deployment.conf"), prefix)
+    data = installed_graphs(provider, prefix, provider_spec, external; digest)
+    selected = Dict(owner["role"] => owner for owner in graph_owners(spec))
+    supplied = Dict(owner["role"] => owner for owner in graph_owners(provider_spec))
+    selected == supplied && spec["environment"] == provider_spec["environment"] ||
+        fail("referenced graph owner declarations differ from the selected deployment")
+    inventory = verify_graph_assets!(data["assets"], data["asset-sha256"])
+    native_library = realpath(joinpath(D.installed_paths(prefix)["library"], "libpipewire-ao-0.3.so"))
+    provider_session = D.decode(D.relative_asset(provider, provider_spec["session"]), prefix)
+    session = D.decode(D.relative_asset(package, spec["session"]), prefix)
+    for (role, item) in data["owners"]
+        fragment = item["fragment"]
+        isfile(fragment) && !islink(fragment) && filesize(fragment) <= D.MAX_CONFIG_BYTES &&
+            C.sha256_file(fragment) == item["sha256"] ||
+            fail("referenced graph service fragment changed for $role")
+        item["placement"] == spec["placement"][role] ||
+            fail("referenced graph placement differs for $role")
+        endpoints(deployment, config) = Dict(
+            node["node.name"] => node
+            for section in ("sources", "graphs", "sinks") for node in config[section]
+            if deployment["node-owners"][node["node.name"]] == role
+        )
+        endpoints(spec, session) == endpoints(provider_spec, provider_session) ||
+            fail("referenced graph endpoints differ for $role")
+        haskey(inventory, realpath(first(item["argv"]))) ||
+            fail("referenced graph executable is outside the installed asset inventory")
+        item["pipewire-library"] == native_library ||
+            fail("referenced graph uses a different PipeWireAO library")
+        client = D.relative_asset(provider, provider_spec["client"][role])
+        same_graph_asset(inventory, client, D.relative_asset(package, spec["client"][role]))
+        directory = item["environment"]["PIPEWIREAO_CONFIG_DIR"]
+        generated = joinpath(provider, "systemd", "graph-owners")
+        for file in graph_argument_files(item["argv"], directory, inventory, prefix)
+            if dirname(file) == generated
+                relative = joinpath("graphs", basename(file) * ".in")
+                template = D.relative_asset(provider, relative)
+                same_graph_asset(inventory, template, D.relative_asset(package, relative))
+            else
+                asset = D.relative_asset(package, relpath(file, provider))
+                same_graph_asset(inventory, file, asset)
+            end
+        end
+    end
+    owners = Dict(role => item["unit"] for (role, item) in data["owners"])
+    return (; manifest, digest, owners, units = sort!(collect(values(owners))))
+end
+
+function same_graph_asset(inventory, provider, selected)
+    expected = get(inventory, provider, nothing)
+    expected !== nothing && C.sha256_file(selected) == expected["sha256"] ||
+        fail("referenced graph input differs: $selected")
+    return nothing
+end
+
+function installed_graphs(package, prefix, spec, external; digest = get(ENV, GRAPH_MANIFEST_ENV, nothing))
     digest === nothing && return nothing
     external === nothing && fail("persistent graph mode requires independent core and source")
     manifest = sealed_graph_document(joinpath(package, "systemd", GRAPH_MANIFEST), digest)
@@ -324,9 +384,18 @@ function graph_library_mapping(line, library, inode)
            tryparse(UInt64, fields[5]) == inode
 end
 
+# A staged systemd instance can use an exact copy of its installed template.
+function installed_fragment_matches(path, template, digest, instance)
+    isfile(path) || return false
+    fragment = realpath(path)
+    exact = fragment == template ||
+        (instance !== nothing && fragment == joinpath(dirname(template), instance))
+    return exact && C.sha256_file(fragment) == digest
+end
+
 function verify_persistent_service!(
     service, item; deadline = nothing, clock = Clocks.SystemNanoClock(),
-    attached = false,
+    attached = false, instance_template = false,
 )
     values = S.properties(
         service.unit; extra = "FragmentPath,DropInPaths,NeedDaemonReload,Type,Restart,KillMode",
@@ -336,25 +405,25 @@ function verify_persistent_service!(
         values["ActiveState"] == "active" && tryparse(Int, values["MainPID"]) == S.pid(service) &&
         values["Type"] == "exec" && values["Restart"] == "no" &&
         values["KillMode"] == "control-group" && isempty(values["DropInPaths"]) &&
-        values["NeedDaemonReload"] == "no" && isfile(values["FragmentPath"]) &&
-        realpath(values["FragmentPath"]) == item["fragment"] &&
-        C.sha256_file(item["fragment"]) == item["sha256"] && S.alive(service) ||
-        fail("persistent graph unit differs from its installed service: $(service.unit)")
+        values["NeedDaemonReload"] == "no" &&
+        installed_fragment_matches(values["FragmentPath"], item["fragment"], item["sha256"],
+            instance_template ? service.unit : nothing) && S.alive(service) ||
+        fail("unit differs from its installed service: $(service.unit)")
     pid = S.pid(service)
     argv = item["argv"]
     graph_file_identity("/proc/$pid/exe") == graph_file_identity(first(argv)) &&
         split(read("/proc/$pid/cmdline", String), '\0'; keepempty = false) == argv ||
-        fail("persistent graph process differs from the installed command: $(service.unit)")
+        fail("service process differs from its installed command: $(service.unit)")
     env = split(read("/proc/$pid/environ", String), '\0'; keepempty = false)
     all(("$key=$value" in env) for (key, value) in item["environment"]) &&
         "INVOCATION_ID=$(service.invocation)" in env && S.alive(service) ||
-        fail("persistent graph process differs from the installed environment: $(service.unit)")
+        fail("service process differs from its installed environment: $(service.unit)")
     if attached
         library = item["pipewire-library"]
         inode = stat(library).inode
         open("/proc/$pid/maps", "r") do maps
             any(line -> graph_library_mapping(line, library, inode), eachline(maps))
-        end || fail("persistent graph process is using a different PipeWireAO library")
+        end || fail("service process is using a different PipeWireAO library")
     end
     return nothing
 end

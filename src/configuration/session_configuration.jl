@@ -284,6 +284,10 @@ function session_configuration(
             PipeWireAORTC.InstrumentDefinition.publication(spec, bindings),
         ),
     )
+    return runtime_configuration(remote, policy)
+end
+
+function runtime_configuration(remote, policy)
     return Dict{String,Any}(
         "context.properties" => Dict{String,Any}(
             "library.use-fallback" => false,

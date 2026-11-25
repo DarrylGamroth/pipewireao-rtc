@@ -7,6 +7,7 @@ using PipeWireAO: with_thread_loop_lock
 using JSON
 using PrecompileTools: @compile_workload
 import Clocks
+using UUIDs: uuid4
 
 import ..SessionConfiguration
 import ..SessionLaunch
@@ -92,9 +93,12 @@ function activate_installed!(config)
     unit = ENV[SessionLaunch.ADMISSION_UNIT_ENV]
     root = PipeWireAORTC.SessionRuntime.runtime_directory(unit)
     invocation = S.valid_invocation(ENV["INVOCATION_ID"])
+    activation = activation_document(package, digest)
+    if haskey(activation, "config")
+        return direct_attachment(config, activation, unit, root, invocation)
+    end
     config == joinpath(root, invocation, "rtc", "rtc.conf") ||
         throw(ArgumentError("RTC configuration is outside this systemd invocation"))
-    activation = activation_document(package, digest)
     D.verify_session_process(getpid(), D.session_process_binding(activation, config))
     request = SessionLaunch.Request(package, activation["prefix"], unit, activation["launcher"], root)
     SessionLaunch.prepare!(request; render!, validate_profile = require_node_owners, activation)
@@ -136,9 +140,11 @@ function _main_identity(request, invocation, record, config; deadline, clock)
     ticks = S.start_ticks(pid)
     startswith(group, "/") && group != "/" && S.process_identity(pid, ticks, group) ||
         throw(ArgumentError("RTC MainPID is outside its unit cgroup"))
-    SessionLaunch.cleanup_hook_valid(values["ExecStopPost"], request, record["source_role"]) ||
+    direct = get(record, "direct_attach", false)
+    (direct ? isempty(values["ExecStopPost"]) :
+        SessionLaunch.cleanup_hook_valid(values["ExecStopPost"], request, record["source_role"])) ||
         throw(ArgumentError("RTC emergency cleanup hook changed"))
-    SessionLaunch.stop_hook_valid(values["ExecStop"], request) ||
+    SessionLaunch.stop_hook_valid(values["ExecStop"], request; direct) ||
         throw(ArgumentError("RTC native stop hook changed"))
     record["config"] == record["session_process"]["config"] == config ||
         throw(ArgumentError("RTC configuration differs from prepared process binding"))
@@ -179,6 +185,8 @@ function installed_admission(config::AbstractString; clock = Clocks.SystemNanoCl
     process = _main_identity(request, invocation, record, config; deadline, clock)
     return InstalledAdmission(request, invocation, config, record, process, nothing, nothing)
 end
+
+include("direct_attachment.jl")
 
 function _verify_main(context::InstalledAdmission; deadline, clock)
     _main_identity(
@@ -241,7 +249,7 @@ function _placement_snapshot(context::InstalledAdmission; deadline, clock)
         nothing
     else
         data = SessionLaunch.sealed_graph_document(
-            joinpath(request.package, "systemd", SessionLaunch.GRAPH_MANIFEST), manifest
+            get(record["admission"], "graph_manifest", joinpath(request.package, "systemd", SessionLaunch.GRAPH_MANIFEST)), manifest
         )
         SessionLaunch.verify_graph_assets!(data["assets"], data["asset-sha256"])
         data["owners"]
@@ -255,12 +263,17 @@ function _placement_snapshot(context::InstalledAdmission; deadline, clock)
         S.verify!(service; deadline, clock)
         snapshots[role] = P.snapshot(service.main_pid, item["placement"])
         S.verify!(service; deadline, clock)
-        if get(item, "persistent", false)
-            persistent === nothing &&
-                throw(ArgumentError("persistent owner lacks an installed graph manifest"))
+        if role == "parameters" && haskey(record["admission"], "parameter_service")
+            SessionLaunch.verify_persistent_service!(
+                service, record["admission"]["parameter_service"]; deadline, clock,
+                attached = true, instance_template = true,
+            )
+        elseif persistent !== nothing && haskey(persistent, role)
             SessionLaunch.verify_persistent_service!(
                 service, persistent[role]; deadline, clock, attached = true
             )
+        elseif get(item, "persistent", false) && !get(record, "direct_attach", false)
+            throw(ArgumentError("persistent owner lacks an installed graph manifest"))
         end
     end
     snapshots["session"] = P.snapshot(pid, record["admission"]["placement"])
@@ -423,7 +436,35 @@ function stop_timing(unit, invocation, deadline, trace::Client.Trace, result)
     )
 end
 
+function _direct_stop_record(args, invocation; missing_ok = false)
+    args.runtime_root == PipeWireAORTC.SessionRuntime.runtime_directory(args.unit) ||
+        throw(ArgumentError("direct stop runtime differs from the unit instance"))
+    record = PipeWireAORTC.SessionRuntime._direct_launch_record(args.runtime_root)
+    if record === nothing || record["invocation"] != invocation
+        missing_ok && return nothing
+        throw(ArgumentError("direct launch receipt belongs to a different invocation"))
+    end
+    record["unit"] == args.unit ||
+        throw(ArgumentError("direct launch receipt belongs to a different unit"))
+    return record
+end
+
+function _record_direct_stop!(args, invocation, pid, ticks)
+    record = _direct_stop_record(args, invocation)
+    record["session_pid"] == pid && UInt64(record["session_start_ticks"]) == ticks ||
+        throw(ArgumentError("direct shutdown receipt belongs to a different RTC process"))
+    get(record, "cleanup_complete", false) === true &&
+    record["phase"] == "stopped" &&
+    get(record, "error", nothing) === nothing &&
+    isempty(get(record, "cleanup_errors", [])) ||
+        throw(ArgumentError("direct RTC exited without completing cleanup"))
+    record["systemd_quit"] = Dict("attempted" => true, "accepted" => true)
+    C.write_json(joinpath(args.runtime_root, "launch.json"), record; atomic = true)
+    return nothing
+end
+
 function stop_invocation!(args, invocation, previous, deadline, trace, clock)
+    direct = get(args, :direct, false)
     values = S.properties(
         args.unit; extra = "ControlPID," * SessionLaunch.LIFETIME_PROPERTIES, deadline, clock
     )
@@ -439,27 +480,36 @@ function stop_invocation!(args, invocation, previous, deadline, trace, clock)
     group != "/" &&
     (observed == group || startswith(observed, group * "/")) ||
         throw(ArgumentError("native stop is outside this session's cgroup"))
-    # A successful public Quit or unexpected process exit can invoke ExecStop
-    # after MainPID has already disappeared. Cleanup remains ExecStopPost's job.
-    values["MainPID"] == "0" &&
+    # After public Quit or an unexpected process exit, retire only this
+    # invocation's locator. A failed activation can leave the prior receipt.
+    if values["MainPID"] == "0"
+        if direct
+            record = _direct_stop_record(args, invocation; missing_ok = true)
+            record === nothing || retire_record!(record, get(record, "discovery_locator", nothing))
+        end
         return (outcome = :main_already_gone, process_exit_at = Clocks.time_nanos(clock))
-    runtime = joinpath(args.runtime_root, invocation)
+    end
+    runtime = direct ? args.runtime_root : joinpath(args.runtime_root, invocation)
     ledger = joinpath(runtime, "launch.json")
-    record = C.read_json(ledger; maximum = 1024 * 1024)
+    record = direct ? _direct_stop_record(args, invocation) :
+             C.read_json(ledger; maximum = 1024 * 1024)
     SessionLaunch.validate_ledger(record)
     pid = tryparse(Int, values["MainPID"])
+    ticks = UInt64(record["session_start_ticks"])
     record["unit"] == args.unit &&
     record["invocation"] == invocation &&
     record["runtime"] == runtime &&
     pid == record["session_pid"] &&
-    S.start_ticks(pid) == UInt64(record["session_start_ticks"]) ||
+    S.start_ticks(pid) == ticks ||
         throw(ArgumentError("native stop ledger differs from the live session"))
     main_group = S.proc_cgroup(pid)
     (main_group == group || startswith(main_group, group * "/")) ||
         throw(ArgumentError("RTC MainPID left its session cgroup before stop"))
     binding = get(record, "session_process", nothing)
-    if binding !== nothing && haskey(binding, "sysimage")
-        record["config"] == binding["config"] == joinpath(runtime, "rtc", "rtc.conf") ||
+    if direct || (binding !== nothing && haskey(binding, "sysimage"))
+        config = direct ? joinpath(record["admission"]["package"], "systemd", "rtc.conf") :
+                 joinpath(runtime, "rtc", "rtc.conf")
+        record["config"] == binding["config"] == config ||
             throw(ArgumentError("native stop configuration differs from the prepared RTC"))
         D.verify_session_process(pid, binding)
     end
@@ -483,10 +533,12 @@ function stop_invocation!(args, invocation, previous, deadline, trace, clock)
             client.observation.node_identity == record["session_uuid"] ||
                 throw(ArgumentError("native stop selected a different session UUID"))
         end
-        # Fence submission durably. Unknown outcomes proceed only to emergency
-        # process cleanup, never to another native mutation.
-        record["systemd_quit"] = Dict("attempted" => true, "accepted" => false)
-        C.write_json(ledger, record; atomic = true)
+        # Retained launches pass the attempt to their independent cleanup hook.
+        # In direct mode the main process owns the receipt until it exits.
+        if !direct
+            record["systemd_quit"] = Dict("attempted" => true, "accepted" => false)
+            C.write_json(ledger, record; atomic = true)
+        end
         completion = Client.request!(
             client,
             Session.RunnerCommand(:quit);
@@ -495,8 +547,10 @@ function stop_invocation!(args, invocation, previous, deadline, trace, clock)
             ),
         )
         confirm_shutdown(completion)
-        record["systemd_quit"]["accepted"] = true
-        C.write_json(ledger, record; atomic = true)
+        if !direct
+            record["systemd_quit"]["accepted"] = true
+            C.write_json(ledger, record; atomic = true)
+        end
     finally
         close(client)
     end
@@ -511,15 +565,18 @@ function stop_invocation!(args, invocation, previous, deadline, trace, clock)
         current = S.properties(args.unit; deadline, clock)
         S.valid_invocation(current["InvocationID"]) == invocation ||
             throw(ArgumentError("session incarnation changed after native Quit"))
-        current["MainPID"] == "0" &&
-            return (outcome = :completed, process_exit_at = Clocks.time_nanos(clock))
+        if current["MainPID"] == "0"
+            exited_at = Clocks.time_nanos(clock)
+            direct && _record_direct_stop!(args, invocation, pid, ticks)
+            return (outcome = :completed, process_exit_at = exited_at)
+        end
         tryparse(Int, current["MainPID"]) == pid ||
             throw(ArgumentError("RTC process changed after native Quit"))
         # /proc may disappear after systemd's query and before this read.
         # Require a fresh MainPID=0 proof on the next pass; PID reuse still faults.
         current_ticks = S.maybe_start_ticks(pid)
         current_ticks === nothing ||
-            current_ticks == UInt64(record["session_start_ticks"]) ||
+        current_ticks == ticks ||
             throw(ArgumentError("RTC PID was reused after native Quit"))
         sleep(min(Int64(5_000_000), Base.checked_sub(deadline, sampled)) / 1.0e9)
     end
@@ -663,7 +720,7 @@ function main(argv = ARGS)
     elseif command == "prepare"
         SessionLaunch.main(argv; render!, validate_profile = require_node_owners)
     elseif command == "stop"
-        args = C.cli_arguments(rest; required = ["unit", "runtime-root"])
+        args = C.cli_arguments(rest; required = ["unit", "runtime-root"], flags = ["direct"])
         stop!(args)
     elseif command == "cleanup"
         runtime_root =
@@ -723,7 +780,7 @@ end
             String,
         ),
     )
-    precompile(stop!, (NamedTuple{(:unit, :runtime_root),Tuple{String,String}},))
+    precompile(stop!, (NamedTuple{(:unit, :runtime_root, :direct),Tuple{String,String,Bool}},))
     precompile(
         Core.kwcall,
         (

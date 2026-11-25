@@ -826,7 +826,8 @@ No service, device or graph process is started here. The caller owns `close`.
 The creating task must stay on its creating OS thread.
 """
 function Session(
-    path::AbstractString; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+    path::AbstractString; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    attachment = nothing,
 )
     file = realpath(path)
     override = get(ENV, "PIPEWIREAO_CONFIG_NAME", file)
@@ -836,7 +837,7 @@ function Session(
         ),
     )
     prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
-    config = DeploymentConfiguration.decode(file, prefix)
+    config = attachment === nothing ? DeploymentConfiguration.decode(file, prefix) : attachment.config
     Set(keys(config)) ==
     Set(("context.properties", "context.modules", "pipewireao.session")) ||
         throw(ArgumentError("session configuration has unsupported sections"))
@@ -860,7 +861,7 @@ function Session(
         throw(ArgumentError("session configuration has unsupported context modules"))
     isdefined(PipeWireAO, :iterate!) ||
         throw(ArgumentError("MediaSession requires PipeWireAO's owner-thread iterate! API"))
-    deployment = SessionCLI.installed_admission(file; clock)
+    deployment = attachment === nothing ? SessionCLI.installed_admission(file; clock) : attachment.deployment
     admission = deployment === nothing ? nothing :
         Admission(deployment, config["context.properties"]["remote.name"], nothing, nothing, nothing, false)
     queue = EventQueue()
@@ -1079,8 +1080,8 @@ end
 function main(arguments = ARGS)
     length(arguments) == 2 && first(arguments) == "-c" ||
         throw(ArgumentError("usage: pipewireao-rtc -c CONFIG"))
-    SessionCLI.activate_installed!(last(arguments))
-    session = Session(last(arguments))
+    attachment = SessionCLI.activate_installed!(last(arguments))
+    session = Session(last(arguments); attachment)
     result = try
         serve!(session)
     catch primary
@@ -1092,6 +1093,9 @@ function main(arguments = ARGS)
         rethrow()
     end
     close(session)
+    if result == 0 && session.admission !== nothing && session.admission.notified
+        SessionCLI.finish_direct_quit!(session.admission.deployment)
+    end
     return result
 end
 

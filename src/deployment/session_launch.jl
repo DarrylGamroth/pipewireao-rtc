@@ -112,7 +112,7 @@ function cleanup_hook_valid(
     )
 end
 
-function stop_hook_valid(value::AbstractString, request::Request)
+function stop_hook_valid(value::AbstractString, request::Request; direct = false)
     prefix =
         "{ path=" *
         request.launcher *
@@ -122,7 +122,7 @@ function stop_hook_valid(value::AbstractString, request::Request)
         request.unit *
         " --runtime-root " *
         request.runtime_root *
-        " ; ignore_errors=no ; "
+        (direct ? " --direct" : "") * " ; ignore_errors=no ; "
     startswith(value, prefix) || return false
     suffix = chopprefix(value, prefix)
     occursin(
@@ -286,9 +286,54 @@ function parameter_owner!(request, spec, session, declared_links, bindings, runt
     isempty(sources) && return nothing
     any(owner -> owner["role"] == "parameters", spec["owners"]) &&
         fail("parameter transport role conflicts with a declared owner")
-    directory = joinpath(runtime, "parameters")
+    config = write_parameter_config!(joinpath(runtime, "parameters"), request.package,
+        spec, session, declared_links, bindings, sources)
+    executable = realpath(Base.julia_cmd().exec[1])
+    isfile(executable) && Sys.isexecutable(executable) ||
+        fail("Current Julia runtime is unavailable for parameter transport")
+    environment = project === nothing ? D.application_environment(spec, request.package) : project
+    entry = [
+        "--project=" * environment,
+        "-e",
+        "using PipeWireAORTC; PipeWireAORTC.ParameterSource.main(ARGS)",
+        "--",
+    ]
+    bootstrap = "pipewireao.rtc.bootstrap.parameters"
+    control = "pipewireao.rtc.parameters." * spec["name"]
+    bindings["BOOTSTRAP_INSTANCE_PARAMETERS"] = string(N.next_instance())
+    bindings["PARAMETER_OWNER_INSTANCE"] = string(N.next_instance())
+    return Dict{String,Any}(
+        "role" => "parameters",
+        "bootstrap-node" => bootstrap,
+        "bootstrap-protocol" => "pipewireao.rtc.owner-bootstrap/1",
+        "control-node" => control,
+        "control-protocol" => "pipewireao.rtc.parameter-source/1",
+        "control-instance" => bindings["PARAMETER_OWNER_INSTANCE"],
+        "environment" => Dict("OPENBLAS_NUM_THREADS" => "1"),
+        "argv" => [
+            executable,
+            "--startup-file=no",
+            "--threads=2,0",
+            entry...,
+            "--config",
+            config,
+            "--remote",
+            joinpath(runtime, bindings["REMOTE"]),
+            "--bootstrap-node",
+            bootstrap,
+            "--bootstrap-instance",
+            bindings["BOOTSTRAP_INSTANCE_PARAMETERS"],
+            "--control-node",
+            control,
+            "--control-instance",
+            bindings["PARAMETER_OWNER_INSTANCE"],
+        ],
+    )
+end
+
+function write_parameter_config!(directory, package, spec, session, declared_links, bindings, sources)
     mkdir(directory; mode = 0o700)
-    client = D.relative_asset(request.package, spec["client"]["rtc"])
+    client = D.relative_asset(package, spec["client"]["rtc"])
     write(
         joinpath(directory, "client.conf"),
         D.substitute(read(client, String), bindings; quoted = true),
@@ -342,48 +387,10 @@ function parameter_owner!(request, spec, session, declared_links, bindings, runt
     config = joinpath(directory, "sources.json")
     C.write_json(config, Dict("version" => 1, "sources" => declarations))
     chmod(config, 0o600)
-    executable = realpath(Base.julia_cmd().exec[1])
-    isfile(executable) && Sys.isexecutable(executable) ||
-        fail("Current Julia runtime is unavailable for parameter transport")
-    environment = project === nothing ? D.application_environment(spec, request.package) : project
-    entry = [
-        "--project=" * environment,
-        "-e",
-        "using PipeWireAORTC; PipeWireAORTC.ParameterSource.main(ARGS)",
-        "--",
-    ]
-    bootstrap = "pipewireao.rtc.bootstrap.parameters"
-    control = "pipewireao.rtc.parameters." * spec["name"]
-    bindings["BOOTSTRAP_INSTANCE_PARAMETERS"] = string(N.next_instance())
-    bindings["PARAMETER_OWNER_INSTANCE"] = string(N.next_instance())
-    return Dict{String,Any}(
-        "role" => "parameters",
-        "bootstrap-node" => bootstrap,
-        "bootstrap-protocol" => "pipewireao.rtc.owner-bootstrap/1",
-        "control-node" => control,
-        "control-protocol" => "pipewireao.rtc.parameter-source/1",
-        "control-instance" => bindings["PARAMETER_OWNER_INSTANCE"],
-        "environment" => Dict("OPENBLAS_NUM_THREADS" => "1"),
-        "argv" => [
-            executable,
-            "--startup-file=no",
-            "--threads=2,0",
-            entry...,
-            "--config",
-            config,
-            "--remote",
-            joinpath(runtime, bindings["REMOTE"]),
-            "--bootstrap-node",
-            bootstrap,
-            "--bootstrap-instance",
-            bindings["BOOTSTRAP_INSTANCE_PARAMETERS"],
-            "--control-node",
-            control,
-            "--control-instance",
-            bindings["PARAMETER_OWNER_INSTANCE"],
-        ],
-    )
+    return config
 end
+
+include("installed_parameters.jl")
 
 _initial_parameter_binding(initial) =
     fail("initial parameter must name a declared artifact binding")

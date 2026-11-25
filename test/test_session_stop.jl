@@ -125,6 +125,10 @@ end
     )
     hook = "{ path=/sdk/bin/pipewireao-rtc-session ; argv[]=/sdk/bin/pipewireao-rtc-session stop --unit pipewireao-session@test.service --runtime-root /run/user/1000/pipewireao-session-test ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0 }"
     @test SessionLaunch.stop_hook_valid(hook, request)
+    direct_hook = replace(hook, "session-test ;" => "session-test --direct ;")
+    @test SessionLaunch.stop_hook_valid(direct_hook, request; direct = true)
+    @test !SessionLaunch.stop_hook_valid(direct_hook, request)
+    @test !SessionLaunch.stop_hook_valid(hook, request; direct = true)
     for changed in (
         replace(hook, "stop --unit" => "control --unit"),
         replace(hook, "@test.service" => "@foreign.service"),

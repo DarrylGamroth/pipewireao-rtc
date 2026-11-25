@@ -619,3 +619,32 @@ end
         @test isfile(joinpath(runtime, "julia-depot", "artifacts", "Overrides.toml"))
     end
 end
+
+@testset "Installed parameter service fragment identity" begin
+    launch = PipeWireAORTC.SessionLaunch
+    mktempdir() do directory
+        package = mkdir(joinpath(directory, "first"))
+        other_package = mkdir(joinpath(directory, "second"))
+        alias = joinpath(directory, "alias")
+        symlink(package, alias)
+        template = launch.support_unit_name("parameters", "fixture", package)
+        @test launch.support_unit_name("parameters", "fixture", alias) == template
+        @test launch.support_unit_name("parameters", "fixture", other_package) != template
+
+        fragment = joinpath(mkdir(joinpath(package, "systemd")), template)
+        write(fragment, "[Service]\nType=exec\n")
+        digest = PipeWireAORTC.Common.sha256_file(fragment)
+        unit = replace(template, "@." => "@fixture.")
+        instance = cp(fragment, joinpath(dirname(fragment), unit))
+        linked_template = joinpath(directory, template)
+        symlink(fragment, linked_template)
+        @test launch.installed_fragment_matches(linked_template, fragment, digest, unit)
+        @test launch.installed_fragment_matches(instance, fragment, digest, unit)
+        @test !launch.installed_fragment_matches(instance, fragment, digest, nothing)
+
+        foreign = cp(fragment, joinpath(mkdir(joinpath(other_package, "systemd")), unit))
+        @test !launch.installed_fragment_matches(foreign, fragment, digest, unit)
+        open(io -> write(io, "Restart=always\n"), instance, "a")
+        @test !launch.installed_fragment_matches(instance, fragment, digest, unit)
+    end
+end

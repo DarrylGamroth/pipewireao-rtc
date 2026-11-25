@@ -233,6 +233,8 @@ function properties(
         fail("cannot query systemd unit $unit: $(strip(result.stderr))")
     values = parse_properties(result.stdout)
     for field in split(fields, ',')
+        # systemctl omits an empty ExecStopPost command array, even with --all.
+        field == "ExecStopPost" && get!(values, field, "")
         haskey(values, field) || fail("missing systemd property $field for $unit")
     end
     if endswith(unit, ".target") # Targets own jobs, not processes or cgroups.
