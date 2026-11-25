@@ -7,8 +7,7 @@ using PipeWireAO,
     FilterGraphAlgorithms,
     FilterGraphPipeWire,
     FilterGraphs
-import PipeWireAO_jll
-include(joinpath(pkgdir(AdaptiveOpticsSimPipeWireHIL), "test/private_core_helpers.jl"))
+include("control_private_core.jl")
 const HIL = AdaptiveOpticsSimPipeWireHIL
 const FGP = FilterGraphPipeWire
 const Offsets = PipeWireAORTC.PhysicalOffsets
@@ -17,10 +16,10 @@ const Clocks = Ext.Clocks
 const Cal = PipeWireAORTC.InstrumentCalibration
 const ThreadPinning = PipeWireAORTC.OwnerBootstrapRuntime.ThreadPinning
 const Common = PipeWireAORTC.Common
-function wait_until(predicate; timeout = 10)
+function wait_until(predicate, operation; timeout = 10)
     deadline = time_ns() / 1e9 + timeout
     while !predicate()
-        time_ns() / 1e9 < deadline || error("private offset condition timed out")
+        time_ns() / 1e9 < deadline || error("private offset wait timed out: $operation")
         @ccall gc_safe = true usleep(Cuint(5000)::Cuint)::Cint
         yield()
     end
@@ -39,6 +38,7 @@ include("physical_offsets_documents.jl")
 @testset "native physical offsets keep both outputs paired and GPI frames independent" begin
     Threads.nthreads(:default) >= 4 || error("run with --threads=4,0")
     for scenario in (:silence, :disconnect, :pending_unrelated, :pending_mixed)
+        progress("starting $scenario")
         mktempdir() do directory
             graph, config = physical_offset_fixture(directory; P, Q, C)
             declaration = Common.read_yaml(config)
@@ -65,8 +65,14 @@ include("physical_offsets_documents.jl")
             observer = Offsets.frame_observer(
                 config, nothing, FilterGraphs.output_formats(graph)
             )
-            _with_private_core() do remote
-                remote = joinpath(ENV["PIPEWIREAO_RUNTIME_DIR"], remote)
+            prefix = get(
+                ENV, "PIPEWIREAO_HIL_TEST_PREFIX",
+                String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir),
+            )
+            with_control_private_core(;
+                prefix, temporary_prefix = "pw-offset-", remote_name = "observations",
+            ) do remote, _, _
+                chmod(dirname(remote), 0o700)
                 progress("private core ready")
                 node = FGP.PipeWireNode(
                     graph;
@@ -93,11 +99,11 @@ include("physical_offsets_documents.jl")
                     required_outputs = (:compensated, :physical),
                 )
                 connect!(node)
-                exchange = ThreadPinning.@spawnat 4 begin
+                exchange_ready = Threads.Atomic{Bool}(false)
+                start_exchange() = ThreadPinning.@spawnat 4 begin
                     current_task().sticky = true
                     try
-                        wait_until(() -> PipeWireAO.isrunning(node))
-                        progress("exchange ready on thread $(Threads.threadid())")
+                        progress("exchange starting on thread $(Threads.threadid())")
                         specs = (
                             (
                                 "send-residual",
@@ -178,6 +184,9 @@ include("physical_offsets_documents.jl")
                                 return length(ports) == 1 ? only(ports) : nothing
                             end
                             try
+                                exchange_ready[] = true
+                                wait_until(() -> PipeWireAO.isrunning(node), "graph startup")
+                                progress("exchange observed running graph")
                                 for (source, sourceport, sink, sinkport) in (
                                     ("send-residual", nothing, "test.gpi", "residual"),
                                     ("send-llowfs", nothing, "receive-llowfs", nothing),
@@ -192,8 +201,8 @@ include("physical_offsets_documents.jl")
                                     ("send-scc", nothing, "read-scc", nothing),
                                 )
                                     progress("link $source to $sink")
-                                    wait_until() do
-                                        roundtrip(registry)
+                                    # The running registry loop already receives port announcements.
+                                    wait_until("ports for $source to $sink") do
                                         port(source, "out", sourceport) !== nothing &&
                                             port(sink, "in", sinkport) !== nothing
                                     end
@@ -220,7 +229,7 @@ include("physical_offsets_documents.jl")
                                     )
                                 end
                                 for i in eachindex(specs)
-                                    wait_until() do
+                                    wait_until("streaming $(specs[i][1])") do
                                         HIL.with_array_stream(wire, i) do stream
                                             stream_state(stream) ==
                                             PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
@@ -266,7 +275,7 @@ include("physical_offsets_documents.jl")
                                     emit(1, zeros(Float32, 2); pts)
                                     receipt = Ref{Any}(nothing)
                                     try
-                                        wait_until() do
+                                        wait_until("physical output for frame $pts") do
                                             receipt[] = HIL.drain_pipewire_array!(
                                                 physical, wire, 5
                                             )
@@ -288,7 +297,7 @@ include("physical_offsets_documents.jl")
                                         end
                                         rethrow()
                                     end
-                                    wait_until() do
+                                    wait_until("compensated output for frame $pts") do
                                         HIL.drain_pipewire_array!(compensated, wire, 4) !==
                                         nothing
                                     end
@@ -303,7 +312,7 @@ include("physical_offsets_documents.jl")
                                     before =
                                         FGP.parameter_status(node, :reference).requested_parameter_sequence
                                     emit(source, value)
-                                    wait_until() do
+                                    wait_until("request after $(specs[source][1]) input") do
                                         FGP.parameter_status(node, :reference).requested_parameter_sequence >
                                         before
                                     end
@@ -311,7 +320,7 @@ include("physical_offsets_documents.jl")
                                     if source == 3
                                         observed = zeros(Float32, 4)
                                         receipt = Ref{Any}(nothing)
-                                        wait_until() do
+                                        wait_until("independent SCC output") do
                                             receipt[] = HIL.drain_pipewire_array!(
                                                 observed, wire, 6
                                             )
@@ -332,7 +341,7 @@ include("physical_offsets_documents.jl")
                                 before =
                                     FGP.parameter_status(node, :reference).requested_parameter_sequence
                                 emit(2, 2a; generation = 2, pts = 500000)
-                                wait_until() do
+                                wait_until("request after LLOWFS generation change") do
                                     FGP.parameter_status(node, :reference).requested_parameter_sequence >
                                     before
                                 end
@@ -346,7 +355,7 @@ include("physical_offsets_documents.jl")
                                     # expire it, then inspect the FIRST resumed frame.
                                     before = status.requested_parameter_sequence
                                     emit(3, 0.5f0 * b; pts = 2000000)
-                                    wait_until() do
+                                    wait_until("request after SCC input") do
                                         FGP.parameter_status(node, :reference).requested_parameter_sequence >
                                         before
                                     end
@@ -354,7 +363,7 @@ include("physical_offsets_documents.jl")
                                     @test pending.requested_parameter_sequence >
                                         pending.active_parameter_sequence
                                     Clocks.update!(wall, Int64(10000000101))
-                                    wait_until() do
+                                    wait_until("request after SCC expiry") do
                                         FGP.parameter_status(node, :reference).requested_parameter_sequence >
                                         pending.requested_parameter_sequence
                                     end
@@ -368,7 +377,7 @@ include("physical_offsets_documents.jl")
                                     HIL.with_array_stream(wire, 1) do _
                                         close(popat!(links, 3))
                                     end
-                                    wait_until() do
+                                    wait_until("request after unlinking SCC") do
                                         FGP.parameter_status(node, :reference).requested_parameter_sequence >
                                         before
                                     end
@@ -390,7 +399,7 @@ include("physical_offsets_documents.jl")
                                     @test pending.requested_parameter_sequence >
                                         pending.active_parameter_sequence
                                     Clocks.update!(wall, Int64(10000000101))
-                                    wait_until(() -> !PipeWireAO.isrunning(node))
+                                    wait_until(() -> !PipeWireAO.isrunning(node), "graph shutdown")
                                     # No resumed primary frame can adopt the incompatible
                                     # pending transaction: the receiver quits its owner.
                                     @test node.owner.process_count == processed
@@ -402,13 +411,20 @@ include("physical_offsets_documents.jl")
                                         compensated, wire, 4
                                     ) === nothing
                                 end
-                                # Hold/quit the graph before removing its transport peers.
-                                quit!(node)
-                                wait_until(() -> !PipeWireAO.isrunning(node))
                             finally
-                                HIL.with_array_stream(wire, 1) do _
-                                    foreach(close, reverse(links))
-                                    close(registry)
+                                # Stop execution before removing its transport peers.
+                                progress("$scenario: stop graph and remove links")
+                                try
+                                    quit!(node)
+                                    wait_until(() -> !PipeWireAO.isrunning(node), "graph shutdown")
+                                finally
+                                    HIL.with_array_stream(wire, 1) do _
+                                        try
+                                            foreach(close, reverse(links))
+                                        finally
+                                            close(registry)
+                                        end
+                                    end
                                 end
                             end
                         end
@@ -419,13 +435,22 @@ include("physical_offsets_documents.jl")
                         quit!(node)
                     end
                 end
+                exchange = nothing
                 try
                     failure = try
                         Offsets.with_receiver(
                             prepared; node, remote, frame_clock = observer, clock = wall
                         ) do
-                            progress("receiver connected; run graph")
+                            # The main task blocks in native run!. Require the independently
+                            # scheduled exchange and its stream loop to be ready first.
+                            exchange = start_exchange()
+                            wait_until("start test exchange") do
+                                exchange_ready[] || istaskdone(exchange)
+                            end
+                            istaskdone(exchange) && fetch(exchange)
+                            progress("receiver and exchange ready; run graph")
                             FGP.run!(node)
+                            progress("$scenario: graph loop exited")
                         end
                         nothing
                     catch error
@@ -443,10 +468,18 @@ include("physical_offsets_documents.jl")
                     end
                 finally
                     quit!(node)
-                    fetch(exchange)
-                    close(node)
+                    try
+                        if exchange !== nothing
+                            wait_until(() -> istaskdone(exchange), "finish test stream shutdown")
+                            fetch(exchange)
+                        end
+                    finally
+                        # The exchange task may still own transport peers after a timeout.
+                        (exchange === nothing || istaskdone(exchange)) && close(node)
+                    end
                 end
             end
         end
+        progress("finished $scenario")
     end
 end
