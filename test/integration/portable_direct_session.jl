@@ -148,6 +148,15 @@ function published_session(directory, id)
     end
 end
 
+function operator_cli(args...)
+    return mktemp() do _, io
+        exitcode = redirect_stdout(() -> RTC.SessionCLI.main(collect(args)), io)
+        @test exitcode == 0
+        seekstart(io)
+        return RTC.Common.parse_json(read(io, String))
+    end
+end
+
 function check_attachment(seed, root)
     prefix = get(ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
     paths = D.installed_paths(prefix)
@@ -234,6 +243,20 @@ function check_attachment(seed, root)
                     close(client)
                 end
             end
+        end
+        @testset "Operator CLI selects, restarts and holds the software RTC" begin
+            selected = operator_cli("select-session", "--session", id)
+            @test (selected["session_id"], selected["owner_pid"], selected["lifecycle"]) ==
+                  (id, attached.main_pid, "ready")
+            command(args...) = operator_cli("control", "--session", id, "--", args...)
+            started = command("session-start")
+            @test started["ok"] && started["state"] == "Running"
+            restarted = operator_cli("restart", "--session", id)
+            @test all(restarted[k]["session_id"] == id for k in ("hold", "reset", "start"))
+            @test [restarted[k]["state"] for k in ("hold", "reset", "start")] ==
+                  ["Ready", "Ready", "Running"]
+            held = command("session-stop")
+            @test held["ok"] && held["state"] == "Ready"
         end
         stopped = Runtime.stop!(attached; deadline = deadline(60))
         @test stopped["direct_attach"] && stopped["phase"] == "stopped"
