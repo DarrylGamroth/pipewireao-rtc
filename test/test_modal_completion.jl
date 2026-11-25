@@ -1,11 +1,11 @@
 module ModalCompletionTests
 using Test, LinearAlgebra, PipeWireAORTC, FilterGraphAlgorithms
+using AdaptiveOpticsCalibration, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
+using FilterGraphPipeWire, FilterGraphs
+using PipeWireAORTC.InstrumentCalibration: modal_completion
+
 const IC = PipeWireAORTC.InstrumentConfiguration
 const FGA = FilterGraphAlgorithms
-const LA = LinearAlgebra
-const GraphOwner = PipeWireAORTC.GraphOwner
-const Calibration = PipeWireAORTC.InstrumentCalibration
-include(joinpath(@__DIR__, "../ext/modal_completion.jl"))
 
 grid_mirror(n) = (;
     layout = (;
