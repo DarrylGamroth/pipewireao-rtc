@@ -6,6 +6,7 @@ const COLD = (
     "analysis_links",
     "instrument_influences_science",
     "aos_graph_adapters",
+    "clocked_backend_configuration",
     "ideal_pupil_relay_preparation",
     "test_aos_configuration_bindings",
     "optical_model_paths",
