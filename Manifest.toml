@@ -324,7 +324,7 @@ version = "0.1.0+0"
 deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "PipeWireAOQueue_jll", "Pkg", "PrecompileTools", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.7.30"
+version = "0.7.31"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
