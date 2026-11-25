@@ -133,6 +133,15 @@ function fixture(package, plugin, prefix, cpu, julia, project)
             "parameters" => Dict("managed.scale:scale:coefficients" => binding),
         ),
     )
+    document(
+        joinpath(package, "analysis.conf"),
+        Dict(
+            "graph" => "graphs/scale.conf.in",
+            "name" => "managed.optional",
+            "rate" => "1/1",
+            "links" => [],
+        ),
+    )
     provider = joinpath(@__DIR__, "portable_direct_provider.jl")
     roles = ("core", "rtc", "session", "detector")
     spec = Dict(
@@ -141,7 +150,11 @@ function fixture(package, plugin, prefix, cpu, julia, project)
         "cpu-latency-us" => nothing,
         "session" => "session.conf",
         "core" => "core.conf",
-        "client" => Dict(role => "client.conf" for role in roles),
+        "client" => Dict(role => "client.conf" for role in (roles..., "analysis")),
+        "analysis" => [
+            Dict("name" => "probe", "cpus" => [cpu], "config" => "analysis.conf"),
+            Dict("name" => "missing", "cpus" => [cpu], "config" => "missing-analysis.conf"),
+        ],
         "environment" => Dict(
             binding => "@PACKAGE@/coefficients.bin",
             "MANAGED_FGN_CONFIG" => "@RUNTIME@/scale.conf",
@@ -325,12 +338,31 @@ ExecStopPost=$launcher cleanup --invocation \${INVOCATION_ID} --runtime-root $ro
         try
             run(`systemctl --user daemon-reload`)
             run(`systemctl --user start $unit`)
-            invocation = S.properties(unit)["InvocationID"]
+            active = S.properties(unit; extra = "ActiveEnterTimestampMonotonic")
+            invocation = active["InvocationID"]
             runtime = joinpath(root, invocation)
             record = Launch.load_record(runtime, invocation, "detector")
             @test record["phase"] == "prepared"
-            @test Set(keys(record["owners"])) ==
-                Set(("core", "detector", "fgn", "parameters"))
+            owners = record["owners"]
+            @test Set(keys(owners)) ==
+                Set(("core", "detector", "fgn", "parameters", "analysis-probe", "analysis-missing"))
+            probe = owners["analysis-probe"]
+            @test probe["optional"] && probe["state"] == "submitted"
+            @test owners["analysis-missing"]["optional"]
+            @test occursin("missing-analysis.conf", only(record["analysis_errors"]))
+            # The public environment can load the analysis entry point and parse
+            # its configuration. Graph execution requires FilterGraphPipeWire.
+            @test Base.find_package("FilterGraphPipeWire") === nothing
+            wait_proof(60, "optional analysis process failure") do
+                S.properties(probe["unit"])["ActiveState"] == "failed"
+            end
+            failed = S.properties(
+                probe["unit"]; extra = "Result,ExecMainStatus,ExecMainStartTimestampMonotonic"
+            )
+            @test failed["Result"] == "exit-code" && failed["ExecMainStatus"] == "1"
+            @test parse(Int64, failed["ExecMainStartTimestampMonotonic"]) >=
+                parse(Int64, active["ActiveEnterTimestampMonotonic"])
+            @test S.properties(unit)["ActiveState"] == "active"
             @test record["owners"]["fgn"]["graph-nodes"] == ["managed.scale"]
             @test ispath(record["remote"])
             wait_proof(
@@ -367,9 +399,12 @@ ExecStopPost=$launcher cleanup --invocation \${INVOCATION_ID} --runtime-root $ro
                 role ->
                     !isdir("/proc/$(role["pid"])") ||
                     !S.old_process_exists(Int(role["pid"]), UInt64(role["start-ticks"])),
-                values(record["owners"]),
+                (owner for owner in values(owners) if !get(owner, "optional", false)),
             )
             @test all(S.quiescent_unit, S.listed_units(invocation))
+            @test isempty(S.listed_jobs(invocation))
+            @test S.quiescent_unit(probe["unit"])
+            @test !islink(joinpath(S.runtime_unit_directory(), probe["unit"]))
             @test !ispath(record["remote"])
         catch
             run(ignorestatus(`journalctl --user -u $unit -n 35 --no-pager`))
