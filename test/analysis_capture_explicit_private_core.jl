@@ -174,3 +174,7 @@ end
         end
     end
 end
+
+@testset "Finite capture records an incomplete outcome if its discard factory is absent" begin
+    check_missing_discard_factory()
+end

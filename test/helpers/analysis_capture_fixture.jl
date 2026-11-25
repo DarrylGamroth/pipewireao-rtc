@@ -69,3 +69,62 @@ function start_analysis_capture(path, remote, state, log)
         wait = false,
     )
 end
+
+function check_missing_discard_factory()
+    with_control_private_core(;
+        modules = "{ name = libpipewire-module-spa-node-factory }"
+    ) do remote, directory, _
+        loop = ThreadLoop("analysis.capture.missing-factory")
+        context, core = with_thread_loop_lock(loop) do _
+            context = Context(loop)
+            context, CoreConnection(context; properties = Dict("remote.name" => remote))
+        end
+        start!(loop)
+        format = NdArrayFormat(
+            NdArray.F32_LE, (2, 2); layout = NdArray.ROW_MAJOR, rate = SPA.Fraction(1000, 1)
+        )
+        source = NdArraySource(
+            core,
+            "analysis-test-source",
+            zeros(Float32, 4),
+            format;
+            schema = "test/analysis-samples-f32/1",
+        )
+        start!(source)
+        name = "capture-missing-factory"
+        path = analysis_capture_configuration(directory, name)
+        log_path = joinpath(directory, "analysis.log")
+        log = open(log_path, "w+")
+        child = nothing
+        state = joinpath(directory, "state")
+        try
+            child = start_analysis_capture(path, remote, state, log)
+            # Cold compilation is included in this bound; endpoint discovery's
+            # unchanged 120s timeout cannot satisfy the required early failure.
+            wait_proof(
+                () -> Base.process_exited(child),
+                90,
+                "missing native discard factory failure",
+            )
+            @test !success(child)
+            text = read(log_path, String)
+            @test occursin("pw_", text) && occursin("failed:", text)
+            @test !occursin("endpoint discovery timed out", text)
+            receipt = PipeWireAORTC.Common.read_json(
+                joinpath(ENV["PIPEWIREAO_RUNTIME_DIR"], name * "-capture.json")
+            )
+            @test receipt["state"] == "incomplete"
+            @test !ispath(joinpath(state, "pipewireao/configuration"))
+        finally
+            child === nothing || stop_proof_child!(child, "missing-factory analysis child")
+            close(log)
+            close(source)
+            with_thread_loop_lock(loop) do _
+                close(core)
+                close(context)
+            end
+            close(loop)
+        end
+    end
+    return nothing
+end
