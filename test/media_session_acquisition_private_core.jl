@@ -34,7 +34,10 @@ end
 respond!(runtime, ticket, command) =
     error("unsupported initial owner operation $(typeof(command))")
 
-function check_initial_quit(socket, directory, daemon, lifecycle)
+function check_initial_quit(
+    socket, directory, daemon, lifecycle; clock = S.Clocks.SystemNanoClock(),
+    observation_timeout = OBSERVATION_TIMEOUT_SECONDS,
+)
     owner = nothing
     worker = nothing
     session = nothing
@@ -105,8 +108,8 @@ function check_initial_quit(socket, directory, daemon, lifecycle)
         )
         path = joinpath(directory, "session.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path, configuration)
-        session = S.Session(path; clock = S.Clocks.SystemNanoClock())
-        deadline = Client.monotonic() + OBSERVATION_TIMEOUT_SECONDS
+        session = S.Session(path; clock)
+        deadline = Client.monotonic() + observation_timeout
         while isempty(session.sources)
             istaskfailed(worker) && fetch(worker)
             S.Agent.do_work(session)
@@ -120,7 +123,7 @@ function check_initial_quit(socket, directory, daemon, lifecycle)
         # retains its five-second cleanup budget on a real, advancing clock.
         started = S.Clocks.time_nanos(session.source_clock)
         S.stage!(session.queue, S.ShutdownRequested())
-        deadline = Client.monotonic() + OBSERVATION_TIMEOUT_SECONDS
+        deadline = Client.monotonic() + observation_timeout
         while !session.done
             istaskfailed(worker) && fetch(worker)
             S.Agent.do_work(session)
@@ -131,7 +134,9 @@ function check_initial_quit(socket, directory, daemon, lifecycle)
         end
         elapsed = S.Clocks.time_nanos(session.source_clock) - started
         @test session.done
-        @test elapsed <= EFFECT_BUDGET_NS
+        if clock isa S.Clocks.SystemNanoClock
+            @test elapsed <= EFFECT_BUDGET_NS
+        end
         @test STATUS_OPERATION in operations
         @test all(
             operation -> operation in (STATUS_OPERATION, SHUTDOWN_OPERATION), operations
@@ -156,18 +161,20 @@ function check_initial_quit(socket, directory, daemon, lifecycle)
     return nothing
 end
 
-@testset "Native initial acquisition Hold and acknowledged cold Shutdown" begin
-    @test S.SESSION_EFFECT_TIMEOUT_NS == EFFECT_BUDGET_NS
-    with_control_private_core() do socket, directory, daemon
-        chmod(dirname(socket), 0o700)
-        # The first case must succeed without first exercising the live path.
-        for (name, lifecycle) in (
-            ("first Preparing", Acquisition.Preparing),
-            ("repeated Preparing", Acquisition.Preparing),
-            ("Prepared", Acquisition.Prepared),
-        )
-            @testset "$name" begin
-                check_initial_quit(socket, directory, daemon, lifecycle)
+if abspath(PROGRAM_FILE) == @__FILE__
+    @testset "Native initial acquisition Hold and acknowledged cold Shutdown" begin
+        @test S.SESSION_EFFECT_TIMEOUT_NS == EFFECT_BUDGET_NS
+        with_control_private_core() do socket, directory, daemon
+            chmod(dirname(socket), 0o700)
+            # The first case must succeed without first exercising the live path.
+            for (name, lifecycle) in (
+                ("first Preparing", Acquisition.Preparing),
+                ("repeated Preparing", Acquisition.Preparing),
+                ("Prepared", Acquisition.Prepared),
+            )
+                @testset "$name" begin
+                    check_initial_quit(socket, directory, daemon, lifecycle)
+                end
             end
         end
     end

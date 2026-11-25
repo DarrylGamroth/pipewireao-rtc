@@ -7,6 +7,7 @@ const R = PipeWireAORTC.RunnerCodec
 const Clocks = S.Clocks
 const SECOND = Int64(1_000_000_000)
 include("control_private_core.jl")
+include("media_session_acquisition_private_core.jl")
 
 function host_session(socket, directory, daemon)
     policy = Dict{String,Any}(
@@ -147,6 +148,18 @@ function drain_failure(session)
 end
 
 @testset "Native host terminal paths" begin
+    @testset "Native acquisition acknowledges shutdown before Connect" begin
+        with_control_private_core() do socket, directory, daemon
+            chmod(dirname(socket), 0o700)
+            # The standalone acquisition selector measures the cold deadline.
+            # This check holds time fixed while proving the native receipts.
+            acquisition = MediaSessionAcquisitionPrivateCoreTests
+            acquisition.check_initial_quit(
+                socket, directory, daemon, acquisition.Acquisition.Preparing;
+                clock = Clocks.CachedNanoClock(Int64(0)), observation_timeout = 60.0,
+            )
+        end
+    end
     @testset "A quiet deadline schedules fault compensation as work" begin
         with_control_private_core() do socket, directory, daemon
             session = host_session(socket, directory, daemon)
