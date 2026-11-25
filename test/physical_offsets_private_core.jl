@@ -35,8 +35,7 @@ const SCC_METADATA = (
 
 include("physical_offsets_documents.jl")
 
-@testset "native physical offsets keep both outputs paired and GPI frames independent" begin
-    Threads.nthreads(:default) >= 4 || error("run with --threads=4,0")
+function test_physical_offsets()
     for scenario in (:silence, :disconnect, :pending_unrelated, :pending_mixed)
         progress("starting $scenario")
         mktempdir() do directory
@@ -482,4 +481,11 @@ include("physical_offsets_documents.jl")
         end
         progress("finished $scenario")
     end
+end
+
+@testset "native physical offsets keep both outputs paired and GPI frames independent" begin
+    Threads.nthreads(:default) >= 4 || error("run with --threads=4,0")
+    # The graph blocks its owning thread in FGP.run!. Leave the main Julia
+    # thread available for libuv to complete writes to a CI output pipe.
+    fetch(ThreadPinning.@spawnat 2 test_physical_offsets())
 end
