@@ -319,7 +319,20 @@ end
                 package = sealed_source, destination = sealed_destination,
                 pipewire_prefix = prefix, julia_executable
             )) == sealed_destination
-            @test read(joinpath(sealed_destination, "bin/pipewireao-rtc-session"), String) == script
+            installed_launcher = joinpath(sealed_destination, "bin/pipewireao-rtc-session")
+            @test read(installed_launcher, String) == script
+            activation = P.Common.read_json(joinpath(
+                sealed_destination, "systemd", P.SessionLaunch.ACTIVATION_FILE,
+            ))
+            hook = activation["launcher"]
+            @test hook == joinpath(sealed_destination, "bin/pipewireao-rtc-session-hook")
+            @test haskey(activation["files"], installed_launcher)
+            @test activation["files"][hook] == P.SessionLaunch.graph_file_identity(hook)
+            unit = read(joinpath(sealed_destination, "systemd/pipewireao-session@.service"), String)
+            @test startswith(only(filter(startswith("ExecStop="), split(unit, '\n'))),
+                "ExecStop=\"$hook\" stop --unit %n")
+            @test startswith(only(filter(startswith("ExecStopPost="), split(unit, '\n'))),
+                "ExecStopPost=\"$hook\" cleanup --invocation \${INVOCATION_ID}")
         end
         sealed_destination = joinpath(directory, "tampered launcher")
         script = P.SessionInstall.installed_launcher(julia_executable; environment = sealed_destination)

@@ -403,14 +403,68 @@ end
             using CacheHelper
             main(args) = (print(CacheHelper.value(args)); 0)
             end
-            const SessionCLI = MediaSession
+            module SessionCLI
+            main(args) = (print(join(args, '\\n')); 0)
+            end
             end
             """)
         config = "/rtc/file with space"
         service = Cmd(science.rtc_arguments(julia, project, config; installed_cache = true))
-        client = joinpath(directory, "client")
-        write(client, I.installed_launcher(julia; environment = project, installed_cache = true))
-        chmod(client, 0o700)
+        client = joinpath(project, "client")
+        sealed = I.installed_launcher(julia; environment = project, legacy = true)
+        write(client, sealed)
+        chmod(client, 0o755)
+        strict = I.installed_launcher(julia; environment = project, installed_cache = true)
+        hook = I.install_service_launcher!(client, strict)
+        @test hook != client && read(client, String) == sealed
+        @test I.install_service_launcher!(hook, strict) == hook
+        @test_throws "reserved session hook" I.install_service_launcher!(client, strict)
+
+        unit = "pipewireao-session@test.service"
+        runtime = joinpath(directory, "pipewireao-session-test")
+        invocation = "a"^32
+        spec = Dict("placement" => Dict("session" => Dict("leader-cpu" => 2)),
+                    "source-owner" => "detector")
+        activation = (; julia, project, digest = "a"^64)
+        direct = (; config, environment = Dict(), services = Dict(),
+                  requisite = String[], wants = String[])
+        launch = PipeWireAORTC.SessionLaunch
+        request = launch.Request(project, "/sdk", unit, hook, runtime)
+        template(suffix) = read(joinpath(
+            PipeWireAORTC.package_root(), "assets/deployment",
+            "pipewireao-session$suffix@.service.in",
+        ), String)
+        render(template; direct = nothing, launcher = hook) = I.installed_unit(
+            template, spec; launcher, package = project, prefix = "/sdk",
+            executable = "/sdk/bin/rtc", activation, direct,
+        )
+        managed_unit = render(template(""))
+        direct_unit = render(template("-direct"); direct)
+        function hook_command(unit_text, directive)
+            line = only(filter(startswith(directive), split(unit_text, '\n')))
+            return Cmd(Base.shell_split(replace(chopprefix(line, directive),
+                "%n" => unit, "%t/pipewireao-session-%i" => runtime,
+                "\${INVOCATION_ID}" => invocation)))
+        end
+        stop = hook_command(managed_unit, "ExecStop=")
+        cleanup = hook_command(managed_unit, "ExecStopPost=")
+        direct_stop = hook_command(direct_unit, "ExecStop=")
+        @test stop.exec == [hook, "stop", "--unit", unit, "--runtime-root", runtime]
+        @test direct_stop.exec == [stop.exec; "--direct"]
+        @test cleanup.exec == [
+            hook, "cleanup", "--invocation", invocation, "--runtime-root", runtime,
+            "--source-role", "detector",
+        ]
+        @test !occursin("ExecStopPost=", direct_unit)
+        stop_record = launch.S.ExecCommand(hook, direct_stop.exec, false)
+        @test launch.stop_hook_valid([stop_record], request; direct = true)
+        legacy_request = launch.Request(project, "/sdk", unit, client, runtime)
+        @test !launch.stop_hook_valid([stop_record], legacy_request; direct = true)
+        older_template = replace(template(""), I.INSTALLED_COMMAND => "@RTC_COMMAND@")
+        older_unit = render(older_template; launcher = client)
+        historical_stop = hook_command(older_unit, "ExecStop=")
+        @test historical_stop.exec[1] == client
+        @test hook_command(older_unit, "ExecStopPost=").exec[1] == client
         withenv("JULIA_DEPOT_PATH" => shared * ":", "JULIA_LOAD_PATH" => "@:@stdlib") do
             @test !success(pipeline(service; stdout = devnull, stderr = devnull))
             @test !isdir(joinpath(shared, "compiled"))
@@ -420,10 +474,19 @@ end
             I.prepare_package_cache(julia, project)
             rm(joinpath(shared, "compiled"); recursive = true)
             @test read(service, String) == config
-            @test read(`$client stop $config`, String) == config
+            for command in (stop, direct_stop, cleanup)
+                @test read(command, String) == join(command.exec[2:end], '\n')
+            end
+            @test !isdir(joinpath(shared, "compiled"))
+            @test read(historical_stop, String) == join(historical_stop.exec[2:end], '\n')
+            @test isdir(joinpath(shared, "compiled"))
+            rm(joinpath(shared, "compiled"); recursive = true)
             cache = joinpath(project, science.RTC_CACHE_DIRECTORY)
             rm(cache; recursive = true)
             @test !success(pipeline(service; stdout = devnull, stderr = devnull))
+            for command in (stop, direct_stop, cleanup)
+                @test !success(pipeline(command; stdout = devnull, stderr = devnull))
+            end
             @test !isdir(cache)
             @test !isdir(joinpath(shared, "compiled"))
             # The managed entry and its re-exec can use different depot settings.

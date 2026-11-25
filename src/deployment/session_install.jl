@@ -50,6 +50,16 @@ function installed_launcher(
            pin * startup * exec_julia * entry * "\n"
 end
 
+# A sealed operator launcher may predate installed package images.
+function install_service_launcher!(launcher, script)
+    read(launcher, String) == script && return launcher
+    hook = joinpath(dirname(launcher), "pipewireao-rtc-session-hook")
+    !(ispath(hook) || islink(hook)) || throw(ArgumentError("reserved session hook: $hook"))
+    write(hook, script)
+    chmod(hook, 0o755)
+    return hook
+end
+
 _installed_source_owner(value) =
     throw(ArgumentError("new session install requires a declared source owner"))
 _installed_source_owner(::String) = nothing
@@ -677,7 +687,12 @@ function finish_install(
         throw(ArgumentError("direct RTC installation requires independently supplied controller graph services"))
     direct === nothing || (template = read(direct_template, String))
     installed_cache = occursin(INSTALLED_COMMAND, template)
+    service_launcher = launcher
     if installed_cache
+        strict_script = installed_launcher(
+            julia; environment, commit, historical_publish, installed_cache,
+        )
+        service_launcher = install_service_launcher!(launcher, strict_script)
         settings = cache_environment(installed_spec["session-runtime"]["environment"],
                                      destination, prefix, external)
         prepare_package_cache(julia, environment;
@@ -685,12 +700,13 @@ function finish_install(
     end
     activation = occursin("@ACTIVATION_ENVIRONMENT@", template) ?
         install_activation!(
-            destination, prefix, julia, environment, launcher, installed_spec, commit;
+            destination, prefix, julia, environment, service_launcher, installed_spec, commit;
             sysimage, validated_image, direct, installed_cache,
         ) : nothing
     unit = installed_unit(
         template, installed_spec;
-        launcher, package = destination, prefix, executable, external, persistent, activation, direct,
+        launcher = service_launcher, package = destination, prefix, executable, external,
+        persistent, activation, direct,
     )
     write(joinpath(systemd, "pipewireao-session@.service"), unit)
     return destination
