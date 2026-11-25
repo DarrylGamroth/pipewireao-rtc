@@ -525,6 +525,47 @@ end
     @test_throws ArgumentError S.Machine(0)
 end
 
+@testset "Only a timely source Hold can authorize fault cleanup" begin
+    for failed_phase in (S.HoldSources, S.HoldGraphs, S.WithdrawLinks)
+        clock = zero_clock()
+        m = running(; clock)
+        S.submit!(m, S.Request(S.SetProperties(); token = 70, payload = "science"))
+        mutation = something(m.effect)
+        S.submitted!(m, mutation)
+        S.required_lost!(m, "required input Link removed")
+        @test S.take_cancelled!(m) === mutation
+        cleanup = (S.HoldSources, S.HoldGraphs, S.WithdrawLinks)
+        sequence!(m, cleanup[1:(findfirst(==(failed_phase), cleanup)-1)])
+        late = something(m.effect)
+        @test late.effect isa failed_phase
+        @test isempty(S.take_replies!(m))
+        Clocks.update!(clock, late.deadline)
+        S.complete!(m, late)
+        @test S.take_cancelled!(m) === late
+
+        if failed_phase === S.HoldSources
+            @test m.effect.effect === S.Disconnect()
+            acknowledge!(m)
+        elseif failed_phase === S.HoldGraphs
+            @test m.effect.effect === S.WithdrawLinks()
+            S.tick!(m)
+        end
+        failed = only(S.take_replies!(m))
+        @test failed.token == 70 && failed.unknown
+        @test failed.error == "required input Link removed"
+        @test failed.lifecycle == R.Fault && m.effect === nothing
+
+        S.observe!(m, S.Observation((; loop_held = true), (; running = false)))
+        S.submit!(m, S.Request(S.Groups(); token = 71))
+        groups = only(S.take_replies!(m))
+        @test groups.outcome === :Observed && groups.details.loop_held
+        @test groups.lifecycle == R.Fault
+        S.submit!(m, S.Request(S.StartGroup(); token = 72, payload = "loop"))
+        refused = only(S.take_replies!(m))
+        @test refused.outcome === :Failed && !refused.unknown && m.effect === nothing
+    end
+end
+
 @testset "Emergency disconnect outlives the expired source-Hold budget" begin
     clock = Clocks.CachedNanoClock(0)
     m = running(; clock)
@@ -608,7 +649,7 @@ end
 end
 
 @testset "Accepted Quit precedes publication fence and survives fence failure" begin
-    for disposition in (:complete, :fail, :expire)
+    for disposition in (:complete, :fail, :expire, :late_completion)
         clock = Clocks.CachedNanoClock(0)
         m = S.Machine(101; clock)
         S.submit!(m, S.Request(S.Quit(); token = 23))
@@ -632,10 +673,13 @@ end
             S.complete!(m, fence)
         elseif disposition === :fail
             S.fail!(m, fence, "publication unavailable"; submitted = false)
-        else
+        elseif disposition === :expire
             Clocks.update!(clock, 5_000_000_000)
             S.tick!(m)
             @test S.take_cancelled!(m) === fence
+        else
+            Clocks.update!(clock, fence.deadline)
+            S.complete!(m, fence)
         end
         @test m.lifecycle == R.Offline &&
               Hsm.current(m) === :Offline &&
