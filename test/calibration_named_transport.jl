@@ -21,8 +21,8 @@ function named_transport(remote, directory, daemon)
     links = PipeWireAO.Link[]
     sinks = Stream[]
     commands = (
-        woofer = CalibrationNamedCommandTests.prepare_command(2, "test.woofer/1"),
-        tiptilt = CalibrationNamedCommandTests.prepare_command(3, "test.tiptilt/1"),
+        woofer = CalibrationNamedCommandTests.prepare_command(2),
+        tiptilt = CalibrationNamedCommandTests.prepare_command(3),
     )
     nodes = Ext.command_graph_names(commands, "test.named")
     actual = map(
@@ -100,15 +100,14 @@ function named_transport(remote, directory, daemon)
                     end,
                 )
                 push!(sinks, sink)
-                format = Ext.calibration_probe_format(
-                    FilterGraphs.output_formats(descriptor.graph).demanded, 500//1
-                )
+                demanded = FilterGraphs.output_formats(descriptor.graph).demanded
+                format = Ext.calibration_probe_format(demanded, 500//1)
                 connect!(
                     sink,
                     :input;
                     flags = STREAM_MAP_BUFFERS | STREAM_INACTIVE | STREAM_DONT_RECONNECT |
                             STREAM_NO_CONVERT,
-                    params = Ext.calibration_probe_parameters(format, "test.$key/1"),
+                    params = Ext.calibration_probe_parameters(format, demanded.schema),
                 )
             end
         end

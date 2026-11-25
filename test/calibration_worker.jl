@@ -14,7 +14,7 @@ struct FailedGraphCleanup end
 Base.close(::FailedGraphCleanup) = error("graph cleanup failed")
 
 function stopped_before_running(remote, phase, condition, guard)
-    projection = CalibrationNamedCommandTests.prepare_command(2, "test.worker-cold/1")
+    projection = CalibrationNamedCommandTests.prepare_command(2)
     node = receiver = machine = nothing
     receipts = Channel{Workers.AbstractGraphReceipt}(2)
     commands = Channel{Workers.StopGraph}(1)
@@ -59,7 +59,7 @@ function stopped_before_running(remote, phase, condition, guard)
 end
 
 function queued_before_run(remote, condition, guard)
-    projection = CalibrationNamedCommandTests.prepare_command(2, "test.worker-prerun/1")
+    projection = CalibrationNamedCommandTests.prepare_command(2)
     node = machine = nothing
     notify() = CalibrationEndpoint.wake!(condition, guard)
     receipts = Channel{Workers.AbstractGraphReceipt}(2)
@@ -184,9 +184,7 @@ function worker_trials(remote, directory, daemon)
         end
         @testset "worker messages preserve affinity, cancellation and cleanup" begin
             for trial in 1:12
-                projection = CalibrationNamedCommandTests.prepare_command(
-                    2, "test.worker-race/1"
-                )
+                projection = CalibrationNamedCommandTests.prepare_command(2)
                 worker = nothing
                 try
                     worker = Ext.start_calibration_graph(
@@ -259,9 +257,7 @@ function worker_trials(remote, directory, daemon)
             @test_throws CompositeException Ext.finish_calibration_graph!(worker)
         end
         @testset "startup failure still transfers cleanup acknowledgement" begin
-            projection = CalibrationNamedCommandTests.prepare_command(
-                2, "test.worker-failure/1"
-            )
+            projection = CalibrationNamedCommandTests.prepare_command(2)
             worker = Ext.start_calibration_graph(
                 projection,
                 joinpath(directory, "absent"),
