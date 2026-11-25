@@ -355,12 +355,25 @@ throw; the executable wrapper preserves Julia's error reporting and exit status.
 function main(argv = ARGS)
     isempty(argv) && throw(
         ArgumentError(
-            "expected install, prepare, stop, cleanup, sessions, select-session, control or restart",
+            "expected export, install, prepare, stop, cleanup, sessions, select-session, control or restart",
         ),
     )
     command = first(argv)
     rest = argv[2:end]
-    if command == "install"
+    if command == "export"
+        args = C.cli_arguments(rest; required = [
+            "instrument", "profile", "host", "environment", "destination", "pipewire-prefix",
+        ])
+        # Resolve optional science packages in the site's pinned environment.
+        runtime = Dict("kind" => "registered", "project" => ".")
+        environment = D.application_environment(Dict("runtime" => runtime), args.environment)
+        script = joinpath(PipeWireAORTC.package_root(), "scripts", "export_instrument.jl")
+        julia = Base.julia_cmd().exec[1]
+        inputs = [args.instrument, args.destination, args.profile, args.host]
+        command = `$julia --startup-file=no --project=$environment $script $inputs`
+        run(addenv(command, "JULIA_LOAD_PATH" => "@:@stdlib",
+            "PIPEWIREAO_PREFIX" => abspath(args.pipewire_prefix)))
+    elseif command == "install"
         SessionInstall.main(rest)
     elseif command == "prepare"
         SessionLaunch.main(argv; render!, validate_profile = require_node_owners)

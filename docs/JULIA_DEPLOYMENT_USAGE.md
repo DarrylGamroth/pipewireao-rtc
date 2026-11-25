@@ -293,7 +293,10 @@ template as package resources. Resource lookup is relative to the installed
 registered package, not to a copied SDK directory. The repository's maintained
 scripts use Julia.
 
-Pkg instantiates the registered dependency environment. The exporter copies a
+The [operator CLI](../README.md#deploy-an-instrument-from-its-definitions) can
+export a definitions-only instrument in a site-provisioned dependency environment.
+The site supplies the Project.toml beside the selected Manifest when the
+instrument has no Project.toml of its own. The exporter copies a
 supplied Manifest into `Manifest.toml`, including when the source Manifest uses
 a Julia-versioned filename. The runtime directory uses `Project.toml` and
 `Manifest.toml`.

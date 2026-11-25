@@ -314,11 +314,13 @@ function installed_unit(
 )
     quote_unit(value) = String(JSON.json(escape_unit_specifiers(value)))
     lines = String[]
+    installed_cache = occursin(INSTALLED_COMMAND, template)
     if occursin("@ACTIVATION_ENVIRONMENT@", template)
         activation === nothing && throw(ArgumentError("RTC unit requires its installed activation"))
         launch = PipeWireAORTC.SessionLaunch
         env = Dict(launch.ACTIVATION_ENV => activation.digest, launch.INSTALLATION_ENV => package,
                    "PIPEWIREAORTC_JULIA" => activation.julia, "PIPEWIREAORTC_PROJECT" => activation.project)
+        installed_cache && (env["JULIA_LOAD_PATH"] = "@:@stdlib")
         append!(lines, ["Environment=" * quote_unit(key * "=" * env[key]) for key in sort!(collect(keys(env)))])
         if direct !== nothing
             for key in sort!(collect(keys(direct.environment)))
@@ -328,7 +330,6 @@ function installed_unit(
     end
     command = quote_unit(executable)
     sysimage = activation === nothing ? nothing : get(activation, :sysimage, nothing)
-    installed_cache = occursin(INSTALLED_COMMAND, template)
     if installed_cache || sysimage !== nothing
         installed_cache || occursin("@RTC_COMMAND@", template) ||
             throw(ArgumentError("pinned RTC package does not support a Julia sysimage"))
@@ -571,7 +572,8 @@ function cache_environment(declared, package, prefix, external)
         end
         # Invocation-specific paths can only be resolved at service start.
         occursin(r"@[A-Z_]+@", value) && continue
-        get(ENV, name, nothing) == value || (settings[name] = value)
+        baseline = name == "JULIA_LOAD_PATH" ? "@:@stdlib" : get(ENV, name, nothing)
+        baseline == value || (settings[name] = value)
     end
     return settings
 end
@@ -588,7 +590,10 @@ function prepare_package_cache(julia, project; settings = Dict{String,String}(),
         """ * LOAD_INSTALLED_RTC
     check = Cmd(ScienceExport.rtc_command(julia, project; installed_cache = true, entrypoint = verify))
     # A managed RTC can re-exec after applying its session-only environment.
-    environments = !direct && !isempty(settings) ? (Dict{String,String}(), settings) : (settings,)
+    # Pkg Apps pins its own load path. Cache the service's selected project.
+    baseline = Dict("JULIA_LOAD_PATH" => "@:@stdlib")
+    selected = merge(baseline, settings)
+    environments = !direct && selected != baseline ? (baseline, selected) : (selected,)
     for env in environments
         run(addenv(stage, env...))
     end

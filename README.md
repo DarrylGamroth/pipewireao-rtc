@@ -115,7 +115,7 @@ With Julia 1.13 and DarrylGamrothRegistry available, install the operator CLI
 from the registry.
 
 ```sh
-julia --startup-file=no -e 'using Pkg; Pkg.Apps.add(name="PipeWireAORTC", version="0.7.6")'
+julia --startup-file=no -e 'using Pkg; Pkg.Apps.add("PipeWireAORTC")'
 export PATH="$HOME/.julia/bin:$PATH"
 pipewireao-rtc-session sessions
 ```
@@ -130,6 +130,39 @@ pipewireao-rtc-session -- control --session SESSION -- status
 Pkg Apps installs the operator command in its own Julia environment. The
 systemd unit and its local launcher use the instrument's verified Project and
 Manifest. Julia callers can use `PipeWireAORTC.SessionCLI.main(["sessions"])`.
+
+### Deploy an instrument from its definitions
+
+The scientist supplies an instrument directory containing the detector and
+mirror declarations, RTC configuration, named graphs, calibration assets and
+a portable profile. The site provisions a Julia runtime environment with a
+registered Project and Manifest, the matching native PipeWireAO prefix, and a
+host profile with CPU placement and device bindings. Multiple instruments can
+reuse one site environment when their dependencies are compatible.
+
+The following commands use the `export` subcommand from this checkout.
+To try it before release, install the operator app with
+`Pkg.Apps.develop(path="/absolute/path/to/pipewireao-rtc")`.
+Use a site environment containing the updated registered RTC for instruments
+without a Project.toml. With an older site RTC, keep the instrument's authored
+Project.toml. The site instantiates the selected packages and artifacts once.
+
+```sh
+pipewireao-rtc-session export --instrument "$instrument" \
+  --profile "$instrument/profiles/$mode/profile.yaml" --host "$host_profile" \
+  --environment "$site_environment" --pipewire-prefix "$prefix" --destination "$export_dir"
+pipewireao-rtc-session install --package "$export_dir" \
+  --pipewire-prefix "$prefix" --destination "$install_dir"
+```
+
+Both destinations must be new. Export runs the site's selected RTC and science
+packages and copies their dependency pins into the deployment. An instrument
+that already declares package constraints keeps them. Install prepares the
+service and its Julia package images. Ordinary service restarts reuse this
+installation, verify live owners and Links, and reach Ready with correction
+open. A new hardware interface or algorithm requires a compatible driver or
+graph plugin. Simulator-specific build options remain with the simulator tools.
+[Service activation and independent providers](docs/SYSTEMD_SESSION_STARTUP.md#startup)
 
 Root `session_*.jl`
 files are thin command entry points; their implementation loads with the package

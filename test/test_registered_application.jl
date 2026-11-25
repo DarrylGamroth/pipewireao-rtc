@@ -440,6 +440,13 @@ end
         )
         managed_unit = render(template(""))
         direct_unit = render(template("-direct"); direct)
+        baseline = "Environment=\"JULIA_LOAD_PATH=@:@stdlib\""
+        @test baseline in split(managed_unit, '\n')
+        @test baseline in split(direct_unit, '\n')
+        custom = render(template("-direct"); direct = merge(direct,
+            (; environment = Dict("JULIA_LOAD_PATH" => "@:/site:@stdlib"))))
+        @test filter(contains("JULIA_LOAD_PATH="), split(custom, '\n')) ==
+            [baseline, "Environment=\"JULIA_LOAD_PATH=@:/site:@stdlib\""]
         function hook_command(unit_text, directive)
             line = only(filter(startswith(directive), split(unit_text, '\n')))
             return Cmd(Base.shell_split(replace(chopprefix(line, directive),
@@ -471,7 +478,10 @@ end
             # The foreground command can build the missing image. Installation
             # must also keep a usable private copy when this shared image exists.
             @test read(Cmd(science.rtc_arguments(julia, project, config)), String) == config
-            I.prepare_package_cache(julia, project)
+            # Pkg Apps sets its own load path when it invokes the installer.
+            withenv("JULIA_LOAD_PATH" => mkdir(joinpath(directory, "operator app"))) do
+                I.prepare_package_cache(julia, project)
+            end
             rm(joinpath(shared, "compiled"); recursive = true)
             @test read(service, String) == config
             for command in (stop, direct_stop, cleanup)

@@ -519,13 +519,22 @@ function copy_source(
     return destination
 end
 
+function source_project(source, manifest)
+    project = joinpath(source, "Project.toml")
+    isfile(project) && return project
+    manifest === nothing &&
+        throw(ArgumentError("instrument without Project.toml requires a site runtime manifest"))
+    return checked_path(joinpath(dirname(checked_path(manifest)), "Project.toml"))
+end
+
 """
     prepare(source, destination; profile, manifest=nothing, git_export=false,
             julia=Base.julia_cmd().exec[1], prefix=get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
 
 Copy an instrument into a fresh application and record the runtime file inventory.
 
-Supply a registered `manifest` to prepare an installable application.
+Supply a registered `manifest` to prepare an installable application. If the
+instrument omits Project.toml, use the Project.toml beside that Manifest.
 Omit it for offline preparation. The installer checks exported runtime inputs
 against the deployment inventory. Set `git_export=true` to record a sibling
 Git repository for the completed export when Git is available.
@@ -574,7 +583,8 @@ function prepare(
             "instrument application must not contain generated seals or machine placement",
         ),
     )
-    metadata = TOML.parsefile(joinpath(source, "Project.toml"))
+    project = source_project(source, manifest)
+    metadata = TOML.parsefile(project)
     !haskey(metadata, "sources") ||
         throw(ArgumentError("instrument Project.toml must not override package sources"))
     !haskey(metadata, "workspace") || throw(
@@ -593,6 +603,9 @@ function prepare(
     application = joinpath(staging, "application")
     try
         copy_source(source, application; runtime_configurations = false)
+        if project != joinpath(source, "Project.toml")
+            RuntimeExport.copy_file(project, joinpath(application, "Project.toml"))
+        end
         prepare_runtime_configurations!(application, runtime_authoring)
         manifest === nothing || RuntimeExport.copy_file(
             checked_path(manifest), joinpath(application, "Manifest.toml")

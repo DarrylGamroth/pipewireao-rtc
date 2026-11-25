@@ -175,6 +175,11 @@ end
         @test external_spec["owners"] == declaration["owners"]
         @test !ispath(joinpath(destination, "optical-startup"))
 
+        definitions = joinpath(directory, "instrument definitions")
+        cp(independent, definitions)
+        rm(joinpath(definitions, "Project.toml"))
+        @test_throws "requires a site runtime manifest" P.InstrumentExport.prepare(
+            definitions, joinpath(directory, "missing environment"); profile = external_profile, prefix)
         "--prepare-only" in ARGS && return nothing
         # Resolve separately so export never mutates the authored instrument or
         # a sealed application; no copied manifest or source override is used.
@@ -189,6 +194,34 @@ end
             @test !haskey(entry, "repo-url")
             @test !haskey(entry, "repo-rev")
         end
+        # Install the public CLI through Pkg Apps in an isolated depot. Its own
+        # environment and the instrument runtime have distinct project paths.
+        app_depot = mkdir(joinpath(directory, "operator depot"))
+        depots = join([app_depot; DEPOT_PATH], ':')
+        add = "using Pkg; Pkg.Apps.add(name=\"PipeWireAORTC\", version=only(ARGS))"
+        run(addenv(`$(Base.julia_cmd().exec[1]) --startup-file=no -e $add $(string(Base.pkgversion(P)))`,
+            "JULIA_DEPOT_PATH" => depots, "JULIA_LOAD_PATH" => "@:@stdlib",
+            "JULIA_PKG_PRECOMPILE_AUTO" => "0"))
+        cli = joinpath(app_depot, "bin", "pipewireao-rtc-session")
+        instrument_profile = joinpath(directory, "instrument profile.yaml")
+        host = joinpath(directory, "site host.yaml")
+        P.Common.write_yaml(instrument_profile, Dict())
+        P.Common.write_yaml(host, external_profile)
+        data_before = file_hashes(definitions)
+        prepared = joinpath(directory, "prepared detector")
+        run(`$cli export --instrument $definitions --profile $instrument_profile --host $host
+            --environment $environment --destination $prepared --pipewire-prefix $prefix`)
+        @test file_hashes(definitions) == data_before
+        for name in ("Project.toml", "Manifest.toml")
+            @test read(joinpath(prepared, name)) == read(joinpath(environment, name))
+        end
+        @test D.profile(joinpath(prepared, "deployment.conf"), prefix)["owners"] ==
+            declaration["owners"]
+        installed_detector = joinpath(directory, "installed detector")
+        run(`$cli install --package $prepared --destination $installed_detector --pipewire-prefix $prefix`)
+        @test isfile(joinpath(installed_detector, "systemd", "pipewireao-session@.service"))
+        @test D.application_environment(external_spec, installed_detector) == installed_detector
+
         source = joinpath(directory, "registered export")
         @test P.InstrumentExport.prepare(
             authored,

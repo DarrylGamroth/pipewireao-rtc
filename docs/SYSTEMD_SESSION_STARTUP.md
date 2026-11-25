@@ -25,7 +25,10 @@ which package it could not load. Install a fresh copy under the deployment's
 Julia environment before selecting it. Keep the sources and native artifacts
 from the pinned Manifest available. Static profile settings for
 `JULIA_DEPOT_PATH`, `JULIA_LOAD_PATH` and `JULIA_CPU_TARGET` are checked
-during installation. Supply any manager-level overrides to the installer too.
+during installation. New strict-cache units default to the active project and
+Julia standard libraries (`JULIA_LOAD_PATH=@:@stdlib`), matching the cache
+verification process. Direct profile settings can override this value. Supply
+manager-level depot and CPU target settings to the installer too.
 Settings that depend on an invocation become known at service start.
 Julia can still compile individual methods on their first call. If that causes
 a missed startup or command deadline with a verified cache, trace the affected

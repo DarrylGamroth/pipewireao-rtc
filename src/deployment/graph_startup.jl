@@ -99,7 +99,7 @@ function precompile!(julia, package, environment, owners)
         append!(command_args, args)
         command = Cmd(command_args)
         depots = join([cache_depot(root); DEPOT_PATH], ':')
-        run(addenv(command, "JULIA_DEPOT_PATH" => depots))
+        run(addenv(command, "JULIA_DEPOT_PATH" => depots, "JULIA_LOAD_PATH" => "@:@stdlib"))
     end
     return nothing
 end
