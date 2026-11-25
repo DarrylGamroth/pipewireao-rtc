@@ -175,3 +175,29 @@ end
         end
     end
 end
+
+@testset "Supervisor placement binds every thread of the child process" begin
+    _, allowed = calling_thread_affinity()
+    cpu = first(filter(>=(2), allowed))
+    entry = """
+        using PipeWireAORTC
+        P = PipeWireAORTC.Placement
+        report = P.pin_supervisor(parse(Int, only(ARGS)))
+        println(PipeWireAORTC.Common.metadata_json(report))
+        """
+    project = dirname(Base.active_project())
+    child = open(`$(Base.julia_cmd()) --startup-file=no --threads=2,0 --project=$project -e $entry -- $cpu`, "r")
+    pid = getpid(child)
+    try
+        receipt = PipeWireAORTC.Common.parse_json(read(child, String))
+        wait(child)
+        @test success(child)
+        @test receipt["pid"] == pid
+        @test pid in receipt["threads"] && length(unique(receipt["threads"])) >= 2
+        @test receipt["cpus"] == [cpu]
+        @test last(calling_thread_affinity()) == allowed
+        @test_throws LoopPlacement.PlacementError LoopPlacement.pin_supervisor(1)
+    finally
+        close(child)
+    end
+end
