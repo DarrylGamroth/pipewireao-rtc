@@ -77,21 +77,33 @@ end
     end
 end
 
+function priming_graph_document()
+    return Dict(
+        "filter.graph" => Dict(
+            "nodes" => [Dict(
+                "name" => "correction",
+                "type" => "ndarray",
+                "label" => "leaky-integrator-f32",
+                "config" => Dict(
+                    "extent" => 2,
+                    "initial_state" => 0,
+                    "input_schema" => "test/cal2-residual/1",
+                    "output_schema" => "test/cal2-command/1",
+                ),
+                "props" => Dict{String,Any}("gain" => -0.05, "pole" => 1, "closed" => false),
+            )],
+            "links" => Dict{String,String}[],
+            "inputs" => [Dict("name" => "residual", "endpoint" => "correction:input")],
+            "outputs" => [Dict("name" => "offset", "endpoint" => "correction:output")],
+        ),
+    )
+end
+
 @testset "Correction priming observes accepted open-loop acquisitions" begin
     extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
     graph = mktemp() do path, io
-        write(io, """
-filter.graph = {
-    nodes = [ { name=correction type=ndarray label=leaky-integrator-f32
-        config={ extent=2 initial_state=0 input_schema=test/cal2-residual/1
-            output_schema=test/cal2-command/1 }
-        props={ gain=-0.05 pole=1 closed=false } } ]
-    links=[]
-    inputs=[ { name=residual endpoint="correction:input" } ]
-    outputs=[ { name=offset endpoint="correction:output" } ]
-}
-""")
-        flush(io)
+        close(io)
+        PipeWireAORTC.ScienceExport.write_spa_config(path, priming_graph_document())
         FilterGraphs.prepare_graph(path; algorithms = FilterGraphAlgorithms.algorithms())
     end
     try
@@ -353,5 +365,110 @@ parameters = [
         write_fits(mask_path, mask)
         write_fits(origins_path, Float32[0.5 0])
         @test_throws ArgumentError prepare()
+    end
+end
+
+@testset "Generated install workload qualifies an unpublished graph with FITS calibration" begin
+    startup = PipeWireAORTC.GraphStartup
+    write_graph = PipeWireAORTC.ScienceExport.write_spa_config
+    write_fits = PipeWireAORTC.InstrumentCalibration.write_fits
+    mktempdir() do directory
+        package = mkdir(joinpath(directory, "export"))
+        document = priming_graph_document()
+        graph = document["filter.graph"]
+        correction = only(graph["nodes"])
+        push!(
+            graph["nodes"],
+            Dict(
+                "name" => "calibration",
+                "type" => "ndarray",
+                "label" => "vector-offset-f32",
+                "config" => Dict("extent" => 2, "schema" => correction["config"]["input_schema"]),
+            ),
+        )
+        push!(graph["links"], Dict("output" => "calibration:output", "input" => "correction:input"))
+        only(graph["inputs"])["endpoint"] = "calibration:requested"
+        push!(graph["inputs"], Dict("name" => "initial-offset", "endpoint" => "calibration:offset"))
+        write_graph(joinpath(package, "controller.conf"), document)
+        calibration = Float32[0.25, -0.5]
+        write_fits(joinpath(package, "offset.fits"), calibration)
+        write(
+            joinpath(package, "parameters.conf"),
+            "parameters = [{ port = initial-offset path = offset.fits hdu = 1 }]\n",
+        )
+        base_args = [
+            "--graph", "@PACKAGE@/controller.conf",
+            "--fits-bindings", "@PACKAGE@/parameters.conf",
+            "--name", "test.qualification",
+            "--remote", "@PACKAGE@/no-core.sock",
+            "--bootstrap-node", "test.qualification.bootstrap",
+            "--bootstrap-instance", "@BOOTSTRAP_INSTANCE_CONTROLLER@",
+            "--session-run-control",
+        ]
+        args = [
+            base_args;
+            "--qualify-at-install";
+            "--correction-property"; "correction:closed";
+            "--prime-on-output"; "offset";
+            "--warmup-output"; "offset"
+        ]
+        owner = Dict(
+            "role" => "controller",
+            "argv" => [first(Base.julia_cmd().exec); "-e"; startup.ENTRY; "--"; args],
+        )
+        PipeWireAORTC.Common.write_json(
+            joinpath(package, "deployment.conf"), Dict("owners" => [owner])
+        )
+        for file in ("Project.toml", "Manifest.toml")
+            cp(joinpath(dirname(Base.active_project()), file), joinpath(package, file))
+        end
+
+        startup.stage!(package, [owner])
+        installed = joinpath(directory, "installed")
+        mv(package, installed)
+        workload = startup.workload_directory(installed, owner)
+        sandbox = Module(gensym(:QualificationTest))
+        Base.include(
+            sandbox, joinpath(workload, "ExportedGraphWarmup", "src", "ExportedGraphWarmup.jl")
+        )
+        qualify(values...) = Base.invokelatest(() -> sandbox.ExportedGraphWarmup.qualify(values...))
+
+        @test !ispath(joinpath(installed, "no-core.sock"))
+        @test qualify() === nothing
+
+        for (option, message) in (
+            ("--prime-on-output", r"correction priming output 'absent' is absent"),
+            ("--warmup-output", r"Graph has no output Port 'absent'"),
+        )
+            invalid = copy(args)
+            invalid[findfirst(==(option), invalid) + 1] = "absent"
+            @test_throws message qualify(invalid)
+        end
+
+        graph_path = joinpath(installed, "controller.conf")
+        correction["props"]["closed"] = true
+        write_graph(graph_path, document)
+        @test_throws r"requires an initially open correction loop" qualify()
+        correction["props"]["closed"] = false
+        write_graph(graph_path, document)
+
+        calibration_path = joinpath(installed, "offset.fits")
+        write_fits(calibration_path, Float32[1, 2, 3])
+        @test_throws DimensionMismatch qualify()
+        write_fits(calibration_path, calibration)
+        @test qualify() === nothing
+
+        # An unsupported non-qualified owner must bypass scientific preparation.
+        # Parsing the invalid graph would fail if the workload tried to prepare it.
+        write(joinpath(installed, "unsupported.conf"), "not a graph\n")
+        unsupported = copy(base_args)
+        unsupported[2] = "@PACKAGE@/unsupported.conf"
+        for mode in (["--execution", "row-block"], ["--capture-backend", "cuda"])
+            @test qualify([unsupported; mode]) === nothing
+            @test_throws r"install qualification requires a complete-frame CPU graph" qualify(
+                [unsupported; mode; "--qualify-at-install"]
+            )
+        end
+        @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
     end
 end
