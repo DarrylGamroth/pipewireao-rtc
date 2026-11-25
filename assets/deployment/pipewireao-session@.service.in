@@ -6,7 +6,7 @@ Type=notify
 NotifyAccess=main
 @ACTIVATION_ENVIRONMENT@
 Environment=PIPEWIREAORTC_SYSTEMD_UNIT=%n
-ExecStart=@RTC_COMMAND@ -c %t/pipewireao-session-%i/${INVOCATION_ID}/rtc/rtc.conf
+ExecStart=@RTC_INSTALLED_COMMAND@ -c %t/pipewireao-session-%i/${INVOCATION_ID}/rtc/rtc.conf
 ExecStop=@LAUNCHER@ stop --unit %n --runtime-root %t/pipewireao-session-%i
 ExecStopPost=@LAUNCHER@ cleanup --invocation ${INVOCATION_ID} --runtime-root %t/pipewireao-session-%i --source-role @SOURCE_ROLE@
 RuntimeDirectory=pipewireao-session-%i

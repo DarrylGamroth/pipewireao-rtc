@@ -485,12 +485,13 @@ end
 
 function session_process_binding(
     julia::AbstractString, project::AbstractString, config::AbstractString; sysimage = nothing,
-    identity = nothing,
+    identity = nothing, installed_cache = false,
 )
     binding = Dict{String,Any}(
         "julia" => julia, "project" => project, "config" => String(config),
-        "argv" => ScienceExport.rtc_arguments(julia, project, config; sysimage),
+        "argv" => ScienceExport.rtc_arguments(julia, project, config; sysimage, installed_cache),
     )
+    installed_cache && (binding["installed-cache"] = true)
     if sysimage !== nothing
         binding["sysimage"] = sysimage
         binding["device"] = identity["device"]
@@ -503,7 +504,8 @@ function session_process_binding(activation::AbstractDict, config::AbstractStrin
     image = get(activation, "julia-sysimage", nothing)
     identity = image === nothing ? nothing : activation["files"][image]
     return session_process_binding(
-        activation["julia"], activation["project"], config; sysimage = image, identity
+        activation["julia"], activation["project"], config; sysimage = image, identity,
+        installed_cache = get(activation, "installed-cache", false)
     )
 end
 
@@ -527,6 +529,10 @@ end
 "Verify the exact Julia executable, project, launcher arguments, config and optional image."
 function verify_session_process(pid::Integer, binding::AbstractDict)
     expected_keys = Set(("julia", "project", "config", "argv"))
+    if haskey(binding, "installed-cache")
+        require(binding["installed-cache"] === true, "invalid installed RTC cache selection")
+        push!(expected_keys, "installed-cache")
+    end
     if haskey(binding, "sysimage")
         image = binding["sysimage"]
         require(image isa AbstractString && isabspath(image), "invalid headless RTC sysimage path")
@@ -542,7 +548,8 @@ function verify_session_process(pid::Integer, binding::AbstractDict)
         binding["julia"], binding["project"], binding["config"], binding["argv"]
     )
     sysimage = get(binding, "sysimage", nothing)
-    expected = ScienceExport.rtc_arguments(julia, project, config; sysimage)
+    expected = ScienceExport.rtc_arguments(julia, project, config; sysimage,
+        installed_cache = haskey(binding, "installed-cache"))
     require(argv == expected, "invalid headless RTC process arguments")
     observed = try
         realpath("/proc/$pid/exe") == realpath(julia) &&

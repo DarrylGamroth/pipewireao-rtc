@@ -244,15 +244,22 @@ const RTC_JULIA_FLAGS = ("--startup-file=no", "--threads=1,0")
 const RTC_ENTRYPOINT =
     "Base.exit_on_sigint(false); using PipeWireAORTC; exit(PipeWireAORTC.MediaSession.main(ARGS))"
 
-"Exact Julia command shared by installed unit generation and process verification."
-function rtc_command(julia::AbstractString, project::AbstractString; sysimage = nothing)
+const RTC_CACHE_DIRECTORY = "rtc-package-cache"
+const RTC_CACHE_SETUP = "pushfirst!(DEPOT_PATH, joinpath(dirname(Base.active_project()), " *
+                        repr(RTC_CACHE_DIRECTORY) * ")); "
+
+"Build the Julia arguments shared by installation, launch and process verification."
+function rtc_command(julia::AbstractString, project::AbstractString; sysimage = nothing,
+    installed_cache = false, entrypoint = RTC_ENTRYPOINT)
     command = String[julia, RTC_JULIA_FLAGS...]
     sysimage === nothing || push!(command, "--sysimage=" * sysimage)
-    return append!(command, ["--project=" * project, "-e", RTC_ENTRYPOINT, "--"])
+    installed_cache && push!(command, "--compiled-modules=strict")
+    entry = installed_cache ? RTC_CACHE_SETUP * entrypoint : entrypoint
+    return append!(command, ["--project=" * project, "-e", entry, "--"])
 end
 
-rtc_arguments(julia::AbstractString, project::AbstractString, config::AbstractString; sysimage = nothing) =
-    append!(rtc_command(julia, project; sysimage), ["-c", config])
+rtc_arguments(julia::AbstractString, project::AbstractString, config::AbstractString; kwargs...) =
+    append!(rtc_command(julia, project; kwargs...), ["-c", config])
 
 function rtc_launcher()
     return raw"""#!/bin/sh

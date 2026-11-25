@@ -8,7 +8,7 @@ Type=notify
 NotifyAccess=main
 @ACTIVATION_ENVIRONMENT@
 Environment=PIPEWIREAORTC_SYSTEMD_UNIT=%n
-ExecStart=@RTC_COMMAND@ -c @RTC_CONFIGURATION@
+ExecStart=@RTC_INSTALLED_COMMAND@ -c @RTC_CONFIGURATION@
 ExecStop=@LAUNCHER@ stop --unit %n --runtime-root %t/pipewireao-session-%i --direct
 RuntimeDirectory=pipewireao-session-%i
 RuntimeDirectoryMode=0700
