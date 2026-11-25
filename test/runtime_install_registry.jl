@@ -125,7 +125,7 @@ function write_registered_coverage(output, directory, package, root)
     return nothing
 end
 
-function registered_runtime_install(root, report)
+function registered_runtime_install(root, report; direct_session = false)
     commit = readchomp(`git -C $root rev-parse HEAD`)
     tree = readchomp(`git -C $root rev-parse $(commit * "^{tree}")`)
     package = TOML.parse(read(`git -C $root show $(commit * ":Project.toml")`, String))
@@ -191,11 +191,18 @@ function registered_runtime_install(root, report)
                 "PIPEWIREAORTC_INSTALL_REGISTERED_SOURCE" => installed,
             ),
         )
+        if direct_session
+            selector = joinpath(root, "test", "integration", "portable_direct_session.jl")
+            run(addenv(`$julia --startup-file=no --project=$root $selector $seed`,
+                environment..., "JULIA_PKG_OFFLINE" => "true"))
+        end
         report === nothing || write_registered_coverage(report, coverage, installed, root)
     end
     return nothing
 end
 
-length(ARGS) <= 1 ||
-    error("usage: julia --project=. test/runtime_install_registry.jl [COVERAGE.info]")
-registered_runtime_install(dirname(@__DIR__), isempty(ARGS) ? nothing : abspath(only(ARGS)))
+direct_session = "--direct-session" in ARGS
+reports = filter(!=("--direct-session"), ARGS)
+length(reports) <= 1 ||
+    error("usage: julia --project=. test/runtime_install_registry.jl [--direct-session] [COVERAGE.info]")
+registered_runtime_install(dirname(@__DIR__), isempty(reports) ? nothing : abspath(only(reports)); direct_session)

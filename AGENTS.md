@@ -125,8 +125,10 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.test(; allow_reresolve=fa
   output path as the optional argument to record the registered CLI's
   coverage against the checkout. For offline export without a registry
   entry, pass `--prepare-only` to
-  [runtime_install.jl](test/runtime_install.jl). The installation selector uses
-  temporary applications without starting services. Reinstall generated units
+  [runtime_install.jl](test/runtime_install.jl). Add `--direct-session` to the
+  registry selector to start the installed RTC on a private core, admit a
+  software detector, and verify native Quit using a Linux systemd user manager.
+  Reinstall generated units
   after moving an application with absolute service paths.
 - Use the [HIL configuration guide](docs/HIL_CONFIGURATION.md) for simulation
   export selectors. Use the instrument repository's README for instrument
