@@ -123,7 +123,7 @@ end
     service = ServiceBoundary.service()
     @test Hsm.current(service) === :Pending && service.state === :pending
     @test :state in propertynames(service) && :state ∉ fieldnames(typeof(service))
-    @test_throws ErrorException setproperty!(service, :state, :running)
+    @test_throws Core.FieldError setproperty!(service, :state, :running)
     @test S.launching!(service) === nothing && service.state === :launching
     @test isempty(S.test_calls)
     @test S.retain!(service, S.test_values[]) === service

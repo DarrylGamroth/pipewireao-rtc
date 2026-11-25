@@ -25,7 +25,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
     end
 end
 
-@testset "response compilation preserves boundary and static calibration" begin
+@testset "response compilation distinguishes ordinary and ideal calibration graphs" begin
     response = Dict(
         "kind" => "second_order",
         "natural_frequency_hz" => 250,
@@ -75,13 +75,18 @@ end
     @test node["config"]["sample_period_s"] == document["frame_period_s"]
     @test node["config"]["schema"] == response["schema"]
     calibration = IC.graph_document(declaration, configured; calibration = true)
-    @test calibration["nodes"] == original["nodes"]
-    @test calibration["inputs"] == original["inputs"]
-    @test isempty(calibration["links"])
-    delete!(document, "responses")
-    ideal = IC.graph_document(declaration, configured)
+    @test calibration["nodes"] == compiled["nodes"]
+    @test calibration["inputs"] == compiled["inputs"]
+    @test calibration["links"] == compiled["links"]
+    hil = merge(declaration, (; document = merge(document, Dict("hil" => Dict()))))
+    ideal = IC.graph_document(hil, configured; calibration = true)
     @test ideal["nodes"] == original["nodes"]
     @test ideal["inputs"] == original["inputs"]
+    @test isempty(ideal["links"])
+    delete!(document, "responses")
+    without_response = IC.graph_document(declaration, configured)
+    @test without_response["nodes"] == original["nodes"]
+    @test without_response["inputs"] == original["inputs"]
     document["responses"] = Dict("stage" => response)
     document["bindings"]["stage"]["shape"] = [2, 1]
     @test_throws ArgumentError IC.graph_document(declaration, configured)

@@ -113,7 +113,7 @@ function send_pending!(session, command)
     return only(values(session.requests))
 end
 
-function disconnect_pending!(session)
+function disconnect_pending!(session, operation)
     stop_effect_task!(session)
     S.fail!(
         session.machine,
@@ -122,13 +122,12 @@ function disconnect_pending!(session)
         submitted = true,
     )
     S.drain!(session)
-    S.fail!(
-        session.machine,
-        something(session.machine.effect),
-        "injected source Hold failure";
-        submitted = true,
-    )
-    S.drain!(session)
+    if operation === :properties_set
+        hold = something(session.machine.effect)
+        @test hold.effect === S.HoldSources()
+        S.fail!(session.machine, hold, "injected source Hold failure"; submitted = true)
+        S.drain!(session)
+    end
     ticket = something(session.machine.effect)
     @test ticket.effect === S.Disconnect()
     S.perform!(session, S.Job(ticket, false), ticket.effect)
@@ -181,7 +180,7 @@ end
                             Dict("controller:gain" => R.RunnerScalar(:int, Int32(1))),
                         ) : R.RunnerCommand(:quit)
                     ticket = send_pending!(session, command)
-                    disconnect_pending!(session)
+                    disconnect_pending!(session, operation)
                     @test drain_failure(session) === nothing
                     @test isempty(session.requests)
                     completion = R.decode_completion(session.ingress.completion)
