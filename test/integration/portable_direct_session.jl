@@ -225,6 +225,29 @@ function check_attachment(seed, root)
                 attached.main_pid, merge(binding, Dict("argv" => argv)),
             )
         end
+        @testset "A second process cannot claim an admitted installation" begin
+            receipt_path = joinpath(attached.runtime_root, "launch.json")
+            before = read(receipt_path)
+            record = RTC.Common.parse_json(String(copy(before)))
+            package = record["admission"]["package"]
+            activation = RTC.Common.read_json(joinpath(package, "systemd", RTC.SessionLaunch.ACTIVATION_FILE))
+            observe = _ -> error("unexpected second admission")
+            withenv("PIPEWIREAORTC_CORE_UNIT" => core_unit, "PIPEWIREAORTC_CORE_SOCKET" => socket,
+                "PIPEWIREAORTC_SOURCE_UNIT" => provider_unit) do
+                @test_throws "unexpected startup policy" RTC.SessionAdmission.with_direct_attachment(
+                    observe, record["config"], activation, handle.unit, attached.runtime_root, handle.invocation,
+                )
+                withenv("PIPEWIREAORTC_SOURCE_UNIT" => "other-provider-$tag.service") do
+                    @test_throws "service bindings differ" RTC.SessionAdmission.with_direct_attachment(
+                        observe, record["config"], activation, handle.unit, attached.runtime_root, handle.invocation,
+                    )
+                end
+            end
+            # Delayed cleanup for an earlier incarnation must preserve this locator.
+            stale = merge(record, Dict("session_control_instance" => record["session_control_instance"] - 1))
+            RTC.SessionAdmission.retire_record!(stale, locator)
+            @test isfile(locator) && read(receipt_path) == before
+        end
         @testset "Installed MediaSession publishes a live Ready locator" begin
             @test isfile(locator)
             entry = only(published_session(directory, id))
