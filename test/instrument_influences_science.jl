@@ -132,15 +132,19 @@ end
             (; actuator_pitch_pupil_radius = 1.0),
         )
 
-        # The path and dimensions remain valid, but the authored snapshot identity
-        # must reject replacement calibration values before they are used.
+        # Managed exports use Git for file integrity. Preparation reports the
+        # actual FITS digest independently of the authored metadata.
         rm(path)
         FITS(path, "w"; extendedparser = false) do file
             write(file, 2 .* cube)
         end
-        @test_throws r"SHA-256" IC._load_influence_functions(
+        replacement = IC._load_influence_functions(
             spec, description, 2, (; actuator_pitch_pupil_radius = 1.0)
         )
+        @test replacement.modes == 2 .* result.modes
+        digest = replacement.provenance.artifact["original_sha256"]
+        @test digest == bytes2hex(sha256(read(path)))
+        @test digest != spec.sha256
     end
 end
 

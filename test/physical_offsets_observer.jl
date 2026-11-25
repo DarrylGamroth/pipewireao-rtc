@@ -67,10 +67,10 @@ end
             "shape" => [3, 2],
         )
         @test Ext.matrix(joinpath(directory, "offsets.yaml"), selection) == data
-        @test_throws ArgumentError Ext.matrix(
+        @test Ext.matrix(
             joinpath(directory, "offsets.yaml"),
             merge(selection, Dict("sha256" => repeat("0", 64))),
-        )
+        ) == data
         @test_throws DimensionMismatch Ext.matrix(
             joinpath(directory, "offsets.yaml"), merge(selection, Dict("shape" => [2, 3]))
         )

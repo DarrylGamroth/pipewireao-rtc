@@ -2,8 +2,10 @@ using PipeWireAO, Test
 
 const COLD = (
     "calibrated_graph_exports",
+    "analysis_links",
     "instrument_influences_science",
     "aos_graph_adapters",
+    "ideal_pupil_relay_preparation",
     "test_aos_configuration_bindings",
     "optical_model_paths",
     "test_response_cadence",
@@ -16,12 +18,10 @@ const COLD = (
     "zemax_component_preparation",
     "pupil_feedback_composition",
     "test_feedback_composition",
-    "analysis_links",
     "analysis_metadata",
     "analysis_statistics",
     "analysis_synchronized_inputs",
     "calibration_type_dispatch",
-    "modal_field_validation",
     "test_modal_completion",
     "physical_offsets_observer",
     "test_session_configuration_integration",

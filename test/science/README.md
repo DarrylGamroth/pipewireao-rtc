@@ -6,8 +6,9 @@ artifact. The manifest locks the dependency trees and uses the current RTC
 checkout as its package source.
 It requires authenticated Git access to `AdaptiveOpticsCalibration.jl`,
 `AdaptiveOpticsSimPipeWireHIL.jl`, and `JuliaFilterGraph.jl`. These repositories
-are needed even for the optics-only checks because AdaptiveOpticsSim imports
-AdaptiveOpticsCalibration.
+must be accessible when instantiating the full project.
+AdaptiveOpticsSim also depends on AdaptiveOpticsCalibration for the
+optics-only checks.
 
 Add General and [DarrylGamrothRegistry](https://github.com/DarrylGamroth/PackageRegistry)
 to the Julia depot if they are absent, then instantiate the project from the

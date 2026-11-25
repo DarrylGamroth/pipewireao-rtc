@@ -145,6 +145,7 @@ end
             reference.observations,
             reference.input_names,
             nothing,
+            reference.exposure_execution,
             reference.state,
         )
         @test actual.propagation !== nothing
