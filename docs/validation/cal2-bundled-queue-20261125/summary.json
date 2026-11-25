@@ -1,0 +1,197 @@
+{
+  "core": {
+    "invocation": "722ac9758d824988980a47e3c4f8dbdb",
+    "pid": 3323608,
+    "ticks": 52702271
+  },
+  "graph_owners": {
+    "cal2-llowfs": {
+      "bootstrap_name": "pipewireao.rtc.bootstrap.cal2-llowfs",
+      "incarnation": 332191118021821687,
+      "unit": "pipewireao-graph-cal2-nativeq-o3p89bv2-cal2-llowfs.service",
+      "unit_identity": {
+        "invocation": "49c2e0fd33b04f61945009428a945f77",
+        "pid": 3328713,
+        "ticks": 52728582
+      }
+    },
+    "cal2-scc": {
+      "bootstrap_name": "pipewireao.rtc.bootstrap.cal2-scc",
+      "incarnation": 431096018558108779,
+      "unit": "pipewireao-graph-cal2-nativeq-o3p89bv2-cal2-scc.service",
+      "unit_identity": {
+        "invocation": "5fb8f8b7a3dc46a59cf86af238095d97",
+        "pid": 3328714,
+        "ticks": 52728588
+      }
+    }
+  },
+  "passed": true,
+  "rtc_initial": {
+    "invocation": "def5507972d2494dabf862d6edcc23e6",
+    "pid": 3328971,
+    "ticks": 52729486
+  },
+  "rtc_replacement": {
+    "invocation": "34335ec2251e4308929bd677210603d8",
+    "pid": 3337655,
+    "ticks": 52792710
+  },
+  "simulator": {
+    "invocation": "577216e8a5d34cf4906094d64aac2a7c",
+    "pid": 3323613,
+    "ticks": 52702278
+  },
+  "tap_continuity": {
+    "cal2-llowfs": {
+      "count": 40,
+      "first": 1,
+      "last": 40
+    },
+    "cal2-scc": {
+      "count": 8,
+      "first": 1,
+      "last": 8
+    }
+  },
+  "trials": {
+    "initial": {
+      "native_quit_s_including_service_cleanup": 3.93675,
+      "rtc": {
+        "invocation": "def5507972d2494dabf862d6edcc23e6",
+        "pid": 3328971,
+        "ticks": 52729486
+      },
+      "service_ready_s": 9.587929216,
+      "status_ready_receipt_s": 11.513568,
+      "stream_receipts": {
+        "cal2-llowfs": {
+          "acquisition_domain": "ee631bdc9aa72aad064958cb8f92cab1",
+          "acquisition_generation": 1,
+          "detached_sequences": [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "first_detached_s_after_quit": 26.488723,
+          "first_usable_model_ns": 12000000,
+          "first_usable_s_after_start": 30.940051,
+          "first_usable_sequence": 7,
+          "last_before_quit_sequence": 15,
+          "observed_during_quit": [],
+          "physical_offset_peak": 0.0,
+          "queue_capture_buffer_count": [
+            3,
+            0
+          ],
+          "queue_capture_generation": 1,
+          "queue_capture_loan_returns": 1,
+          "queue_pending_count": [
+            1,
+            0
+          ],
+          "residual_peak": 4.021171e-08
+        },
+        "cal2-scc": {
+          "acquisition_domain": "607d6afabeed09a74045a6cbbc6e509e",
+          "acquisition_generation": 1,
+          "detached_sequences": [
+            4,
+            5
+          ],
+          "first_detached_s_after_quit": 153.49593,
+          "first_usable_model_ns": 20000000,
+          "first_usable_s_after_start": 286.54883,
+          "first_usable_sequence": 3,
+          "last_before_quit_sequence": 3,
+          "observed_during_quit": [],
+          "physical_offset_peak": 0.0,
+          "queue_capture_buffer_count": [
+            3,
+            0
+          ],
+          "queue_capture_generation": 1,
+          "queue_capture_loan_returns": 1,
+          "queue_pending_count": [
+            1,
+            0
+          ],
+          "residual_peak": 8.246469e-09
+        }
+      }
+    },
+    "replacement": {
+      "native_quit_s_including_service_cleanup": 5.194356,
+      "rtc": {
+        "invocation": "34335ec2251e4308929bd677210603d8",
+        "pid": 3337655,
+        "ticks": 52792710
+      },
+      "service_ready_s": 5.679463835,
+      "status_ready_receipt_s": 7.301651,
+      "stream_receipts": {
+        "cal2-llowfs": {
+          "acquisition_domain": "ee631bdc9aa72aad064958cb8f92cab1",
+          "acquisition_generation": 1,
+          "detached_sequences": [
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "first_detached_s_after_quit": 25.184665,
+          "first_usable_model_ns": 52000000,
+          "first_usable_s_after_start": 32.233921,
+          "first_usable_sequence": 27,
+          "last_before_quit_sequence": 35,
+          "observed_during_quit": [],
+          "physical_offset_peak": 0.0,
+          "queue_capture_buffer_count": [
+            3,
+            0
+          ],
+          "queue_capture_generation": 2,
+          "queue_capture_loan_returns": 1,
+          "queue_pending_count": [
+            1,
+            0
+          ],
+          "residual_peak": 4.021171e-08
+        },
+        "cal2-scc": {
+          "acquisition_domain": "607d6afabeed09a74045a6cbbc6e509e",
+          "acquisition_generation": 1,
+          "detached_sequences": [
+            8
+          ],
+          "first_detached_s_after_quit": 161.039878,
+          "first_usable_model_ns": 60000000,
+          "first_usable_s_after_start": 289.742628,
+          "first_usable_sequence": 7,
+          "last_before_quit_sequence": 7,
+          "observed_during_quit": [],
+          "physical_offset_peak": 0.0,
+          "queue_capture_buffer_count": [
+            3,
+            0
+          ],
+          "queue_capture_generation": 2,
+          "queue_capture_loan_returns": 1,
+          "queue_pending_count": [
+            1,
+            0
+          ],
+          "residual_peak": 8.246469e-09
+        }
+      }
+    }
+  }
+}
