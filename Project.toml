@@ -1,66 +1,77 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.2.38"
+version = "0.7.31"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
+
+[apps]
+pipewireao-rtc-session = { submodule = "SessionCLI" }
 
 [workspace]
 projects = ["test"]
 
 [deps]
-Hsm = "ae4ab49b-60bf-4949-b8fd-fb49b1a0d067"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+Agent = "f7939a7f-2bcc-4096-952b-c44031b5533b"
+Clocks = "6b5ade5d-6e95-4584-b343-73eec2e8782b"
 DBInterface = "a10d1c49-ce27-4219-8d33-6db1a4562965"
 FITSIO = "525bcba6-941b-5504-bd06-fd0dc1a4d2eb"
+Hsm = "ae4ab49b-60bf-4949-b8fd-fb49b1a0d067"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
+PipeWireAO_jll = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
-YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 ThreadPinning = "811555cd-349b-4f26-b7bc-1f208b848042"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [weakdeps]
-FilterGraphAlgorithms = "8914fa96-dfe6-4d3c-aced-40e6da1f6420"
 AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 AdaptiveOpticsCalibration = "3c8b5851-926e-4ebb-af30-f8544b98d45f"
 AdaptiveOpticsSim = "002fb5eb-ad68-44a0-adbe-b299bfc2febc"
 AdaptiveOpticsSimPipeWireHIL = "355e2bce-7765-4934-ac1c-873e1c98ec3d"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-FilterGraphIsland = "245ec3f5-bd83-45fe-abab-efac21027a22"
+FilterGraphAlgorithms = "8914fa96-dfe6-4d3c-aced-40e6da1f6420"
 FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
-JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
+FilterGraphs = "8053475d-7091-4a8a-adbc-8ed688b6da8d"
 
 [extensions]
-PipeWireAORTCOffsetsExt = ["AdaptiveOpticsSimPipeWireHIL", "FilterGraphAlgorithms", "FilterGraphPipeWire", "JuliaFilterGraph"]
-PipeWireAORTCCalibrationExt = ["FilterGraphAlgorithms", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
 PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
-PipeWireAORTCGraphExt = ["FilterGraphAlgorithms", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
+PipeWireAORTCCalibrationExt = ["FilterGraphAlgorithms", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphPipeWire", "FilterGraphs"]
+PipeWireAORTCGraphExt = ["FilterGraphAlgorithms", "FilterGraphPipeWire", "FilterGraphs"]
+PipeWireAORTCOffsetInputsExt = "AdaptiveOpticsSimPipeWireHIL"
+PipeWireAORTCOffsetsExt = ["AdaptiveOpticsSimPipeWireHIL", "FilterGraphAlgorithms", "FilterGraphPipeWire", "FilterGraphs"]
+PipeWireAORTCOpticsExt = "AdaptiveOpticsSim"
 
 [compat]
-Hsm = "0.3.2"
-FilterGraphAlgorithms = "0.8.13"
-AMDGPU = "2.7"
-LinearAlgebra = "1"
-AdaptiveOpticsCalibration = "0.17.3"
-Interpolations = "0.16"
-AdaptiveOpticsSim = "0.3.12"
-AdaptiveOpticsSimPipeWireHIL = "0.2.11"
-CUDA = "6.4.2"
+AMDGPU = "2.11"
+AdaptiveOpticsCalibration = "0.17.4"
+AdaptiveOpticsSim = "0.3.25"
+AdaptiveOpticsSimPipeWireHIL = "0.5.8"
+Agent = "0.4.1"
+CUDA = "6.5.1"
+Clocks = "0.4.0"
 DBInterface = "2.7.0"
 FITSIO = "0.17"
-FilterGraphIsland = "0.1.4"
-FilterGraphPipeWire = "0.1.16"
+FilterGraphAlgorithms = "0.12.5, 0.13"
+FilterGraphPipeWire = "0.5.11"
+FilterGraphs = "0.10.3"
+Hsm = "0.3.3"
 JSON = "1.12"
-JuliaFilterGraph = "0.4.3"
-PipeWireAO = "0.6.19"
+LinearAlgebra = "1"
+PipeWireAO = "0.9.6"
+PipeWireAO_jll = "4.0.10"
+Pkg = "1"
+PrecompileTools = "1"
 SHA = "0.7, 1"
 SQLite = "1.9.0"
 Sockets = "1"
 TOML = "1"
-YAML = "0.4.17"
 ThreadPinning = "1"
 UUIDs = "1"
-julia = "1.12"
+YAML = "0.4.17"
+julia = "1.13"

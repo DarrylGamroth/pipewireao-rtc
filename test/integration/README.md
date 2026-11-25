@@ -3,8 +3,8 @@
 ## Classic CPU Ready-to-Quit regression
 
 `classic_shutdown.jl CPU_APPLICATION FRESH_STAGE NATIVE_PREFIX` starts a fresh
-non-actuating CPU session, requests one native Quit and checks exact owned
-process/cgroup cleanup. Use the registered Classic project and pinned depot,
+non-actuating CPU session, stops it through systemd, and verifies the native
+Quit acknowledgement and exact process/cgroup cleanup. Use the registered Classic project and pinned depot,
 the prefix's client config/module/SPA/library paths, and empty CUDA/ROCm device
 visibility. Automatic package GC and precompilation should be disabled.
 The test retains native identities, installed hashes and manager/owner journals;
@@ -15,155 +15,97 @@ is distinct from the unchanged five-second native effect bound.
 See the [shutdown qualification](../../docs/validation/classic-shutdown-20261021/README.md)
 for the native memory regression, deployment and fault recovery evidence.
 
+## Sealed simulation data flow
+
+Run the probe alongside the lifecycle driver of a newly installed, non-actuating
+systemd cohort. Use the installed sealed project, the matching PipeWireAO
+native client environment, the absolute socket recorded in the private
+`launch.json` and a fresh empty handshake directory.
+
+```sh
+julia --startup-file=no --threads=2,1 --project="$application" \
+  test/integration/sealed_application_flow.jl \
+  "$profile" "$application" "$private_socket" "$handshake_directory"
+```
+
+Select `gpi2`, `cal2`, `spiders` or `spiders-single`. The probe creates
+`ready` after its links negotiate. The lifecycle driver creates `running`
+after the Start acknowledgement, waits for `observed`, issues Stop and creates
+`stopped` after acknowledgement. The probe writes `complete` after measuring
+two seconds of unchanged observer sequences and releasing its clients. The
+driver retains ownership of Status and Quit. Set `RTC_FLOW_TIMEOUT` in seconds
+to cover probe negotiation, acquisition and the Stop handshake. The default
+is 300 seconds and the calibrated CAL2 CPU run uses 1400 seconds.
+
+The probe attaches to the declared capacity-one copy/drop-oldest queues.
+GPI2 requires advancing UInt16 detector delivery and finite woofer, tweeter
+and tip/tilt commands. Two acquisition identities must appear in the detector
+and all three command streams after the first Running observation. CAL2 adds
+one temporary source on its unconnected external pupil input, stages 30
+deterministic 2 ms pupil packets and waits for each LLOWFS exposure before
+staging its successor. It checks both SCC optical and electrical classifications
+against the declared chopper windows and verifies finite SCC and LLOWFS offsets.
+SPIDERS checks fitted DM demand in both profiles and advancing simulator-applied
+DM sequences with a reference timestamp in the dual profile.
+
+The JSON receipts retain observed sequences, the inferred gaps between received
+labels and the two-second Stop observation window. Their validation scope is
+functional sample delivery and identity consistency at the lossy queue boundary.
+
 ## Managed Classic CPU closed-loop replay
 
-`classic_optional_analysis.jl CPU_TEST FRESH_STATE PREFIX BASELINE_APPLICATION`
-checks the separate optional analysis deployment. Prepare the sealed 32-frame,
-2 Hz CPU application and FFT witness described below, using the released
-application environment. The baseline retains the original controller graph
-and parameter bindings before the diagnostic reduction was added.
+This replay used the former RTC simulator launcher. The
+[detector validation record](../../docs/validation/classic-detector-20261022/README.md)
+identifies its pinned source and collected test harness. Current simulation
+execution and its integration selectors are in AdaptiveOpticsSimPipeWireHIL.
 
-The gate checks normal, SIGSTOP-stalled and SIGCONT-resumed analysis across
-Reset generations, then Quit with the worker stopped. Separate fresh sessions
-check a killed analysis process and an analysis graph preparation failure.
-Required Start/Stop/Reset/Quit, complete five-stream control prefixes, bitwise
-controller replay, exact detector replay under the retained FFT witness, and
-the independent summary identity/PTS/numerical oracle remain required for
-their respective phases. Analysis CPU affinity, ordinary scheduling, lack of
-GPU runtimes and exact cleanup are checked. No pre-existing session is used.
+## Current Julia session-policy checks
+
+The cold policy selectors exercise the Hsm machine, typed effects, object
+binding/link lifecycle, ingress and transport without a WirePlumber host or Lua
+runtime. The machine selector is included in `test/runtests.jl`; the effects,
+objects, ingress and transport selectors are included there as well.
 
 ```sh
-julia +1.13 --startup-file=no --threads=2,0 --project=/absolute/CPU_TEST \
-  test/integration/classic_optional_analysis.jl \
-  /absolute/CPU_TEST /absolute/FRESH_STATE /absolute/PREFIX /absolute/BASELINE_APPLICATION
+julia --startup-file=no --project=. test/test_media_session.jl
+julia --startup-file=no --project=. test/media_session_effects.jl
+julia --startup-file=no --project=. test/media_session_objects.jl
+julia --startup-file=no --project=. test/media_session_ingress.jl
+julia --startup-file=no --project=. test/media_session_transport.jl
 ```
 
-This is finite CPU functional evidence, not latency, wall-rate or hardware
-qualification. See [optional analysis evidence](../../docs/validation/optional-analysis-20261022/README.md).
-
-`classic_wfs_summary.jl CPU_TEST FRESH_STATE PREFIX [BASELINE_APPLICATION]`
-preserves the earlier in-process WFS gate for its historical sealed application;
-use the optional-analysis gate for the current deployment. It checks two
-32-frame CPU generations. Prepare the
-same sealed 2 Hz CPU application and test-only FFT witness described below.
-It captures detector, demanded commands, slopes, flux, validity and summary;
-checks all six acquisition identities and Header sequence/PTS; independently
-reconstructs the eight summary fields; and requires exact detector/controller
-replay and zero warmed graph allocations. The optional baseline application
-must retain the original science graph and parameter bindings; every common
-output is compared bitwise. Reset and Quit cleanup are required. This is a
-finite functional/numerical test, not wall-rate or hardware qualification.
-
-`classic_wavefront.jl APPLICATION FRESH_STATE PREFIX` additionally validates the
-shared residual-wavefront transport against direct pupil OPD replay. Use a sealed
-CPU application with optical observation, 32 exchanges and 2 Hz wall pacing.
-First create its test-only FFT witness wrapper in a fresh application directory:
+Optional `media_session_private_core.jl`,
+`media_session_acquisition_private_core.jl`, `media_session_host.jl` and
+`media_session_process.jl`
+checks need the current source
+environment with the PipeWireAO public `iterate!` API and a matching native SDK
+prefix. They own only a private core and test processes. Session control needs
+one owning Julia thread and no journal worker pool. Use `--threads=1,0` and set
+`PIPEWIREAO_PREFIX` to the matching PipeWireAO SDK:
 
 ```sh
-julia --startup-file=no --project=/absolute/CPU_BASE \
-  test/integration/prepare_classic_wavefront.jl /absolute/CPU_BASE /absolute/CPU_TEST
-julia --startup-file=no --project=/absolute/CPU_TEST \
-  test/integration/classic_wavefront.jl /absolute/CPU_TEST /absolute/FRESH_STATE /absolute/PREFIX
+PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
+  julia --startup-file=no --threads=1,0 --project=/absolute/source-environment test/media_session_private_core.jl
+PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
+  julia --startup-file=no --threads=1,0 --project=/absolute/source-environment test/media_session_acquisition_private_core.jl
+PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
+  julia --startup-file=no --threads=1,0 --project=/absolute/source-environment test/media_session_host.jl
+PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
+  julia --startup-file=no --threads=1,0 --project=/absolute/source-environment test/media_session_process.jl
 ```
 
-The wrapper records FFTW wisdom and retained plan descriptions after native
-science warmup. The reference uses `WISDOM_ONLY` for repeated optical transforms
-and checks its retained plans against that witness before comparing pixels.
-Missing wisdom, changed provider/version/thread settings or different retained
-plans fail the gate; the test does not silently remeasure or relax the ADC
-comparison. Ordinary preparation transforms retain their existing behavior.
-Independently measured FFT plans need not be bitwise identical: last-bit optical
-differences can cross noisy detector sampling thresholds. See the
-[controlled CPU investigation](../../docs/validation/classic-detector-20261022/README.md).
+These are functional private-core checks; they do not qualify service
+deployment, physical hardware, deadlines or real-time behavior. The previous
+standard-Link/WirePlumber coexistence selector was implementation-specific and
+has been retired. Its source remains in [Git history](https://github.com/DarrylGamroth/pipewireao-rtc/blob/4f7eaff/test/integration/session_items.jl);
+its results apply only to the earlier implementation.
 
-It checks two generations separated by native Reset, the emitting frame's
-acquisition identity/PTS, pupil masking, nm units, piston removal, RMS, unchanged
-detector/controller replay and final Quit cleanup. The separate
-`test/aos_optical_observation.jl simulation.conf` check needs no live session.
+## Installed-session fault cases
 
-`classic_managed_replay.jl` starts only a new non-actuating managed session.
-The finite source must declare `--phase-timing-directory @RUNTIME@/phase-timing`
-and a `--phase-timing-warmup` shorter than its 256 exchanges (for example 128).
-A warmup longer than the run produces no timing file; the preflight rejects
-that configuration before admission. A capacity of 256 timing rows is sufficient.
-Use a separately sealed Classic CPU application: 480-sample pupil, unchanged
-500 Hz model period and calibration, 1–2 Hz requested wall pacing and
-`total_exchanges=256`. Its simulator owner must retain phase timing under
-`@RUNTIME@/phase-timing` with capacity 256 and zero excluded warmup frames.
-Clear CUDA/ROCm visibility in the deployment and each scientific owner; the
-normal CUDA application is not edited. The integration client and observed
-owners must load no GPU runtime.
-
-```sh
-julia +1.13 --startup-file=no --threads=2,0 --project=CPU_APPLICATION \
-  test/integration/classic_managed_replay.jl \
-  /absolute/path/to/CPU_APPLICATION /absolute/path/to/FRESH_STAGE \
-  /absolute/path/to/NATIVE_PREFIX
-```
-
-Select the application's pinned depot and the prefix's ordinary client config,
-module, SPA-plugin and library directories in the environment. This is the
-same upstream-libwireplumber/PipeWireAO prefix used by installed fault checks.
-The headless RTC owns admission and required application links. The test client
-uses the unchanged capacity-one display queues, compiles collection while held,
-and requires a complete detector/command prefix at the selected slow pace.
-These queues still permit drops; this is not a general losslessness claim.
-The applied-command display queue may deliver a subset of the prefix.
-It supplies Header sequence/PTS and payload, without Acquisition metadata;
-the detector and demanded-command streams carry the mandatory Acquisition identity.
-
-Checks cover held startup, backend and calibration identity, complete ordered
-frame/command acquisition identities, PTS association, Float32 micrometre/metre
-conversion, exact direct JFG and noisy plant replay, and finite piston-removed
-pupil-OPD improvement against the same seeded zero-command trajectory. Raw
-prefix bytes, seen masks and identities remain available on failed collection
-or replay. A success receipt is written only after the outer testset passes.
-Native Quit is never retried; an uncertain Quit stays a failure while the
-existing exact-manager fault cleanup reconciles process/cgroup removal.
-
-This is functional CPU simulation evidence. It does not qualify 500 Hz wall
-cadence, latency, long-run control stability, GPU execution or physical hardware.
-
-`classic_saved_replay.jl CPU_APPLICATION CAPTURE_STAGE CANDIDATE_PROVENANCE_JSON
-COLLECTED_HARNESS_DIRECTORY` separately revalidates preserved bytes without
-starting any service. It verifies payload hashes, candidate inputs and retained
-lifecycle receipts, then reruns the same scientific oracles. It writes
-`offline-verification.json` only after all assertions pass and refuses to
-overwrite an existing receipt. The original live test outcome is retained.
-
-## CPU-only standard Link qualification
-
-`session_items.jl` uses the existing private-core helper and real
-`PipeWireAO.NdArraySource` / `NdArraySink` endpoints. It loads the installed
-candidate's production `ao-connections`, upstream Link APIs and RTC-local
-control-module binding, checks exact endpoint identities and port IDs,
-checks that the link creator client belongs to the actual RTC PID, exchanges
-three CPU arrays, and proves link withdrawal while preserving an unrelated node. A separate
-WirePlumber daemon shares the private core through a minimal profile with no
-device monitors or desktop auto-connect policy; this is process coexistence,
-not hardware or full desktop-policy qualification. It starts no systemd
-session, simulator, CUDA runtime or physical device. It stops only its own
-headless RTC child and private daemon; the evidence directory must be fresh.
-
-```sh
-julia --startup-file=no --project=. test/integration/session_items.jl \
-  /absolute/path/to/wireplumber-library-prefix /absolute/path/to/rtc-prefix \
-  /absolute/path/to/fresh-evidence-directory
-```
-
-The candidate uses upstream Link and SessionItem interfaces built against
-PipeWireAO, without downstream Lua/POD API extensions. The RTC prefix supplies `ao-lua`. The
-RTC prefix contains its native control module; the generated profile selects
-Lua, `ao-lua` and the control binding, without SessionItem factories, desktop audio policy or an
-all-feature event source. Set `LD_LIBRARY_PATH` with the candidate WirePlumber
-library first, then RTC and PipeWireAO dependencies, so an older library cannot
-shadow the candidate. Endpoint client PID checks bind Client info; registry announcements
-alone do not guarantee the PID property. The fixture leaves the link available
-for 30 seconds for first-use compilation and sample exchange, then checks
-retirement and remote absence. This is a functional test, not a latency bound.
-Logs and `receipt.json` remain in the evidence directory, including failures.
-
-## Actual session fault cases
+These selectors are being migrated to the direct Julia session host. Earlier
+receipts concern the WirePlumber implementation and do not qualify its
+replacement. Each selected application/source cohort needs a fresh lifecycle
+and fault result; cold helper checks alone do not establish readiness.
 
 `session_faults.jl` is opt-in. It creates new private sessions through
 `PipeWireAORTC.SessionRuntime`; it never attaches to an existing
@@ -173,8 +115,9 @@ Physical DM safe-state actions and operator approval are outside this test.
 Prerequisites:
 
 - Linux user systemd with a working user bus and delegated cgroups.
-- The package's installed PipeWireAO/WirePlumber dependencies, scientific
-  packages, data, and configured CPU/resource rights.
+- The matching PipeWireAO client/SDK source cohort, scientific packages, data,
+  and configured CPU/resource rights. No Lua or libwireplumber RTC dependency
+  is required by the selected host.
 - A sealed package accepted by the current deployment validator, containing a
   headless RTC application, node-owner declarations, and a source using
   `pipewireao.rtc.calibration-lifecycle/1` with `instrument=classic` or `copper`,
@@ -257,9 +200,6 @@ a failed gate does not trigger mutation retries. A cleanup failure remains a
 failure with retained diagnostics; the test does not broadly kill services.
 
 Polling does not establish source-first causal ordering or real-time bounds.
-The separate `session_policy_faults.jl` qualification checks production Lua
-policy ordering with controlled I/O boundaries; its evidence has a different
-scope from the installed-session checks above.
 
 ## Cold source-contract checks
 
@@ -277,37 +217,14 @@ cursors. They distinguish held and policy-shutdown proof, reject secondary or
 wrong-incarnation link faults, and exercise delayed receipt/process/cgroup cleanup
 observations with a controlled clock. They preserve failed observations when a
 later read settles. They do not establish live fault recovery. Run each selected
-AOS case against a fresh sealed application separately; for Classic's JFG application,
+AOS case against a fresh sealed application separately; for Classic's FilterGraphs application,
 `--controller-role julia` selects its declared graph owner.
 
-## Deterministic production-policy checks
+## Retired production-policy selector
 
-`session_policy_faults.jl` loads the selected production `ao/session.lua` in
-Lua 5.4 and gates its asynchronous source, graph, and link operations. It
-exercises the real fault callback with controlled I/O boundaries, without
-starting a service or changing the policy. The admitted state is supplied by
-the test; native discovery, transport and systemd are outside this check.
-
-```sh
-julia --startup-file=no --project=test test/integration/session_policy_faults.jl
-julia --startup-file=no --project=test test/integration/session_policy_faults.jl \
-  /absolute/path/to/pipewireao-rtc/native/scripts/ao/session.lua
-```
-
-The default policy is `/opt/pipewireao/share/pipewireao-rtc/scripts/ao/session.lua`.
-Install the Lua 5.4 shared library for this optional test. Output records the
-selected policy path and SHA-256; each case creates and closes a separate Lua
-state. The seven cases check source-first hold acknowledgement, both graph
-holds before withdrawal, first-fault retention/cancellation, unknown source
-hold, failed graph hold, uncertain withdrawal, failure before source capture,
-and absence of automatic readmission. Several obligations share a case.
-
-| Scenario | Verification surface | Remaining limit |
-| --- | --- | --- |
-| Source hold before graph hold and withdrawal | Production Lua callback with gated completions | Native/device timing is not measured. |
-| Repeated faults, unknown hold, graph/withdrawal failures | Production Lua callback | Controlled I/O failures do not inject native proxy errors. |
-| Sink removal, owned link removal, graph-child exit | Opt-in installed-session cases | Each selected sealed package/policy closure needs its own live result. |
-| Held Fault with surviving owners, or unknown Hold with complete policy shutdown | Installed-session observations and exact-invocation journals | The finite window does not prove absence of every possible retry. |
-| Complete cleanup and explicitly requested fresh admission | Installed-session cases and exact retained identities | This does not qualify physical command disposition. |
-| Native sink error and proxy-error injection | Gap: needs a cooperative owned sink or a declared plugin fault mechanism | A remotely bound Node has no public `set_error!` operation. |
-| Physical DM safe-state action and approval | Deferred outside the non-actuating RTC profile | The retired JFG harness is not evidence for this RTC path. |
+`session_policy_faults.jl` exercised the old production Lua policy and was
+retired with that implementation. Its source remains in [Git history](https://github.com/DarrylGamroth/pipewireao-rtc/blob/4f7eaff/test/integration/session_policy_faults.jl).
+Historical event-ordering evidence does not qualify current Julia policy. The
+new machine/effect and native private-core selectors above cover the current
+source surface; installed failure/re-admission integration remains a separate
+migration gate.

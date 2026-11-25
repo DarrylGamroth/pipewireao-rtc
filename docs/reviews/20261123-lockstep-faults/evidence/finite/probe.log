@@ -1,0 +1,9 @@
+Julia 1.13.4 candidate=/home/dgamroth/workspaces/codex/worktrees/hil-lockstep-hold/src/AdaptiveOpticsSimPipeWireHIL.jl RTC=/home/dgamroth/workspaces/codex/worktrees/rtc-gpi2-pupil-tap/src/PipeWireAORTC.jl native=/home/dgamroth/.julia/artifacts/77da251765f3124df77322c562e67a7c7742ab1d
+SIMULATOR_CONNECTED sequence=0 held=true
+hold_final=false released_validator=accepted snapshot=Dict{String, Integer}("sequence" => 1, "report-generation" => 1, "running" => false, "version" => 1, "generation" => 1, "result" => 0, "instance" => 31, "completed-token" => 2, "report-sequence" => 1, "kind" => 1, "completed" => true)
+hold_final=false exposure=1 active_command=1 command=(woofer = Float32[22.0, 24.0], tweeter = Float32[63.0, 66.0, 69.0], tiptilt = Float32[124.0]) model_sequence=1
+SIMULATOR_CONNECTED sequence=0 held=true
+hold_final=true released_validator=accepted snapshot=Dict{String, Integer}("sequence" => 1, "report-generation" => 1, "running" => false, "version" => 1, "generation" => 1, "result" => 0, "instance" => 31, "completed-token" => 2, "report-sequence" => 1, "kind" => 1, "completed" => true)
+hold_final=true exposure=1 active_command=0 command=(woofer = Float32[10.0, 10.0], tweeter = Float32[20.0, 20.0, 20.0], tiptilt = Float32[30.0]) model_sequence=1
+Test Summary:                  | Pass  Total   Time
+finite managed lockstep report |   31     31  22.6s

@@ -1,0 +1,697 @@
+{
+  "time_start_ns": 398752322949694,
+  "time_end_ns": 398801684473773,
+  "wall_s": 49.362,
+  "logical_cpu_busy_pct": {
+    "0": 14.2,
+    "1": 4.9,
+    "2": 46.8,
+    "3": 3.8,
+    "4": 3.7,
+    "5": 2.8,
+    "6": 100.0,
+    "7": 10.4,
+    "8": 2.0,
+    "9": 2.5,
+    "10": 3.5,
+    "11": 1.6,
+    "12": 4.5,
+    "13": 2.8,
+    "14": 1.9,
+    "15": 0.8
+  },
+  "threads": [
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1495444",
+      "on_cpu_s": 48.09327,
+      "runnable_wait_s": 1.2599
+    },
+    {
+      "role": "rtc",
+      "thread": "julia",
+      "cpu_allowed": "3",
+      "tid": "1510079",
+      "on_cpu_s": 1.27558,
+      "runnable_wait_s": 0.07959
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1495455",
+      "on_cpu_s": 1.2445,
+      "runnable_wait_s": 1.28295
+    },
+    {
+      "role": "llowfs",
+      "thread": "julia",
+      "cpu_allowed": "8",
+      "tid": "1509541",
+      "on_cpu_s": 0.28486,
+      "runnable_wait_s": 0.12068
+    },
+    {
+      "role": "scc",
+      "thread": "julia",
+      "cpu_allowed": "10",
+      "tid": "1509539",
+      "on_cpu_s": 0.28013,
+      "runnable_wait_s": 0.12845
+    },
+    {
+      "role": "core",
+      "thread": "telemetry-loop",
+      "cpu_allowed": "3",
+      "tid": "1495439",
+      "on_cpu_s": 0.18154,
+      "runnable_wait_s": 0.02
+    },
+    {
+      "role": "scc",
+      "thread": "julia",
+      "cpu_allowed": "11",
+      "tid": "1509530",
+      "on_cpu_s": 0.0921,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "AOS-arrays",
+      "cpu_allowed": "7",
+      "tid": "1498079",
+      "on_cpu_s": 0.07076,
+      "runnable_wait_s": 0.04358
+    },
+    {
+      "role": "core",
+      "thread": "pipewire-ao",
+      "cpu_allowed": "3",
+      "tid": "1495438",
+      "on_cpu_s": 0.01867,
+      "runnable_wait_s": 0.00791
+    },
+    {
+      "role": "scc",
+      "thread": "julia-data-loop",
+      "cpu_allowed": "10",
+      "tid": "1510229",
+      "on_cpu_s": 0.00114,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "core",
+      "thread": "rtc-data-loop",
+      "cpu_allowed": "2",
+      "tid": "1495440",
+      "on_cpu_s": 9e-05,
+      "runnable_wait_s": 0.00089
+    },
+    {
+      "role": "llowfs",
+      "thread": "julia-data-loop",
+      "cpu_allowed": "8",
+      "tid": "1510227",
+      "on_cpu_s": 8e-05,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "rtc",
+      "thread": "iou-sqp-1510079",
+      "cpu_allowed": "3",
+      "tid": "1510080",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "rtc",
+      "thread": "julia",
+      "cpu_allowed": "3",
+      "tid": "1510081",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "iou-sqp-1495444",
+      "cpu_allowed": "6",
+      "tid": "1495447",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1495448",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497259",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497261",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497262",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497263",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497264",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497265",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497266",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497267",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497268",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497269",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497270",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497271",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497272",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497273",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497274",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497275",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "hil",
+      "thread": "julia",
+      "cpu_allowed": "6",
+      "tid": "1497276",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "llowfs",
+      "thread": "julia",
+      "cpu_allowed": "9",
+      "tid": "1509528",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "llowfs",
+      "thread": "iou-sqp-1509528",
+      "cpu_allowed": "9",
+      "tid": "1509531",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "llowfs",
+      "thread": "julia",
+      "cpu_allowed": "9",
+      "tid": "1509532",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "llowfs",
+      "thread": "rtc-bootstrap",
+      "cpu_allowed": "9",
+      "tid": "1509722",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "llowfs",
+      "thread": "ndarray-filter-",
+      "cpu_allowed": "9",
+      "tid": "1510015",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "scc",
+      "thread": "iou-sqp-1509530",
+      "cpu_allowed": "11",
+      "tid": "1509533",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "scc",
+      "thread": "julia",
+      "cpu_allowed": "11",
+      "tid": "1509534",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "scc",
+      "thread": "rtc-bootstrap",
+      "cpu_allowed": "11",
+      "tid": "1509732",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    },
+    {
+      "role": "scc",
+      "thread": "ndarray-filter-",
+      "cpu_allowed": "11",
+      "tid": "1510017",
+      "on_cpu_s": 0.0,
+      "runnable_wait_s": 0.0
+    }
+  ],
+  "cgroups_at_end": {
+    "rtc": [
+      [
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-pipewireao\\x2dsession.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice"
+        ]
+      ],
+      {}
+    ],
+    "core": [
+      [
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/c2l-owner-4YQJfN8f-core.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice"
+        ]
+      ],
+      {
+        "nr_throttled": 0,
+        "throttled_usec": 0
+      }
+    ],
+    "hil": [
+      [
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/c2l-owner-4YQJfN8f-hil.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice"
+        ]
+      ],
+      {
+        "nr_throttled": 0,
+        "throttled_usec": 0
+      }
+    ],
+    "llowfs": [
+      [
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-graph-cal2-owner-4yqjfn8f-cal2-llowfs.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice"
+        ]
+      ],
+      {
+        "nr_throttled": 0,
+        "throttled_usec": 0
+      }
+    ],
+    "scc": [
+      [
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-graph-cal2-owner-4yqjfn8f-cal2-scc.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice/user-1000.slice"
+        ],
+        [
+          "max 100000",
+          "/sys/fs/cgroup/user.slice"
+        ]
+      ],
+      {
+        "nr_throttled": 0,
+        "throttled_usec": 0
+      }
+    ]
+  },
+  "observed_startups": [
+    {
+      "activation": "replacement-3/cold",
+      "ready_seconds": 17.333457699,
+      "last_leader_samples": {
+        "prepare": {
+          "monotonic_ns": 397321223847988,
+          "pid": 1488677,
+          "role": "prepare",
+          "runtime_ns": 2028882235,
+          "runnable_wait_ns": 36149034
+        },
+        "rtc": {
+          "monotonic_ns": 397335679868831,
+          "pid": 1488742,
+          "role": "rtc",
+          "runtime_ns": 9083331944,
+          "runnable_wait_ns": 198339994
+        }
+      }
+    },
+    {
+      "activation": "replacement-4/cold",
+      "ready_seconds": 16.798509016,
+      "last_leader_samples": {
+        "prepare": {
+          "monotonic_ns": 397462989963291,
+          "pid": 1491783,
+          "role": "prepare",
+          "runtime_ns": 1993681180,
+          "runnable_wait_ns": 44645178
+        },
+        "rtc": {
+          "monotonic_ns": 397476838419681,
+          "pid": 1491859,
+          "role": "rtc",
+          "runtime_ns": 8470890003,
+          "runnable_wait_ns": 136685739
+        }
+      }
+    },
+    {
+      "activation": "replacement-5/cold",
+      "ready_seconds": 13.500649718,
+      "last_leader_samples": {
+        "prepare": {
+          "monotonic_ns": 397963836512534,
+          "pid": 1501778,
+          "role": "prepare",
+          "runtime_ns": 1684678179,
+          "runnable_wait_ns": 27011632
+        },
+        "rtc": {
+          "monotonic_ns": 397974874273453,
+          "pid": 1501841,
+          "role": "rtc",
+          "runtime_ns": 6636831945,
+          "runnable_wait_ns": 73565359
+        }
+      }
+    },
+    {
+      "activation": "replacement-5/warm-abrupt",
+      "ready_seconds": 8.833421097,
+      "last_leader_samples": {
+        "prepare": {
+          "monotonic_ns": 398025251458605,
+          "pid": 1502639,
+          "role": "prepare",
+          "runtime_ns": 1495756021,
+          "runnable_wait_ns": 18677111
+        },
+        "rtc": {
+          "monotonic_ns": 398032071089190,
+          "pid": 1502685,
+          "role": "rtc",
+          "runtime_ns": 5845542696,
+          "runnable_wait_ns": 80085679
+        }
+      }
+    },
+    {
+      "activation": "replacement-6/cold",
+      "ready_seconds": 13.147394561,
+      "last_leader_samples": {
+        "prepare": {
+          "monotonic_ns": 398272568387614,
+          "pid": 1505237,
+          "role": "prepare",
+          "runtime_ns": 1760459838,
+          "runnable_wait_ns": 38372247
+        },
+        "rtc": {
+          "monotonic_ns": 398283202554849,
+          "pid": 1505303,
+          "role": "rtc",
+          "runtime_ns": 6255125668,
+          "runnable_wait_ns": 95965031
+        }
+      }
+    },
+    {
+      "activation": "replacement-7/warm-abrupt",
+      "ready_seconds": 11.19739382,
+      "last_leader_samples": {
+        "prepare": {
+          "monotonic_ns": 398549756948068,
+          "pid": 1510024,
+          "role": "prepare",
+          "runtime_ns": 1665743566,
+          "runnable_wait_ns": 32013983
+        },
+        "rtc": {
+          "monotonic_ns": 398558586561219,
+          "pid": 1510079,
+          "role": "rtc",
+          "runtime_ns": 6556697499,
+          "runnable_wait_ns": 140481572
+        }
+      }
+    },
+    {
+      "activation": "replacement-10/warm-abrupt",
+      "ready_seconds": 14.093499778,
+      "last_leader_samples": {
+        "prepare": {
+          "monotonic_ns": 399671051430209,
+          "pid": 1538322,
+          "role": "prepare",
+          "runtime_ns": 2076312440,
+          "runnable_wait_ns": 45470491
+        },
+        "rtc": {
+          "monotonic_ns": 399682294426443,
+          "pid": 1538412,
+          "role": "rtc",
+          "runtime_ns": 8594003152,
+          "runnable_wait_ns": 177009636
+        }
+      }
+    },
+    {
+      "activation": "replacement-10/warm-recovery",
+      "ready_seconds": 11.83907581,
+      "last_leader_samples": {
+        "prepare": {
+          "monotonic_ns": 399816594718659,
+          "pid": 1540405,
+          "role": "prepare",
+          "runtime_ns": 2023581288,
+          "runnable_wait_ns": 41550140
+        },
+        "rtc": {
+          "monotonic_ns": 399825428457790,
+          "pid": 1540476,
+          "role": "rtc",
+          "runtime_ns": 7804663333,
+          "runnable_wait_ns": 139777364
+        }
+      }
+    }
+  ],
+  "physical_core_logical_cpu_pairs": [
+    [
+      0,
+      1
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      6,
+      7
+    ],
+    [
+      8,
+      9
+    ],
+    [
+      10,
+      11
+    ],
+    [
+      12,
+      13
+    ],
+    [
+      14,
+      15
+    ]
+  ],
+  "measurement": "Linux /proc/PID/task/TID/schedstat and /proc/stat, approximately once per second during replacement-7. Startup samples use /proc/PID/schedstat from the service cgroup at approximately 200 ms."
+}

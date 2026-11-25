@@ -1,0 +1,19 @@
+mode_count=1509
+retained_rank=1445
+measurement_count=11104
+relative_inverse_residual=0.054787233
+tiptilt_fit_relative_residual=0.021530246
+execution=AdaptiveOpticsSim.AlgorithmGraphs.CapturedGraphExecution
+validating deterministic field loop
+validating noisy paired field loop
+FIELD_LOOP 32/256 overlap=0.8051444817841281 open=0.0007446556277202427
+FIELD_LOOP 64/256 overlap=0.7992587088579627 open=0.0006391694593434295
+FIELD_LOOP 96/256 overlap=0.8029351574922095 open=0.00048254816127904336
+FIELD_LOOP 128/256 overlap=0.8018978204588103 open=0.0006193407597218535
+FIELD_LOOP 160/256 overlap=0.8112458770031349 open=0.0008195200080614956
+FIELD_LOOP 192/256 overlap=0.8007378184139691 open=0.0010439135593474803
+FIELD_LOOP 224/256 overlap=0.7929602572448767 open=0.001095747397687773
+FIELD_LOOP 256/256 overlap=0.7919620104089546 open=0.0008586459948168677
+staging candidate (no installation)
+staged parameters=33 calibration_identity=sha256:8e6a5f6b91590f16b9fcf14803ce7fe1c5cedd40b0989e5a60be0a90fc2e0253
+candidate validation complete

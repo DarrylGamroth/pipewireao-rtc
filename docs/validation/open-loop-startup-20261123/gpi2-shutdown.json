@@ -1,0 +1,60 @@
+{
+  "healthy": {
+    "ready_s": 66.969,
+    "quit_pass": true,
+    "flow_pass": true,
+    "quit_s": 12.533,
+    "original_processes_alive": 0,
+    "final": {
+      "ActiveState": "inactive",
+      "ExecMainStatus": "0",
+      "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@cc9f8d900252.service",
+      "InvocationID": "",
+      "MainPID": "0",
+      "Result": "success",
+      "SubState": "dead"
+    }
+  },
+  "fault_direct_quit": {
+    "ready_s": 67.271,
+    "quit_pass": true,
+    "flow_pass": true,
+    "direct_quit_s": 4.426772771,
+    "original_processes_alive": 0,
+    "woofer_fault": {
+      "links_removed": 31,
+      "revoke_ms": 1169.107753,
+      "settled": "\u250c Error: Session fault handling settled\n\u2502   session_instance = 0x0001508b3b828b2e\n\u2502   lifecycle = Fault::Lifecycle = 0x00000005\n\u2502   failure = \"Required Link removed\"\n\u2502   cleanup = nothing\n\u2502   outcome_unknown = false"
+    },
+    "final": {
+      "ActiveState": "inactive",
+      "ExecMainStatus": "0",
+      "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@2ab2858276db.service",
+      "InvocationID": "",
+      "MainPID": "0",
+      "Result": "success",
+      "SubState": "dead"
+    }
+  },
+  "fault_systemd_quit": {
+    "ready_s": 76.699,
+    "quit_pass": true,
+    "flow_pass": true,
+    "quit_s": 13.469,
+    "original_processes_alive": 0,
+    "woofer_fault": {
+      "links_removed": 31,
+      "revoke_ms": 1832.292079,
+      "settled": "\u250c Error: Session fault handling settled\n\u2502   session_instance = 0x000150a3b36c178b\n\u2502   lifecycle = Fault::Lifecycle = 0x00000005\n\u2502   failure = \"Required Link removed\"\n\u2502   cleanup = nothing\n\u2502   outcome_unknown = false"
+    },
+    "final": {
+      "ActiveState": "inactive",
+      "ExecMainStatus": "0",
+      "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@c66a0103c891.service",
+      "InvocationID": "",
+      "MainPID": "0",
+      "Result": "success",
+      "SubState": "dead"
+    }
+  }
+}

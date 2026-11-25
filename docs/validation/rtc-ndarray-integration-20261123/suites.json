@@ -1,0 +1,35 @@
+{
+  "rtc_suites": [
+    {
+      "revision": "fba98e26a1123d06f9a0a99fd076e9e3af1cc7a4",
+      "julia": "1.13.4",
+      "passed": 11333,
+      "testsets": 527,
+      "log_sha256": "a4c0847cfcb0bb1023336575e80195969bdd02247521ddb7cc422bd269f8f7bd",
+      "exit": 0
+    },
+    {
+      "revision": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+      "julia": "1.13.4",
+      "passed": 11574,
+      "testsets": 534,
+      "log_sha256": "400b9da5f7934ac284ae5d7a5ba852b0d88ba4579343bf44636a65186cafdc3b",
+      "exit": 0
+    },
+    {
+      "revision": "6ddc12a393de781d21429d5da05c59565b09b375",
+      "julia": "1.13.4",
+      "passed": 11539,
+      "testsets": 534,
+      "log_sha256": "cac923798c67c6e3ba16fb05e61fddf9eb37270211d9e0946b2a74b7238ffaa9",
+      "exit": 0
+    }
+  ],
+  "shared_format_regression": {
+    "before": "unhandled native runner result parameter_ndarray",
+    "after": 66,
+    "test_file": "test/test_parameter_ndarray.jl",
+    "log_sha256": "dfa6b163b2582b7becd7ded508c4689584eaf7c5f8c023fec6a394e116ec9a8d"
+  },
+  "snapshot_test": "The concurrent snapshot test counts observations until the writer task completes. It made 125 assertions on the combined run and 87 on the corrected client run."
+}

@@ -1,0 +1,83 @@
+{
+  "rtc": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+  "receipt_sha256": "6f723bc2f36f83d66ab1b882257a46e829f0c2ab7b46ab64073a0fd4ee8db4e4",
+  "scope": "Installed Classic CPU private service, historical graph-image fallback, Julia native client",
+  "matrix": {
+    "shape": [
+      212,
+      376
+    ],
+    "schema": "pipewireao/shwfs-reconstructor-f32/1",
+    "edited": {
+      "receipt": {
+        "sent_ns": 358316665690908,
+        "received_ns": 358318357947738,
+        "token": 762,
+        "operation": 17,
+        "state": "Running",
+        "outcome": "Submitted",
+        "details": {
+          "graph": "revolt-classic-jfg-frame-graph",
+          "parameter": "reconstructor",
+          "generation": null,
+          "active_adoption_observed": false
+        }
+      },
+      "payload_sha256": "58e1d0847988b5c425295f9d018e2e6ae06ae68a9fa8ad66959d17cfa675fa97",
+      "bytes": 318848
+    },
+    "restored": {
+      "receipt": {
+        "sent_ns": 358319244858821,
+        "received_ns": 358319322877976,
+        "token": 764,
+        "operation": 17,
+        "state": "Running",
+        "outcome": "Submitted",
+        "details": {
+          "graph": "revolt-classic-jfg-frame-graph",
+          "parameter": "reconstructor",
+          "generation": null,
+          "active_adoption_observed": false
+        }
+      },
+      "payload_sha256": "6a0309c678617020756274467edea8f17eecee7247f3be4d60e84fc99db349b2",
+      "bytes": 318848
+    },
+    "observed_edit": {
+      "sequence": 1,
+      "bytes": 318848,
+      "sha256": "58e1d0847988b5c425295f9d018e2e6ae06ae68a9fa8ad66959d17cfa675fa97",
+      "basis_outputs": 212,
+      "basis_first_coefficient": -0.14845382,
+      "basis_sha256": "17ae101607a7fbe26c2324726bf7bac1ac616ca12dc346ec22a5e1ed2c2b2f2a"
+    },
+    "observed_restore": {
+      "sequence": 2,
+      "bytes": 318848,
+      "sha256": "6a0309c678617020756274467edea8f17eecee7247f3be4d60e84fc99db349b2",
+      "basis_outputs": 212,
+      "basis_first_coefficient": -0.14845383,
+      "basis_sha256": "87c3b9dde6876a57436665ffc5242da778d8dc64ae6365a08fee52e222fc0f94"
+    },
+    "before": {
+      "requested": 0,
+      "active": 0
+    },
+    "active": {
+      "requested": 1,
+      "active": 1
+    },
+    "active_after_restore": {
+      "requested": 2,
+      "active": 2
+    },
+    "baseline_sha256": "6a0309c678617020756274467edea8f17eecee7247f3be4d60e84fc99db349b2",
+    "baseline_basis_sha256": "87c3b9dde6876a57436665ffc5242da778d8dc64ae6365a08fee52e222fc0f94",
+    "success": true
+  },
+  "declared_link_counts": [
+    20,
+    20
+  ]
+}

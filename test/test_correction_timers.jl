@@ -1,3 +1,4 @@
+import Clocks
 using Test, PipeWireAORTC, PipeWireAO
 
 const CL = PipeWireAORTC.CorrectionLoops
@@ -6,7 +7,7 @@ const CL = PipeWireAORTC.CorrectionLoops
     loop = ThreadLoop("correction-control-timers")
     wakes = Threads.Atomic{Int}(0)
     callback_thread = Threads.Atomic{Int}(0)
-    observer = CL.Observer(["correction:closed"], Int64(22); timeout_ms=50)
+    observer = CL.Observer(["correction:closed"], Int64(22); timeout_ms = 50)
     sm = only(observer.loops)
     CL.observed!(sm, sm.instance, 0, 0, false)
     CL.attach_timers!(observer, loop, () -> begin
@@ -20,12 +21,12 @@ const CL = PipeWireAORTC.CorrectionLoops
         @test_throws ArgumentError CL.attach_timers!(observer, loop, () -> nothing)
         start!(loop)
         CL.requested!(sm, sm.instance, 1, 0, true)
-        @test timedwait(() -> wakes[] > 0, 5; pollint=0.005) === :ok
+        @test timedwait(() -> wakes[] > 0, 5; pollint = 0.005) === :ok
         @test callback_thread[] != Threads.threadid()
         @test CL.state(sm) === :Closing
         @test sm.failure === nothing
         # Only the serialized control observation can dispatch the fault.
-        CL.expire!(sm, time_ns(), observer.timeout_ns)
+        CL.expire!(sm, Clocks.time_nanos(observer.clock), observer.timeout_ns)
         @test CL.state(sm) === :Unknown
         @test sm.failure === :adoption_timeout
         @test sm.pending_since_ns == 0
@@ -40,7 +41,7 @@ end
 @testset "Applied adoption cancels the native timer" begin
     loop = ThreadLoop("correction-control-cancel")
     wakes = Threads.Atomic{Int}(0)
-    observer = CL.Observer(["correction:closed"], Int64(23); timeout_ms=250)
+    observer = CL.Observer(["correction:closed"], Int64(23); timeout_ms = 250)
     sm = only(observer.loops)
     CL.observed!(sm, sm.instance, 0, 0, true)
     CL.attach_timers!(observer, loop, () -> Threads.atomic_add!(wakes, 1))
@@ -73,27 +74,26 @@ end
 end
 
 @testset "Early native wakes preserve the original adoption deadline" begin
-    now = Ref(UInt64(0))
+    now = Clocks.CachedNanoClock(0)
     loop = ThreadLoop("correction-control-rearm")
     wakes = Threads.Atomic{Int}(0)
-    observer = CL.Observer(["correction:closed"], Int64(25);
-        timeout_ms=50, clock=() -> now[])
+    observer = CL.Observer(["correction:closed"], Int64(25); timeout_ms = 50, clock = now)
     sm = only(observer.loops)
     CL.observed!(sm, sm.instance, 0, 0, false)
     CL.attach_timers!(observer, loop, () -> Threads.atomic_add!(wakes, 1))
     try
         start!(loop)
         CL.requested!(sm, sm.instance, 1, 0, true)
-        update_timer!(sm.timer; delay=0.001)
-        @test timedwait(() -> wakes[] > 0, 5; pollint=0.005) === :ok
-        now[] = UInt64(10_000_000)
-        CL.expire!(sm, now[], observer.timeout_ns)
+        update_timer!(sm.timer; delay = 0.001)
+        @test timedwait(() -> wakes[] > 0, 5; pollint = 0.005) === :ok
+        Clocks.update!(now, Int64(10_000_000))
+        CL.expire!(sm, Clocks.time_nanos(now), observer.timeout_ns)
         @test CL.state(sm) === :Closing
         @test sm.pending_since_ns == 0
         count = wakes[]
-        @test timedwait(() -> wakes[] > count, 5; pollint=0.005) === :ok
-        now[] = UInt64(50_000_000)
-        CL.expire!(sm, now[], observer.timeout_ns)
+        @test timedwait(() -> wakes[] > count, 5; pollint = 0.005) === :ok
+        Clocks.update!(now, Int64(50_000_000))
+        CL.expire!(sm, Clocks.time_nanos(now), observer.timeout_ns)
         @test sm.failure === :adoption_timeout
         @test CL.state(sm) === :Unknown
     finally
@@ -105,7 +105,7 @@ end
 @testset "Closing a pending observer cancels and releases its native timer" begin
     loop = ThreadLoop("correction-control-close")
     wakes = Threads.Atomic{Int}(0)
-    observer = CL.Observer(["correction:closed"], Int64(26); timeout_ms=250)
+    observer = CL.Observer(["correction:closed"], Int64(26); timeout_ms = 250)
     sm = only(observer.loops)
     CL.observed!(sm, sm.instance, 0, 0, true)
     CL.attach_timers!(observer, loop, () -> Threads.atomic_add!(wakes, 1))

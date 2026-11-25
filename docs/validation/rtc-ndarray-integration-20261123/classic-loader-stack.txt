@@ -1,0 +1,21 @@
+Selected Julia signal frames, current frame first.
+The method and type being reconciled are unknown.
+
+var_occurs_inside at src/subtype.c:2955
+var_occurs_inside at src/subtype.c:2984
+var_occurs_inside at src/subtype.c:2984
+var_occurs_inside at src/subtype.c:2984
+var_occurs_inside at src/subtype.c:2984
+var_occurs_invariant at src/subtype.c:978 [inlined]
+subtype_unionall at src/subtype.c:1035
+subtype at src/subtype.c:1570
+[Additional recursive subtype frames omitted.]
+exists_subtype at src/subtype.c:1869 [inlined]
+forall_exists_subtype at src/subtype.c:1898
+ijl_types_equal at src/subtype.c:2450 [inlined]
+ijl_types_equal at src/subtype.c:2397
+jl_specializations_get_linfo_ at src/gf.c:211
+jl_restore_system_image_from_stream_ at src/staticdata.c:4183
+jl_restore_package_image_from_stream at src/staticdata.c:4435
+jl_restore_incremental_from_buf at src/staticdata.c:4504
+ijl_restore_package_image_from_file at src/staticdata.c:4570

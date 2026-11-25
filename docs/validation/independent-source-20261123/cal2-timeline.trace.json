@@ -1,0 +1,251 @@
+{
+  "displayTimeUnit": "ms",
+  "traceEvents": [
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 0,
+      "name": "process_name",
+      "args": {
+        "name": "CAL2 replacement RTC · timed activation 2"
+      }
+    },
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 1,
+      "name": "thread_name",
+      "args": {
+        "name": "Service milestones"
+      }
+    },
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 2,
+      "name": "thread_name",
+      "args": {
+        "name": "RTC process"
+      }
+    },
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 3,
+      "name": "thread_name",
+      "args": {
+        "name": "SCC graph"
+      }
+    },
+    {
+      "ph": "M",
+      "pid": 1,
+      "tid": 4,
+      "name": "thread_name",
+      "args": {
+        "name": "LLOWFS graph"
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 1,
+      "name": "Prepare",
+      "ts": 0.0,
+      "dur": 14568154.944,
+      "args": {
+        "activity": "Validate the deployment, identify external services, launch graph owners and write the current RTC configuration.",
+        "purpose": "Bind a fresh RTC to the intended owners."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 1,
+      "name": "Initialize",
+      "ts": 14568154.944,
+      "dur": 15765522.0,
+      "args": {
+        "activity": "RTC and publication helper start; the RTC opens its control path and the helper checks the process and launch record.",
+        "purpose": "Establish a command endpoint for this RTC."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 1,
+      "name": "Connect to RTC control",
+      "ts": 30333676.944,
+      "dur": 4793589.0,
+      "args": {
+        "activity": "Connect to the expected process and control instance.",
+        "purpose": "Correlate commands and replies with the current RTC."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 1,
+      "name": "Check session preparation",
+      "ts": 35127265.944,
+      "dur": 15986192.0,
+      "args": {
+        "activity": "Observe the Warmup reply after owner connection, Link setup and initial graph Hold.",
+        "purpose": "Allow admission only after the declared session is connected and held."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 1,
+      "name": "Admit and publish Ready",
+      "ts": 51113457.944,
+      "dur": 7173747.774,
+      "args": {
+        "activity": "Check placement and identity; require successful Admit and Status, then publish discovery.",
+        "purpose": "Expose the confirmed live session to operators."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 2,
+      "name": "RTC lifetime shown through service Ready",
+      "ts": 14568154.944,
+      "dur": 43719050.774,
+      "args": {}
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "cat": "journal",
+      "pid": 1,
+      "tid": 2,
+      "name": "Control dispatch preparation completed (journal)",
+      "ts": 28719478.944,
+      "args": {
+        "measured_call_ms": 0.759623
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "cat": "journal",
+      "pid": 1,
+      "tid": 3,
+      "name": "Controller process starts",
+      "ts": 11043222.944,
+      "args": {}
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 3,
+      "name": "load FilterGraphPipeWire (journal interval)",
+      "ts": 15862363.944,
+      "dur": 32988.0,
+      "args": {
+        "measured_call_ms": 0.097963,
+        "compilation_within_call_ms": 0.0,
+        "timing": "Slice uses journal receipt times. The call timer is in the arguments."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 3,
+      "name": "prepare graph (journal interval)",
+      "ts": 17120235.944,
+      "dur": 709476.0,
+      "args": {
+        "measured_call_ms": 709.2643549999999,
+        "compilation_within_call_ms": 608.165066,
+        "timing": "Slice uses journal receipt times. The call timer is in the arguments."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 3,
+      "name": "warm up graph (journal interval)",
+      "ts": 19003571.944,
+      "dur": 2172.0,
+      "args": {
+        "measured_call_ms": 2.111575,
+        "compilation_within_call_ms": 0.0,
+        "timing": "Slice uses journal receipt times. The call timer is in the arguments."
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "cat": "journal",
+      "pid": 1,
+      "tid": 4,
+      "name": "Controller process starts",
+      "ts": 11039719.944,
+      "args": {}
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 4,
+      "name": "load FilterGraphPipeWire (journal interval)",
+      "ts": 17174412.944,
+      "dur": 40916.0,
+      "args": {
+        "measured_call_ms": 0.09618,
+        "compilation_within_call_ms": 0.0,
+        "timing": "Slice uses journal receipt times. The call timer is in the arguments."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 4,
+      "name": "prepare graph (journal interval)",
+      "ts": 18741843.944,
+      "dur": 941399.0,
+      "args": {
+        "measured_call_ms": 941.111363,
+        "compilation_within_call_ms": 842.7664649999999,
+        "timing": "Slice uses journal receipt times. The call timer is in the arguments."
+      }
+    },
+    {
+      "ph": "X",
+      "cat": "elapsed",
+      "pid": 1,
+      "tid": 4,
+      "name": "warm up graph (journal interval)",
+      "ts": 21080802.944,
+      "dur": 967.0,
+      "args": {
+        "measured_call_ms": 0.732863,
+        "compilation_within_call_ms": 0.0,
+        "timing": "Slice uses journal receipt times. The call timer is in the arguments."
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "cat": "journal",
+      "pid": 1,
+      "tid": 1,
+      "name": "Service start returned",
+      "ts": 58287205.718,
+      "args": {}
+    }
+  ]
+}

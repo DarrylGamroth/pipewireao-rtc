@@ -115,6 +115,12 @@ Only then may cleanup succeed or a new realization generation begin. A
 zero-links snapshot alone is insufficient while creation or withdrawal may be
 pending. A replacement manager MUST NOT adopt an old generation. Unknown
 cleanup MUST remain a fault.
+During admission, MediaSession can submit independent Link requests to the
+native factory in one pass. Each incoming Link waits for the
+downstream node’s outgoing Links to negotiate. Links sharing an output or
+input port also keep their established order. The native Link info, format,
+registry incarnation and held checks apply to every Link in the cohort.
+
 RTC-ARCH-026 selects the headless application as this provider. Earlier
 WirePlumber and retired-runner evidence remains provider-specific; moving the
 policy does not transfer qualification automatically.
@@ -126,8 +132,9 @@ complete owned-object cleanup, and preservation of unrelated objects.
 ### RTC-DEV-004 — Basic lifecycle
 
 The session authority MUST serialize the following stable states and
-transitions. Under RTC-ARCH-026, the headless RTC application is that authority; its Lua
-policy reuses libwireplumber. Julia and Rust runtime coordinators remain retired.
+transitions. Under RTC-ARCH-026, MediaSession is the authority inside the
+headless RTC application and uses PipeWireAO.jl’s native bindings. The former Julia DeploymentRunner and Rust
+runtime coordinators remain retired.
 
 ```mermaid
 stateDiagram-v2
@@ -166,6 +173,14 @@ cleanup; external owner nodes may remain. A zero-links observation alone MUST
 NOT establish cleanup completion or permit a new generation. `CORRECTING` MUST
 NOT exist in this profile.
 
+On a failed Quit, RTC MUST retain the first failed shutdown effect and its
+known owner incarnation, operation ticket, deadline and submission state,
+including a failure that follows an already-settled Fault. The original
+trigger and any subsequent cleanup failure MUST remain distinguishable.
+After a submitted mutation has an unknown outcome, recovery MUST NOT replay
+it. A source that has already been fenced during owner shutdown MUST NOT
+receive another scientific Hold.
+
 Verification intent (informative): exercise every transition, retry after
 each injected creation and streaming failure, repeat load/start/stop/unload,
 and verify that invalid commands leave the state and owned objects coherent.
@@ -174,7 +189,7 @@ and verify that invalid commands leave the state and owned objects coherent.
 
 RTC-ARCH-026 retains the retirement of Statig and the former Rust dispatcher.
 The headless RTC MUST be the sole serialized lifecycle and admission authority.
-Its RTC-owned Lua state transitions MUST preserve RTC-DEV-004
+Its RTC-owned policy state transitions MUST preserve RTC-DEV-004
 states, legal transitions, unload behavior, typed operation identity and
 completion fencing. The authority MAY have at most one internal session or
 group effect in flight. Its token MUST be unique within the manager incarnation
@@ -183,13 +198,13 @@ originating transition and session incarnation. Stop, unload, reset, required
 loss or superseding operation MUST cancel or fence pending work; late results
 MUST be discarded and MUST NOT mutate a later state. Potentially blocking
 PipeWire work MUST use asynchronous PipeWire operations through the bounded
-native typed endpoint and C transport shim. Lua and native handlers MUST NOT
+native typed endpoint and C transport shim. Policy and native handlers MUST NOT
 perform blocking PipeWire roundtrips, filesystem/configuration work or science
 work. External owner operations MUST have bounded deadlines. The shim and
 clients MUST NOT own lifecycle state. Existing Statig evidence is historical
 and does not qualify the current headless implementation.
 
-Verification intent (informative): verify one authoritative Lua state writer,
+Verification intent (informative): verify one authoritative session state writer,
 serialized order, bounded effects, exact completion correlation, stale
 completion rejection and coherent retry/unload across a fresh incarnation.
 
@@ -264,7 +279,7 @@ Verification intent (informative): validate the positive and negative
 configuration matrix, realize and inspect the exact factory and port rates,
 run a 100 Hz identity-bearing no-buffer follower behind a selected 1000 Hz
 driver, compare retained Acquisition identity and final command provenance for
-native FGN and JuliaFilterGraph, exercise stop, READY reset, explicit restart,
+native FGN and FilterGraphs, exercise stop, READY reset, explicit restart,
 pool replacement, and cleanup, and measure steady-state allocation and latency.
 
 ### RTC-DEV-011 — Selective execution groups
@@ -407,7 +422,7 @@ PipeWire node. The external declaration MUST identify the exact node, ports,
 directions, element types, shapes, schemas, ownership, and run-control grant.
 Admission MUST NOT depend on a Julia package name, process identity, or another
 implementation-specific property. The initial maintained external processing
-application SHALL be a prepared `JuliaFilterGraph.jl` graph published through
+application SHALL be a prepared `FilterGraphs` graph published through
 `FilterGraphPipeWire`.
 
 When session run control is granted, the runner MUST submit a Version 1
@@ -466,7 +481,7 @@ RTC runner MUST NOT load Julia or interpret simulation internals.
 
 The fixture MUST admit and link the external plant to the maintained REVOLT
 Classic RTC component. It MUST cover a runner-owned `fgn-native` realization
-and an equivalent external `JuliaFilterGraph.jl` realization without changing
+and an equivalent external `FilterGraphs` realization without changing
 the plant adapter or scientific port contracts. Each realization MUST complete
 the session lifecycle, preserve external and unrelated nodes on unload, and
 compare every transported command plus declared plant diagnostics against the
@@ -534,7 +549,7 @@ Acquisition identity; use an independent metadata-aware observer for that
 acceptance check. No latency, scientific convergence, or hardware claim follows
 from a successful view. Complete controlled-preparation CPU evidence and
 remaining default cold repeatability/GUI limits are recorded in
-[LIVE_OBSERVATION_VALIDATION.md](LIVE_OBSERVATION_VALIDATION.md).
+[LIVE_OBSERVATION_VALIDATION.md](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/LIVE_OBSERVATION_VALIDATION.md).
 
 ### RTC-DEV-007 — Numerical and state equivalence
 
@@ -695,32 +710,56 @@ unit and verify recovery and fresh active generations separately.
 
 ### RTC-DEV-021 — Admission and coherent lifecycle
 
-The headless RTC MUST prepare and admit the exact session before ingress. It MUST
-verify exact topology and owner readiness, and required effective per-thread
-affinity, scheduler and memory/QoS prerequisites, before explicit source
-release. Readiness MUST bind current manager and owner incarnations; stale
-locators, markers and saved status files MUST NOT admit ingress. An external
-source MUST remain held until release and MUST stop when admission is revoked.
-A source without a hold contract MUST be rejected.
+The headless RTC MUST prepare and admit the exact session before enabling
+RTC-controlled execution. It MUST verify exact topology, owner readiness and
+the declared effective per-thread affinity, scheduler and memory/QoS
+prerequisites. Site services own their placement. The RTC MUST observe the
+declared placement before admission. Readiness MUST bind current manager and
+owner incarnations. A source declared under the managed acquisition contract
+MUST remain held until release and MUST stop when admission is revoked.
+A missing managed hold contract MUST fail admission.
+
+An explicitly declared independent stream MAY already be publishing. The RTC
+MUST verify its exact live provider, data Ports and negotiated Links before
+Ready. The provider owns model time and publication. RTC Start, Stop, Reset,
+Quit and failure cleanup MUST preserve that provider and its private core.
+A replacement RTC MUST verify the retained service identities and realize a
+fresh set of RTC-owned Links. RTC-controlled processing MUST remain held
+until explicitly started.
+
+When a profile selects install-time graph qualification, installation MUST
+exercise the configured graph and its required outputs using the installed
+calibration. RTC activation MUST use fresh controller state. For a loop
+declaring a live priming output, closure MUST require explicit operator
+intent and a usable measurement from that owner while open. A rejected
+early close MUST leave the correction open. Reset MUST clear priming.
+Input may already be publishing when the RTC joins the stream.
 
 Failure or loss of any required endpoint, Link, manager or owner MUST revoke
-admission and fault the session. Restart MUST use fresh incarnations, revalidate
-the dependent set and MUST NOT replay operator mutations. Shutdown MUST stop
-ingress before unloading consumers. Every invocation MUST use fresh owner unit
-names with `Restart=no`, bind owners to verified MainPIDs and process
-incarnations, and terminate only its owned processes. Before owner startup, it
-MUST verify the installed emergency cleanup hook. It MUST reconcile uncertain
-launches and pending starts before proceeding. User-manager operations MUST have
-finite bounds; name-based stop MUST NOT be treated as an atomic incarnation
-fence. Operation and cleanup deadlines MUST be finite; unknown revocation or
-cleanup MUST remain a fault.
+admission and fault the session. Restart MUST use a fresh session incarnation,
+revalidate the dependent set and MUST NOT replay operator mutations. Graceful
+shutdown MUST revoke RTC-controlled processing before unloading consumers.
+User-manager operations and cleanup MUST have finite deadlines. Name-based
+stop MUST NOT be treated as an atomic incarnation fence. Unknown revocation
+or cleanup MUST remain a fault.
 
-If the headless RTC service dies abruptly while Lua is unavailable, its installed
-systemd emergency cleanup hook MUST revoke ingress before tearing down
-consumers. Service activation MUST NOT authorize ingress. Foreground and
-user-service modes MUST use the same session contract. User units MUST NOT
-elevate the whole control or Julia deployment tooling to FIFO or assume
-unavailable rights.
+An RTC activation that launches a managed cohort MUST use fresh owner unit
+names with `Restart=no`, bind owners to verified MainPIDs and process
+incarnations, and terminate only its owned processes. Before starting that
+cohort the RTC MUST verify the installed emergency cleanup hook. It MUST
+reconcile uncertain launches and pending starts before proceeding. If the RTC
+dies abruptly, that hook MUST revoke owned ingress or withdraw the session's
+connections to independent ingress when tearing down consumers.
+
+A direct attachment MUST bind the independently supervised service and
+native endpoint identities afresh at each activation. If the RTC process
+dies, closing its PipeWire connection MUST withdraw its Links. Retained graph
+services MUST retire the affected attachments on loss of the exact native
+claimant. Systemd MUST retire any RTC-scoped companion services on RTC exit.
+
+Service activation MUST NOT authorize ingress. Foreground and user-service
+modes MUST use the same session contract. User units MUST NOT elevate the whole
+control or Julia deployment tooling to FIFO or assume unavailable rights.
 
 The Julia DeploymentRunner and Rust Statig runner are retired target components
 under RTC-ARCH-025/026. Their existing results remain historical evidence and
@@ -728,14 +767,19 @@ do not qualify the current library-based headless implementation.
 
 Verification intent: delayed owner, wrong contract, bad placement/rights,
 stale manager/owner incarnation, partial launch failure, dependency loss and
-repeated fresh admission; source silence before admission and clean shutdown
-with systemd-supervised processes.
+repeated fresh admission. Verify managed source silence before release. For an
+independent stream, observe advancing sequence and model timestamps during RTC
+absence and verify fresh admission on replacement. For direct attachment,
+exercise both graceful and abrupt RTC exits. Check withdrawal of the old
+Links and retirement of the old graph attachments and RTC-scoped services.
+Confirm that the independent providers keep their service identities and that
+the replacement uses fresh native endpoint identities.
 
 ### RTC-DEV-022 — Bounded local control
 
 The public native PipeWire endpoint MUST dispatch typed requests to the sole
 the headless RTC lifecycle owner. A narrow C transport shim MAY expose PipeWire
-operations to Lua but MUST NOT duplicate lifecycle policy or serve as another
+operations to the session policy but MUST NOT duplicate lifecycle policy or serve as another
 command endpoint. FGN/JFG scientific changes MUST use their owner-local public
 controls. The headless RTC MUST order those updates against reset, stop and reload,
 while the owner applies the scientific value and reports adoption. Parameter
@@ -748,6 +792,23 @@ Dimensions/type/byte length MUST be checked before reading a payload. Client
 read/write deadlines MUST be finite. Malformed commands MUST reject without
 terminating a healthy session. The private core MUST restrict control access
 to the owning user.
+
+Sessions supporting native array updates advertise
+`pipewireao.rtc-control.parameter-ndarray=true`. Operation 17 accepts a graph,
+a declared parameter inlet, a fixed native NDArray Format POD and the payload.
+A SPA Float array carries a payload that fits the control envelope. For bulk
+transfer, the payload identifies an output node and port by global ID and
+object serial on the same private PipeWire core. Admission MUST bind the
+producer to the requesting controller’s client, verify the format against the
+declared parameter, and consume at most one complete frame before publication.
+The session advertises its captured parameter-source node ID and serial in
+`pipewireao.rtc-control.parameter-source.id` and
+`pipewireao.rtc-control.parameter-source.serial`. The sender verifies the
+receiving stream belongs to that node’s client before releasing its bytes.
+Each native hop receives the remaining relative budget and correlates its own
+terminal reply. A caller that expires after submission retains an unknown
+outcome and must never replay the update.
+The path-based operation 14 remains available for its existing clients.
 
 Client operations MUST cover session/group start and stop, reset, scalar
 transactions, declared ndarray parameter replacement, property/parameter
@@ -767,23 +828,19 @@ Verification intent: oversized input/file, dimension overflow, flood/slow
 client/disconnect, operator rejection, stopped submission, running adoption,
 unknown timeout outcome and required-object monitoring between commands.
 
-The selected headless configuration journal covers property-set and parameter
-requests admitted through the session endpoint. A journal-enabled session MUST
-persist the request before dispatching its scientific effect and persist the
-reported completion before publishing it. Journal I/O MUST run outside PipeWire
-callbacks and the session main context. The original finite request deadline
-includes journal work. A failure before dispatch MUST refuse the operation without
-faulting an otherwise healthy scientific session. An effect whose durable outcome
-cannot be established MUST remain unknown; history MUST NOT infer adoption,
-rollback or permission to retry. History queries MUST retain the original session,
-controller, endpoint and token identities across client exits.
+Native property and parameter requests MUST retain finite deadlines and
+correlation through submission and owner response. The response MUST distinguish
+submission from observed active adoption. If an effect's outcome cannot be
+established, it MUST remain unknown; clients MUST NOT infer adoption or rollback,
+or automatically retry it. The RTC does not require durable operation history or
+a durable write before dispatch. These controls do not provide complete scientific
+stream recording.
 
-Verification intent: two independent native clients contribute to one SQLite
-history; refused pre-effect writes produce no scientific effect; expiry or
-controller loss while waiting for persistence does not dispatch later; restart
-retains unresolved requests without replay. Artifact registration and history
-queries run headlessly with the GUI absent. This is configuration-operation
-history, not complete scientific stream recording.
+Verification intent: native clients preserve request identity and deadline
+semantics; expiry and controller loss do not produce a later implicit dispatch;
+unknown outcomes are not replayed or reported as rolled back. Artifact catalog
+registration and retrieval remain available independently of session operation
+history.
 
 ### RTC-DEV-023 — Deployment controls and documentation
 
@@ -824,6 +881,10 @@ and validate encoding, order and unit conversion against a direct oracle.
 
 ### RTC-DEV-025 — Acknowledged simulator admission and controls
 
+This section applies to a source whose acquisition lifecycle the RTC controls. The
+provider owns the process-side bootstrap and SourceControl implementation.
+RTC owns admission, links and ordering across the declared endpoints.
+
 The source owner MUST warm and reset before reporting prepared, connect held,
 and publish no frame before explicit release following effective placement and
 the headless RTC admission acknowledgement. One frame and same-sequence command MAY
@@ -834,10 +895,25 @@ session. A reset MUST change acquisition generation and clear sequence/timing
 state. Source-local pause/reset/query remains an owner contract; session
 ordering belongs solely to the headless RTC.
 
+When an admitted session loses a required dependency, RTC MAY explicitly
+revoke a managed lockstep source that advertises the versioned revocation
+capability on its captured incarnation. The owner MUST stop new exposures
+and return a correlated stopped receipt for the acquired and last coherently
+adopted sequences. It MAY abandon an outstanding command response. The last
+applied correction MUST survive abandonment, and a late reply for that
+exposure MUST NOT become active. Ordinary Pause retains its outstanding
+adoption requirement. A V1-only owner retains graceful Pause and the
+existing bounded unknown-outcome path. Finite completion MUST require actual
+adoption of the final correction. An abandoned final response MUST NOT
+publish successful finite completion or admit a replacement exposure past
+the declared limit. [Native revocation contract](SIMULATOR_CONTROL.md#explicit-fault-revocation-for-managed-lockstep)
+
 Complete-frame simulator live controls MUST use native SPA `Props` parameters
 on the exact owned source-node incarnation. They MUST retain native Version 1
 run/reset contracts and use versioned source-query and source-snapshot schemas.
-They MUST use bounded prepared storage, positive request tokens, matching
+For Run, Pause and Reset, RTC MUST use the correlated owner-applied source
+status as the completion. Query is an independent request for fresh status.
+These controls MUST use bounded prepared storage, positive request tokens, matching
 owner-applied completions and one finite overall request deadline. Initial
 native-client discovery and static compilation MUST use a separate bounded
 preparation phase while the source is held, before the first real request. This
@@ -968,7 +1044,7 @@ and reuse the existing Julia acquisition and AdaptiveOpticsCalibration APIs.
 Its installed operational path MUST NOT require Python, including indirect
 export or supervision dependencies. Python development scripts were removed
 from this repository on 2026-10-08. Their recorded results retain their original
-scope and source provenance; see [the Julia migration](JULIA_CALIBRATION_MIGRATION.md).
+scope and source provenance; see [the Julia migration](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/JULIA_CALIBRATION_MIGRATION.md).
 
 This requirement applies to explicitly selected operational-calibration
 sessions. Existing installed finite exchange profiles retain RTC-DEV-025,
@@ -1061,7 +1137,7 @@ HEART interfaces require observed support without source modifications.
 
 ### Calibration completion channel
 
-The selected `NativeCalibrationEndpoint` uses the exact private-core acquisition
+The selected `CalibrationEndpoint` uses the exact private-core acquisition
 owner with one bounded pending native request, outside processing callbacks.
 It does not establish command ownership itself. The endpoint server MUST serialize effects,
 fence prior work before restoration, and retain the hold or fault the deployment
@@ -1085,7 +1161,6 @@ same deadline. There is no reconnect or operation retry after an unknown outcome
 | `adopt` | `probe`, absolute `figure` | `adopted`: `cursor`, actual `figure`, `clipped` |
 | `settle` | `probe`, `after`, `rule` | `settled`: `cursor` |
 | `collect` | `probe`, `after`, `measurements`, `frames` | `responses`: averaged `values`, contributing `exposures`, `valid` |
-| `capture` | `probe`, `after`, `frames` | `captured`: `cursor`, relative `manifest`, `sha256`, `frames`, payload `bytes`, `metadata_bytes` |
 | `restore` | absolute `figure`, `rule` | `restored`: actual `figure`, `clipped` |
 | `release` | none | `released`: no additional fields |
 
@@ -1116,56 +1191,17 @@ the version-1 field layout and existing positive request/reply bytes unchanged;
 earlier implementations reject zero counts and empty Responses. Rejection MUST
 NOT authorize retry, fallback or placeholder measurements.
 
-The optional `capture` action is selected for an explicit Classic or Copper owner
-prepared with a fresh local capture directory, explicit stage identity and a
-positive whole-session payload-byte budget. It has the same current-probe,
-exact-after-cursor and settled-to-collected transition as `collect`. Unsupported
-profiles, insufficient capacity and stale requests MUST reject before any
-exposure is acquired. The six existing interaction actions retain their meaning.
-A capture is complete transport evidence and may retain false intrinsic WFS
-validity; it MUST NOT be reported as an accepted interaction response.
-
-One captured Classic exposure contains 247,808 raw U16_LE bytes, 1,504 slope
-F32_LE bytes, 752 flux F32_LE bytes and 188 BOOL8 bytes. One captured Copper
-exposure contains 8,192 raw U16_LE bytes (64×64), 14,400 reconstruction-pixel
-F32_LE bytes (4×900) and four mean-pupil-intensity F32_LE bytes (1). All retain
-the existing ROW_MAJOR contracts. The Copper mean is diagnostic and MUST NOT
-be appended to the 3,600-measurement vector. The expected profile MUST be
-declared before acquisition and checked against the owner, startup snapshot
-and manifest; a manifest MUST NOT select its own payload contract.
+Operation ID 5 and completion tag 5 are reserved for the retired file-capture
+action. A request for operation 5 MUST be rejected before any exposure effect.
+The remaining operation and result IDs retain their existing values.
 
 Copper uses the previous successful frame's mean for normalization. After
 startup and each probe adoption, its `settle` action MUST complete at least one
-discarded exposure before `collect` or `capture` can accept measurements. An
-`immediate` measurement-settling rule MUST reject before endpoint effects or
-phase/cursor changes, including when no capture storage is configured. A
-positive model-time rule MUST advance through completed exposures. This
-normalization rule does not establish physical mirror settling or change
+discarded exposure before `collect` can accept measurements. An immediate
+measurement-settling rule MUST reject before endpoint effects or phase/cursor
+changes. A positive model-time rule MUST advance through completed exposures.
+This normalization rule does not establish physical mirror settling or change
 reference-restoration semantics. Classic immediate settling remains unchanged.
-
-Capture requests MUST remain within the 4,096-frame bound
-and the session's cumulative payload budget. Manifest metadata is separately
-bounded by a 16 KiB settings header and 4,096 bytes per exposure. Neither budget
-permits unbounded retained in-memory frames or JSON control records.
-
-The serialized owner writes from completed sink-owned arrays before rearming
-the next exposure, outside PipeWire callbacks. The original request deadline
-covers acquisition, writes and publication. Files are immutable in a unique
-request-serial subdirectory; a completion manifest is published atomically only
-after every payload succeeds. Its schema binds run, serial, probe, stage,
-illumination, exact detector/graph/mask settings, full acquisition-domain mapping,
-each exposure's generation/sequence/model start/duration, intrinsic quality,
-payload shape/type/length and SHA-256. The reply carries a canonical relative
-manifest path and its digest. Clients cannot select output paths. Missing,
-duplicate, stale or mismatched outputs remain endpoint failures.
-
-The campaign MUST verify the descriptor, exact lengths and hashes before using
-any data. It owns retention and cleanup after restoration, release and public
-shutdown. Partial files and an absent completion manifest are not accepted
-evidence. An unknown post-effect outcome retains the fault/hold disposition;
-restarting or killing a process does not confirm restoration. Automatic stage
-transition or publication of final candidates MUST stop on a failed required
-gate. Existing active calibrations are never overwritten by a campaign.
 
 ## RTC-DEV-030 — Native local live controls
 
@@ -1175,10 +1211,9 @@ on public PipeWire owner nodes. JSON embedded in a POD MUST NOT be treated as
 native serialization. Saved configuration and scientific artifacts MAY retain
 JSON; their existence MUST NOT substitute for a fresh live completion.
 
-Cold application replacement under RTC-DEV-031 is deployment management, not
-a second live-control endpoint. Its candidate documents and saved job receipts
-MAY use JSON. Every live session effect and authoritative session observation
-within that operation MUST still use this native contract.
+The standalone simulator reads its own startup configuration. A provider
+participating in a managed RTC session MUST use the declared native bootstrap
+and live-control contracts.
 
 Each live authority MUST have one owner. The headless RTC application MUST own
 session lifecycle and admission; FGN/JFG and AOS MUST retain their owner-local scientific
@@ -1190,7 +1225,7 @@ or graph-authoring contract is introduced.
 
 The headless RTC's session endpoint MUST use bounded native typed Props
 requests and completions. A narrow PipeWireAO C transport shim MAY expose the required
-PipeWire operations to Lua, but MUST NOT own session state or implement
+PipeWire operations to the session policy, but MUST NOT own session state or implement
 connection/admission policy. The endpoint MUST bind exact manager, runtime,
 endpoint and Link incarnations; stale manager replacement MUST NOT adopt an old
 session. Before success or a new generation, withdrawal MUST cancel/account for
@@ -1252,6 +1287,18 @@ Classic/Copper functional, scientific and allocation gates remain distinct from
 CPU transport tests or host real-time qualification.
 
 ## RTC-DEV-031 — Cold simulator configuration replacement
+
+Status: retired with the RTC simulator launcher. The clauses below record the
+former managed replacement contract. The artifact catalog remains available
+through the local management endpoint.
+
+The local [management endpoint](MANAGEMENT_ENDPOINT.md) is an RTC-owned client
+access boundary for the tooling below. It does not replace native live controls
+or add a session authority. Its companion, shared worker and durable receipt
+lifetime are independent of GUI connections. Per-user catalog queries and
+management receipt lookup remain usable without a running session; simulator
+effects retain the exact managed incarnation fences and scientific preparation
+requirements below.
 
 For a registered managed development application, the headless RTC tooling MUST
 describe startup settings using the selected plant package's declared defaults

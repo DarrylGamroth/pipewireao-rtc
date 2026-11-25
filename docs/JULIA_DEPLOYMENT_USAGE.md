@@ -1,16 +1,20 @@
 # Julia deployment and calibration entrypoints
 
-Operational calibration preparation and acquisition clients use Julia ≥ 1.12.
+Operational calibration preparation and acquisition clients use Julia ≥ 1.13.
 The headless RTC owns application session policy; systemd owns process supervision. The numerical estimators and probe bases remain
 in AdaptiveOpticsCalibration. Detector acquisition and graph algorithms retain
 their existing owners. The migration does not change illumination, noise,
 matrices, gains or scientific acceptance.
 
 The Julia DeploymentRunner and supervisor launchers are retired. Use the
-one-shot RTC session tools described in the [repository quickstart](../README.md#launch-a-sealed-session-package).
+one-shot RTC session tools described in the [repository quickstart](../README.md#launch-an-exported-session-package).
 The native session client controls admission and graph operations; local owner
-interfaces retain calibration acquisition actions. The new SDK includes sealed
-headless RTC and libwireplumber assets and rejects a missing session runtime before installation.
+interfaces retain calibration acquisition actions. New applications declare
+PipeWireAORTC as a registered Julia dependency in their Project and Manifest.
+The installation launcher uses that exact application environment; the
+application does not contain a copied RTC implementation or test workspace.
+Existing sealed SDK deployments retain their recorded runtime and must use
+matching older tools.
 Scientific campaign qualification under this replacement remains separate from
 the recorded Copper complete-frame lifecycle checks.
 
@@ -102,6 +106,16 @@ coordinated loop; independent corrector closure requires an allocation policy.
 
 ## Headless WFS measurements
 
+During preparation, the launcher records the declared optional analysis units
+in the invocation's `launch.json` and submits their systemd jobs with a budget
+of up to two seconds. Each job waits for the RTC unit and checks that the same
+invocation is active before starting its graph.
+A failed analysis service is visible in its systemd status and journal. RTC
+admission and live readiness depend only on required owners. The invocation's
+cleanup removes both required and optional units. Native Quit enters the
+MediaSession HSM. systemd stops the optional analysis process with SIGHUP,
+which also cancels startup while Julia is compiling.
+
 An optional analysis graph uses the ordinary `shack-hartmann-summary-f32`
 Algorithm with `slopes`, `flux` and `validity` from observation queues. Configure
 the subaperture count, export `summary`, and connect it to an exclusive
@@ -143,10 +157,10 @@ Ports and 64 channels per Port, with valid UTF-8, nonempty control-free text up 
 bytes. The complete published catalog must fit 16384 bytes. Changing these units
 requires a new source Node. Existing analysis configurations remain valid.
 
-Standalone FilterGraphIsland and RTC GraphOwner launches can use repeated
+Standalone FilterGraphPipeWire and RTC GraphOwner launches can use repeated
 `--channel-unit PORT CHANNEL UNITS` arguments for the same source annotation.
 The authoritative channel meanings and publication contract remain with
-JuliaFilterGraph's `schemas/catalog.toml` and `docs/source-channels.md`.
+the graph repository's `schemas/catalog.toml` and `docs/source-channels.md`.
 
 The current REVOLT Classic profile computes this packet in a separate optional
 JFG analysis process. The required WFS/controller graph remains unchanged. Its
@@ -176,7 +190,7 @@ restart the RTC deployment. Manually restarting the optional systemd service
 changes its retained invocation identity, so RTC cleanup fences that service
 from cleanup.
 
-This deployment uses locally registered JuliaFilterGraph 0.4.1, FilterGraphPipeWire
+The dated deployment below used locally registered JuliaFilterGraph 0.4.1, FilterGraphPipeWire
 0.1.6 and PipeWireAORTC 0.2.5. See the [optional analysis validation scope](validation/optional-analysis-20261022/README.md)
 and [independent review](reviews/20261022-optional-analysis/REVIEW.md) for
 current evidence and limitations. The finite CPU gate passes 3,944 assertions
@@ -209,113 +223,10 @@ new session owner or a prerequisite for native GUI operation.
 
 ## Optional simulator wavefront images
 
-### Headless RMS measurements
-
-With `optical_observation = true` and an atmospheric graph declaring both
-`:atmosphere_opd` and `:pupil_opd`, the shared observer publishes
-`simulator-wavefront-rms` (media
-`wavefront-rms`). Its row-major F32 array has shape `(1, 2)` and schema
-`org.calculon.ao.pupil-opd-rms.nm.f32/1`. Zero-based channel 0 is uncorrected
-atmospheric pupil OPD RMS; channel 1 is corrected pupil OPD RMS. Both are spatial
-population RMS in nm after subtracting pupil piston, using the same transmitting
-pupil mask; tip/tilt remain included. This comparison includes all modeled
-corrections in `:pupil_opd`. The atmospheric reference excludes any additional
-non-atmospheric aberrations a future plant might introduce.
-
-The producer captures both graph outputs before advancing the model. One bounded
-cohort stays owned until both snapshots are transferred and consumed. Both RMS
-values travel in one sample with the originating sequence, PTS and acquisition
-generation, so independent observer drops cannot mispair the curves. No zero-DM
-run, changed controller gain or second atmosphere simulation is used. The RMS
-calculation runs in the optional headless optical worker, not the GUI or required
-controller callback. Scripts and GUI clients can observe the same measurement
-stream through an ordinary capacity-one copy/drop-oldest queue.
-
-The RTC declares the immutable `pipewireao.ndarray.channels` source metadata for
-this two-value packet. Its zero-based channels are
-`uncorrected_atmosphere_rms` (title “Uncorrected atmosphere RMS”) and
-`corrected_pupil_rms` (title “Corrected pupil RMS”); both declare `nm OPD`.
-These names identify the existing values without changing their calculation or
-frame representation. A graph without an atmospheric reference has no RMS
-source and publishes no channel catalog.
-
-Graphs without an atmospheric output retain their ordinary optical images and
-do not advertise this comparison stream. No uncorrected value is synthesized.
-The diagnostic is sampled at most 20 times per wall-clock second and is not a
-full-rate telemetry recorder or cadence guarantee. Generic GUI time-series views
-can select the declared channels. Source Header PTS gives wall-clock elapsed
-time; a declared fixed model period times Header sequence differences gives
-simulation elapsed time. The CPU development session advances model time more
-slowly than wall time; the graph must label which basis it uses.
-
-### Pupil image
-
-`optical_observation = true` enables the shared AOS optical observer. It uses
-the declared guide-sensor aperture and the completed `pupil_opd` graph output;
-the GUI needs no instrument-specific rendering code. Alongside the ideal
-focal photon-rate image, it publishes `simulator-residual-wavefront` with media
-name `residual-wavefront` and schema
-`org.calculon.ao.residual-pupil-opd.nm.f32/1`.
-
-The optional `imaging` section in `simulation/definition.yaml` selects a named
-entry from `sources` for ideal direct imaging. It can set `zero_padding` (integer
-1–16; default 2). For example:
-
-```yaml
-sources:
-  science:
-    source_band: H
-    source_magnitude: 2.0
-    source_wavelength_m: 1.65e-6
-    source_separation_arcsec: 0.0
-    source_position_angle_deg: 0.0
-imaging:
-  source: science
-  zero_padding: 2
-```
-
-Source photometry and wavelength are independent of the guide sensor. Imaging
-uses the same completed pupil OPD, so its source direction must match the guide
-source; a different line of sight requires a separately rendered pupil OPD.
-Finite source height is not admitted by this declaration. With no `imaging`
-section, the observer retains the exact guide source and padding 2. Both modes
-publish cell-integrated focal photon rate, without detector exposure/noise,
-long-exposure accumulation or a Strehl estimate. Cold session contracts use the
-selected padding, so rebuilding updates ordinary focal-image port shapes.
-
-The Float32 image contains pupil OPD in nm after subtracting the mean over
-transmitting pupil samples. Tip/tilt remain included. Obscured and outside-pupil
-pixels contain NaN. The generic ndarray viewer excludes these pixels from
-scaling and measurements; its whole-image RMS is therefore the pupil
-piston-removed wavefront error, with uniform sample weighting. This is simulated
-optical truth, not a wavefront reconstructed from the detector.
-
-Both images originate from the same bounded snapshot and carry its acquisition
-generation, sequence and original WFS PTS. Each image source may drop snapshots
-independently. Slow or absent GUI consumers cannot gate the WFS/control exchange.
-Observation is capped at 20 snapshots per wall second and runs outside PipeWire
-callbacks; the diagnostic is not a recording or timing qualification.
-
-The application declares its ordinary image queue, source/sink shapes and link,
-then places an existing ndarray view in the Simulator navigation group:
-
-```toml
-[[view]]
-id = "residual-wavefront"
-kind = "ndarray"
-group = "simulator"
-title = "Residual wavefront · nm OPD"
-source = { node_name = "simulator-residual-wavefront-queue-output", media_name = "residual-wavefront" }
-
-[view.egui]
-open_on_start = true
-preserve_square_elements = true
-colormap = "viridis"
-measurements = { scope = "whole_image", selected = ["root_mean_square"] }
-```
-
-The view group is presentation only. Array transport, metadata, rendering and
-measurement selection use the existing interfaces for every simulator.
+An external provider can publish the declared focal photon-rate,
+residual-wavefront and wavefront-RMS ports. RTC resolves their declared shapes
+and schemas during export. The simulator-specific publisher has been retired.
+Generic observation clients can still subscribe to the same PipeWire ports.
 
 ## REVOLT instrument entrypoints
 
@@ -348,9 +259,23 @@ and product contracts. Output and runtime directories must be new.
 
 ## Package and resources
 
-The cold orchestration project is the named package `PipeWireAORTC`
-(v0.1.1, Julia ≥ 1.12), loaded with `using PipeWireAORTC`. Modules live in
-`src`; the test workspace lives in `test`.
+The cold orchestration project is the named package `PipeWireAORTC`, loaded with
+`using PipeWireAORTC`. Modules live in `src`; package tests live in `test` and
+the development workspace includes them. A registered application resolves the
+package through its Project/Manifest; it does not copy `src/` or `test/` into
+the application payload, and the development test workspace is not an
+application dependency.
+
+Measured-influence preparation requires explicitly loading AdaptiveOpticsSim
+0.3.21 or newer. Its `Optics.resample_measured_influences` owns coordinate sampling
+and interpolation. RTC validates and decodes the sealed FITS input and retains
+its provenance. This preparation requires no HIL transport package.
+
+Configured detector layout uses AOS's built-in `detector_frame_layout_f32` node.
+RTC composes the scientific factories with application-relative optical paths;
+it implements no detector placement/conversion kernel. Existing graph declarations
+keep their selector, configuration, ports and schemas.
+
 Run portable verification with:
 
 ```sh
@@ -358,30 +283,72 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.precompile(); Pkg.test()'
 ```
 
 Reusable operational implementations live in package modules under `src`; root
-`session_*.jl` scripts are thin package entrypoints. REVOLT entrypoints
-are under `../REVOLTRTC.jl/bin` and use that app's project. The shared package
-source checkout uses `assets/deployment/hil`, `assets/deployment/templates` and
-the service template as resources.
-Every exported SDK embeds these resources under `julia/assets/deployment`, along
-with its package project, lock, source, CLI and test workspace closure. Resource
-paths are resolved from the loaded package at runtime, including after SDK
-relocation and precompilation. Operational provenance inventories exclude tests.
-The repository's maintained scripts use Julia.
+`session_*.jl` scripts are thin package entrypoints. Instrument build tools call
+the shared package selected by the registered application Project/Manifest.
+Instrument identity, simulation definitions, RTC configuration, graphs and
+profiles remain authored in the instrument repository; generated application
+data is prepared from those declarations. The shared package source checkout
+uses `assets/deployment/hil`, `assets/deployment/templates` and the service
+template as package resources. Resource lookup is relative to the installed
+registered package, not to a copied SDK directory. The repository's maintained
+scripts use Julia.
 
-Installation verifies the sealed incoming artifacts, package identity/version
-and resource completeness before copying an SDK. Generated service units use
-that SDK's embedded template. Installation writes the unit but does not enable
-or start it. Keep legacy include-loaded SDKs with their original launcher;
-export a new SDK to adopt this package format. The new installer rejects the old
-format instead of replacing sealed code.
+The [operator CLI](../README.md#deploy-an-instrument-from-its-definitions) can
+export a definitions-only instrument in a site-provisioned dependency environment.
+The site supplies the Project.toml beside the selected Manifest when the
+instrument has no Project.toml of its own. The exporter copies a
+supplied Manifest into `Manifest.toml`, including when the source Manifest uses
+a Julia-versioned filename. The runtime directory uses `Project.toml` and
+`Manifest.toml`.
 
-## Installed entrypoints
+The exporter records the runtime file inventory in `deployment.conf`. The
+inventory lists configuration, graphs, calibration data and other owner inputs.
+Markdown, the `profiles/` authoring directory, RTC application and mode authoring
+files, the generated `rtc/application.conf`, composition receipts, and the
+Julia Project and Manifest stay outside this inventory.
 
-Install a sealed exported package using the one-shot CLI:
+Use the matching RTC tooling to install and launch a new export. New inventory
+entries have a `null` value. Existing exports with checksum strings still load.
+Installation validates the application schemas and registered Julia environment
+and stages the systemd unit for explicit startup.
+
+## Git verification for project exports
+
+The simulation project's `tools/build.jl` writes a sibling
+`<export>.git` repository when Git and a PipeWireAORTC version that supports
+Git exports are available. Keep it alongside the
+export directory. The session installer automatically uses its HEAD commit.
+A Git mismatch stops installation. The Git repository contains the complete
+export, including the Project, Manifest and materialized FITS files.
+
+To install from another Git repository, supply its Git directory and the
+full export commit ID explicitly.
 
 ```sh
 julia --startup-file=no --project=. session_cli.jl install \
-  --package /absolute/sealed-package \
+  --package /absolute/exported-package \
+  --destination /absolute/fresh-installation \
+  --pipewire-prefix /opt/pipewireao \
+  --git-repository /absolute/project-exports.git \
+  --git-commit "$export_commit"
+```
+
+The installer checks the copied files against the pinned tree before generating
+the launchers and caches. The installed launcher pins the commit and checks the
+tracked files using Git's index. The index lets Git check unchanged files
+without reading their contents again. Git verification leaves deployment and
+scientific validation in place. Re-export and reinstall to change the tracked
+payload. Without a sibling repository or a Git executable, the default
+installer checks the application contracts and file inventory. An explicit repository and
+commit request requires Git.
+
+## Installed entrypoints
+
+Install an exported session package using the one-shot CLI.
+
+```sh
+julia --startup-file=no --project=. session_cli.jl install \
+  --package /absolute/exported-package \
   --destination /absolute/fresh-installation \
   --pipewire-prefix /opt/pipewireao
 ```
@@ -434,11 +401,14 @@ the headless RTC runs. HEART retains its necessary controller-PID launch stage.
 See [startup and cleanup](SYSTEMD_SESSION_STARTUP.md) for identity checks and
 ingress-first removal of the generated runtime units.
 
-Clients send native session controls. Normal `shutdown!` requires a correlated
-Quit→Offline acknowledgement and then observes exact systemd/owner cleanup.
-Emergency `stop!` is a distinct process-cleanup operation; it cannot establish
-successful public shutdown. Unknown Quit outcomes prohibit another Quit.
-The same retained invocation is used to reconcile cleanup without replay.
+Stop an installed session with `SessionRuntime.stop!` or `systemctl --user stop`.
+ExecStop sends native Quit and retains the correlated Offline acknowledgement
+in the invocation's `systemd_quit` record. ExecStopPost verifies exact
+systemd/owner cleanup. If the manager stop outcome is uncertain,
+`SessionRuntime.reconcile_stop!` observes cleanup without replaying it.
+Direct PipeWire clients can send native Quit and receive its terminal reply.
+Use `SessionRuntime.final_record` to read the retained cleanup result after
+the unit exits.
 
 Owner services use fresh names and `Restart=no`. Restart the session as a new
 whole cohort; do not restart a required owner in place. Retained runtime files
@@ -454,7 +424,7 @@ PipeWireAO files. It does not infer source equality from a Git revision alone.
 Adapter `39efcf5` requires an AOS graph-calibration boundary absent from the
 selected AOS checkout and fails import before admission. Select compatible
 `--aos-root` and `--adapter-root` inputs when exporting; the
-[migration record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md) binds the tested
+[migration record](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/JULIA_CALIBRATION_MIGRATION_VALIDATION.md) binds the tested
 files and preserves that failed attempt.
 
 ## Failure and scientific boundaries
@@ -471,7 +441,150 @@ selection in an HIL export does not establish CUDA or AMDGPU cadence.
 Migration qualification is recorded separately from interaction-matrix
 precision, physical suitability and correction acceptance.
 
-## Headless artifact registration and shared update history
+## Streaming statistics and acquired artifacts
+
+`array-statistics-f32` is an ordinary FilterGraphAlgorithms declaration for an
+optional headless analysis graph. It accepts a complete Float32 array and
+publishes equally shaped `mean`, `variance` and `stddev`, plus `(1,)` outputs
+`sample-count` (UInt64), `complete` and `variance-valid` (Bool). Use the existing
+pixel-calibration node to convert UInt16 camera data before statistics. Declare
+the quantity at that boundary: calibrated pixels and raw camera codes are not
+interchangeable. No calculation depends on GUI visibility.
+
+The graph node has three modes:
+
+| Configuration | Meaning | Cost for P elements and W frames |
+|---|---|---|
+| `mode = finite`, `window_samples = W` | Accumulate W accepted frames, freeze until reset | O(P) per frame; O(P) storage |
+| `mode = sliding`, `window_samples = W` | Reconstruct statistics of the latest W accepted frames, including warmup | O(PW) per frame and storage |
+| `mode = exponential`, `time_constant_s`, `sample_period_s` | EWMA and central exponentially weighted population variance | O(P) per frame and storage |
+
+Finite/sliding variance uses N−1; `variance-valid` is false before two samples.
+Exponential variance initializes to zero with the first sample and is a weighted
+population variance, with no unbiased correction. Its fixed accepted-sample
+weight is `α = −expm1(−sample_period_s / time_constant_s)`; this is not a
+timestamp-aware estimator for irregular arrivals. Configure the nominal accepted
+cadence explicitly. Nonfinite inputs or unrepresentable outputs reject before
+adopting history. The current implementation is CPU-only. Storage is preallocated
+and bounded by `max_state_bytes` (default 256 MiB). Sliding reconstruction avoids
+cancellation after large level changes; prefer finite acquisition or exponential
+tracking for large images when retaining/revisiting W images is too expensive.
+
+For example, place this node in a native SPA-JSON analysis graph, deriving
+`size` from the instrument as for the existing WFS analysis declarations:
+
+```text
+{ type = ndarray name = statistics label = array-statistics-f32
+  config = {
+    size = { "$ref" = "/instrument/wavefront_sensors/shwfs/layout/detector_shape" }
+    mode = finite
+    window_samples = 512
+    input_schema = "site/calibrated-detector-f32/1"
+    mean_schema = "site/detector-mean-f32/1"
+    variance_schema = "site/detector-variance-f32/1"
+    stddev_schema = "site/detector-stddev-f32/1"
+  }
+}
+```
+
+The `site/` identifiers are illustrative quantity contracts, not new built-in
+schemas. Use the source/target declarations' actual identifiers. Mean/stddev
+retain the input units; variance has squared units. Explicitly export the six
+outputs. Existing ndarray panels can display the published arrays; scalar or
+named-vector reductions can feed existing charts. No instrument-specific renderer
+is needed. Window changes rebuild this optional graph; reset starts a new window.
+
+Analysis configurations may declare `fits-bindings` using the existing graph
+owner's typed FITS binding format. Parameters load before execution. Deployed
+bindings and their FITS files must be sealed with the analysis graph. The
+instrument repository's `tools/acquire-statistics.jl` freezes the selected
+calibration inputs and prepares the Classic/GPI acquisition recipes. Its
+`capture.provenance` retains the acquisition receipt, graph, binding declaration,
+recipe, calibration and parameter hashes in each catalog manifest. Preparation
+checks the actual FITS snapshots and rejects changed HDU/axis declarations.
+These identify the selected calibration snapshot; they do not attest that a
+subsequently modified live controller still uses that calibration.
+
+To register a finite acquisition automatically, add `capture` to the existing
+analysis YAML. The following fragment assumes all outputs retain their names:
+
+```yaml
+capture:
+  label: Detector mean candidate
+  scope:
+    session_label: selected-instrument
+    graph: selected-controller
+    parameter: background
+  products:
+    mean: mean
+    variance: variance
+    stddev: stddev
+  units:
+    mean: adu
+    variance: adu^2
+    stddev: adu
+  sample-count: sample-count
+  complete: complete
+  variance-valid: variance-valid
+```
+
+Set scope, schema and units to match the declared parameter exactly. Mean is
+required; variance/stddev registrations are optional. A finite graph's outputs
+must come directly from the same statistics node, including named export aliases.
+Sliding/EW outputs cannot masquerade as a completed finite acquisition. `complete`
+must arrive at exactly the declared count. Snapshots are limited to 64 MiB total.
+The observer copies once and releases an immutable snapshot. A finite capture
+owns native discard sinks for graph outputs without explicit output links, so
+every output has a negotiated buffer pool even with no external viewer. These
+consumers are optional and leave configured output peers in place. Their
+`node.loop.name` follows the declared input sources' common nonempty loop name;
+conflicting source loop names reject startup. If no source declares a loop name,
+the consumers retain the native default, as with generic isolated test sources.
+Source node/port identities remain checked through link creation. Completion
+or rejection stops native processing and removes the owned consumers; FITS
+creation, Git and SQLite then run on the returning task. There is no automatic
+application, sign change, unit conversion or startup selection. Each product is
+a separate registration; partial failures preserve successful IDs in the receipt
+and are not automatically retried.
+
+Registered results appear through the existing catalog, including its GUI helper.
+Reload the catalog, select a compatible artifact for a transaction target, and
+submit through the normal RTC path. Variance/stddev use their own schemas and
+units and are not compatible reference vectors. FITS BUNIT is preserved so GUI
+unit checks use the same preparation contract as file imports. Mean gradients
+that already have a reference subtracted are residuals; they are not an absolute
+replacement reference without the existing calibration procedure's baseline and
+sign treatment. Registration alone does not establish scientific acceptance.
+
+Acquisition counts accepted analysis frames, not guaranteed contiguous camera
+exposures: observation queues deliberately copy/drop-oldest rather than block
+the controller. The artifact records source endpoints, graph hash, first/last
+source sequence, sequence gaps, count and available acquisition domain/generation.
+Missing/mismatched headers, reset/invalidation during collection, nonmonotonic
+sequences, or changed identity reject capture. No invalid/missing samples are
+silently counted as zero. General per-element validity masks are not implemented;
+select/qualify the intended finite input upstream.
+
+The finite algorithm can republish its frozen result with the current input's
+header while shutdown is pending; that header does not describe the whole
+aggregation window. Use the captured artifact metadata for window provenance.
+The finite acquisition returns after registration. One capture is allowed
+per analysis owner incarnation. The ordinary Julia entrypoint remains:
+
+```julia
+using PipeWireAORTC
+PipeWireAORTC.Analysis.main(["--config", analysis_configuration,
+    "--remote", private_pipewire_socket])
+```
+
+Use existing optional-service configuration to launch it with separate CPU
+placement and copy/drop-oldest observation queues. There is no new calibration
+protocol or GUI acquisition wizard. A configured capture writes
+`NAME-capture.json` under `PIPEWIREAO_RUNTIME_DIR` with `registered`, `rejected`,
+`incomplete` or `registration_failed`, plus any retained artifact IDs. Existing
+analysis configurations without `capture` retain their behavior.
+
+## Headless artifact registration
 
 `PipeWireAORTC.ConfigurationStore` owns a local bare Git repository and SQLite
 catalog. GUI, CLI and Julia scripts use this implementation. The default root is
@@ -491,6 +604,7 @@ record = ConfigurationStore.register!(store, reconstructor;
     scope=Dict("session_label" => session_label,
         "graph" => graph_name, "parameter" => "reconstructor"),
     schema=reconstructor_schema,
+    units=reconstructor_units,
     metadata=Dict("generator_revision" => generator_revision))
 artifact_id = record["id"]
 ```
@@ -530,13 +644,12 @@ Send one JSON object per line:
 
 ```json
 {"protocol":"pipewireao.configuration/1","op":"list","arguments":{"limit":50}}
-{"protocol":"pipewireao.configuration/1","op":"history","arguments":{"limit":50}}
 ```
 
 `register` accepts the FITS path, type, shape, one-based HDU, axes, label, scope,
 schema and metadata. `get` accepts an artifact ID and optional `layout`.
 `root` optionally selects an explicit local store. This management interface
-performs catalog/import/history work only. It does not provide another live
+performs catalog/import/retrieval work only. It does not provide another live
 control protocol, calibration orchestrator or remote browser service.
 
 The native GUI's `PIPEWIREAO_CONFIGURATION_COMMAND` is a JSON array of executable
@@ -546,121 +659,48 @@ Without a helper the GUI reports the catalog unavailable while existing native
 controls remain usable. Browser/WASM presentation compilation does not establish
 a live browser management transport.
 
-New `SessionConfiguration` configurations include the RTC-owned asynchronous
-`ao-journal` module. The `configuration_store_root` keyword selects its store;
-`nothing` explicitly produces an unjournaled configuration for an older isolated
-runtime. The exporter and installer require the matching journal module. Existing
-sealed sessions are unchanged; no earlier history can be reconstructed.
-
-`ConfigurationStore.history(store; session_id=nothing, limit=50)` queries the
-shared journal. Its entries include the proven controller identity/name, native
-session and endpoint incarnation, token, requested property values or parameter
-binding, and correlated completion. All clients using the journal-enabled session
-endpoint contribute, even when the GUI is closed. Direct writes bypassing that
-endpoint are outside this history. Read-only queries are not update events.
+Current `SessionConfiguration` exports do not install an operation journal.
+The journal-only `configuration_store_root` keyword is removed. The
+`ConfigurationStore.history` API and configuration management `history`
+operation are also removed. GUI clients outside this repository that depended on
+those interfaces need to update their integration; this guide does not claim
+those clients have migrated. Regenerate configurations created by an older
+exporter: the current RTC rejects stale session configurations containing
+`journal.path` or `pipewireao.rtc.session.journal` before connecting. Existing
+installed applications remain pinned to their installed code and configuration.
 
 For a registered artifact, select its target and catalog entry in the GUI, load
 it to prepare a verified read-only transport payload, then explicitly apply it.
-The current native parameter request carries the prepared file path. The
-headless history query correlates that path with the retained catalog mapping
-and returns the exact Git manifest ID in `artifact_id`; the GUI displays it in
-the selected update. The native journal retains the original request and reply.
-An immediate Submitted result is preserved even when a later
-`parameter-generation` query confirms equal requested and active sequences.
+The catalog record supplies the exact Git manifest ID as `artifact_id`. The
+native parameter request carries its prepared file path, but no persistent
+session operation history correlates that request back to the catalog record.
+Native request correlation and owner generation queries provide live operation
+results. An immediate Submitted result remains distinct from later
+`parameter-generation` evidence of active adoption.
 
 Requested operations lacking terminal evidence remain unknown. A submitted
 parameter is not necessarily active; an SQLite transaction and a Git commit do
 not make several scientific changes atomic. Existing owner generation/status
-queries remain the source of current adoption evidence. Reopening the journal
-never retries an operation or restores an old value.
+queries remain the source of current adoption evidence. Clients must not retry an
+unknown operation automatically or infer rollback.
 
-Backups must preserve both a consistent SQLite snapshot and the Git repository,
-including all retained artifact refs. Git maintenance must preserve registered
-objects. Do not place the SQLite WAL database on a network filesystem or copy a
-live database file without its consistent snapshot. Backup/restore automation
-and scientific stream recording are separate work.
+Backups must preserve the artifact catalog's consistent SQLite snapshot and
+the Git repository, including all retained artifact refs. Git maintenance must
+preserve registered objects. Do not place the SQLite WAL database on a network
+filesystem or copy a live database file without its consistent snapshot.
+Backup/restore automation and scientific stream recording are separate work.
 
 ## Simulator startup settings and rebuild
 
-`PipeWireAORTC.SimulatorConfiguration` is the headless implementation used by
-Julia scripts, the CLI and generic GUI Simulator Settings. The plant package
-declares `describe_hil_settings()` metadata for its strict startup builder.
-The selected application's pinned environment supplies that declaration and
-performs physical validation; the GUI contains no instrument prescriptions.
+Set startup values in the standalone HIL configuration and launch the selected
+simulation using its own project. RTC's management service handles the artifact
+catalog. The former simulator settings and rebuild request domain is retired.
 
-For an explicitly selected managed session:
+## External-pupil applications
 
-```julia
-using PipeWireAORTC: SimulatorConfiguration
-
-settings = SimulatorConfiguration.describe(session_id)
-proposal = deepcopy(settings["settings"])
-proposal["atmosphere"]["r0"] = 0.20
-proposal["atmosphere"]["wind_speed"][1] = 8.0
-receipt = SimulatorConfiguration.start_rebuild(session_id,
-    settings["configuration_sha256"], proposal; resume_running=true)
-progress = SimulatorConfiguration.job(receipt["id"])
-```
-
-Preparation first verifies the original sealed assets and warms the candidate
-on its declared backend. Invalid values leave the old session running. Only
-then does the one-shot job request native RTC Quit, verify exact cleanup,
-and start a fresh installation/invocation. A completed receipt names the exact
-replacement discovery locator. Select it through the ordinary native session
-client; a saved receipt does not prove that the session is still available.
-
-Cold replacement resets controller and simulator state and reloads saved startup
-gains and calibration. It does not preserve unsaved live property/artifact edits.
-Profile and pupil resolution are read-only in this atmosphere-editing increment;
-changing those requires corresponding calibration and a separate deployment.
-
-For the native GUI, set `PIPEWIREAO_SIMULATOR_COMMAND` to the JSON argv array
-that runs Julia in the same registered application environment:
-
-```julia
-using JSON3
-command = [Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * application,
-    "-e", "using PipeWireAORTC; PipeWireAORTC.SimulatorConfiguration.serve()"]
-println(JSON3.write(command))
-```
-
-Mark the simulator's existing `node_properties` view with
-`simulator_settings = true` in its operator-view declaration. Its Display remains
-status/metadata; Settings contains the declared scalar controls and per-layer
-array table, drafts, Apply and restart, progress and explicit reconnect.
-Other instrument packages opt in through the same declaration and builder
-contract; no GUI handler is selected by instrument name.
-
-Jobs are owned by finite systemd user oneshots and survive GUI/helper exit.
-Their bounded records default to `~/.local/state/pipewireao/simulator-settings`
-(or `$XDG_STATE_HOME/pipewireao/simulator-settings`); an explicit
-`PIPEWIREAO_SIMULATOR_ROOT` selects an isolated root. Each retains the old exact
-identity, immutable request, candidate, preflight logs, shutdown/startup receipts
-and final result. A failed/unknown effect is never retried or rolled back
-automatically. Use the retained original application for explicit recovery.
-Archive completed records explicitly before reaching the 256-record limit.
-The saved Git artifact catalog and SQLite journal are not changed by this tool.
-
-## Managed external-pupil applications
-
-`AOSOwner.main` accepts a version-4 `mode: external-pupil` configuration through
-its ordinary native bootstrap. The strict fields are `version`, `mode`,
-`plant: {definition, settings, chopping?}`, `pupil_node`, `sensor_nodes`, `backend`, `device`,
-`instrument`, `rtc_configuration`, `calibration_identity` and
-`prescription_identity`. `sensor_nodes` names every physical optical path.
-The instrument has zero deformable mirrors and empty mirror controls; it does
-not acquire a synthetic DM or controller command boundary. CPU uses device 0;
-AMDGPU uses an explicit positive device ordinal. Export prepares port contracts
-on the CPU, without importing a GPU package.
-
-The source publishes Preparing before optional scientific imports, then Prepared
-and Connected through the existing bootstrap. Connected starts held. Native
-SourceControl run/pause/reset and bootstrap Quit retain their existing meanings.
-Reset requires a held source and serialized input processing; it clears pending
-transport admission, partial exposures and detector history, increments output
-generation and permits a new input domain. No second session supervisor is used.
-For a composed session the native authority holds all sources before reset,
-starts consumers, then auxiliary sources, and starts the primary source last.
+Use [standalone HIL configuration](HIL_CONFIGURATION.md) to launch a
+mirror-free optical simulation in its own process. RTC can resolve optical
+port metadata during export or calibration preparation.
 
 `InstrumentExport.external_pupil_port_contracts(definition; settings)` supplies
 cold pupil/sensor shape, element type and schema declarations. The pupil is one
@@ -689,7 +729,7 @@ plant:
 
 The ordinary branch graph is fringed. AOS selects the two static graphs at its
 model exposure boundaries and reports the completed exposure's actual optical
-kind. RTC maps that kind through the explicit trigger polarity into Acquisition
+kind. The HIL publisher maps that kind through the explicit trigger polarity into Acquisition
 Version 3. It never derives optical kind from received-frame parity. Missing
 whole windows remain visible: for these chopped outputs only, acquisition and
 Header sequence equal `pts / duration + 1`, requiring aligned, nonnegative model
@@ -711,7 +751,39 @@ unavailable; the first live exposure must prime again. Retained last-product
 metadata is inspection history, not evidence of publication. This CPU graph
 preparation does not qualify cadence, GPU graph execution or a coupled loop.
 
+### Clocked optical applications
+
+Use [schema 2](HIL_CONFIGURATION.md#clocked-optical-source) to drive a source
+graph from a declared Float32 command and publish completed sensor exposures.
+The standalone process owns timing, data buffers and optical execution. Use
+the declared PipeWire link endpoints and compact metadata profiles.
+
+Existing version-5 pupil-source assets can still be read for cold
+physical-offset and calibration preparation. The standalone optical modes do
+not provide that profile's coupled physical-offset receiver and scientific
+pupil output as a managed source. Any external provider used for that profile
+must implement its declared bootstrap, SourceControl and data port contracts.
+
 ### Sealed composition and feedback preparation
+
+Portable instrument profiles may select `application: rtc/standalone/application.yaml`.
+The default remains `rtc/application.yaml`. The selected YAML file must remain
+inside the instrument source; its sibling `modes.yaml` and `core.conf` define its
+application modes and native core modules. Asset references remain relative to
+the instrument root. Owner lists start from the selected application, so an
+alternate application need not inherit the default controllers or queues.
+The generated runtime declaration remains `rtc/application.conf`.
+
+Authoring may omit `cpu-latency-us` (null), owner and session-runtime
+`environment` (empty mappings), and a mode's `application` (empty mapping).
+The exporter writes explicit native deployment fields. For `jfg` and `aos`
+owners, omit the Julia `--threads=` placeholder to derive it from host worker
+placement; explicit placeholders are still replaced by that placement. Prepared
+JFG ports also supply omitted session graph `shape`, `element-type` and `schema`.
+Explicit metadata must agree with the prepared port. External source/sink
+contracts and physical schema choices remain explicit. Declared version-11 GUI
+configuration files may omit `session.label`; the exporter uses the deployment
+name. An explicit label continues to select its declared session.
 
 `InstrumentExport.compose(base, component, fresh_output; namespace, roles,
 links, overrides, prefix, owner_arguments=Dict(), sinks=[], node_owners=Dict())`
@@ -725,6 +797,13 @@ argument replacements are recorded in the final seal and composition receipt.
 Project/Manifest replacement, including a nested runtime project, is prohibited;
 the final registered dependency closure is revalidated before publication.
 This API does not compile a graph variant or launch processes.
+
+Component nodes explicitly owned by their private `core`, including native
+telemetry queue endpoints, retain the shared `core` owner after composition.
+Both input applications and the merged result validate those names against
+their native core declarations. External owners still require an exact `roles`
+mapping. Explicit queue endpoint names must remain unique across merged queues
+and native context objects; identical shared declarations are deduplicated.
 
 `InstrumentExport.prepare_feedback(base, component, fresh_output, recipe;
 prefix, profile=nothing)` performs the scientific preparation before composition.
@@ -743,11 +822,9 @@ The staged final graph is prepared with all typed FITS mappings, then
 `PhysicalOffsets.prepare` verifies factors, sign, offset route and zero startup.
 Only a passing staged application becomes the requested output.
 
-Each receiving branch may explicitly select `acquisition_version: 2` or `3`;
-omission preserves Version 2. This must match its actual native producer. A
-chopped SCC graph forwards Version 3 to its physical-offset output, so its
-receiver selects 3 while ordinary LLOWFS may retain 2. Admission remains exact;
-the receiver does not downgrade or reinterpret metadata versions.
+Each receiving branch requires the Properties facts used by its consumer.
+No per-branch Acquisition wire-version selector remains; old selectors are
+rejected before transport starts.
 
 The receiving graph uses three default Julia threads: native graph execution,
 bootstrap monitoring and the offset pump. An explicit preparation profile
@@ -762,7 +839,8 @@ monotonic silence limits remain separate.
 Version-1 profiles may independently select the already-built primary producer
 with `upstream: {backend: cpu, device: 0}`. Without `upstream`, the root backend
 and device must match both applications, preserving existing profiles. Both
-selections permit only CPU/device 0 or AMDGPU/a positive device ordinal. The
+selections permit CPU/device 0, CUDA/a nonnegative device ordinal, or AMDGPU/a
+positive device ordinal. The
 actual producer must still satisfy the selected reference calibration's backend
 qualification; Host expected-reference calibration requires CPU upstream.
 For example, an AMDGPU optical consumer with a CPU producer selects:
@@ -807,3 +885,73 @@ These tools prepare fresh artifacts; they do not install or start a session. A c
 application is software preparation, not evidence of a running native cohort,
 closed-loop acceptance or deadline performance. See
 [optical calibration selection](CALIBRATION_METHOD_USAGE.md#optical-branch-calibration-and-generated-selection).
+
+A standalone composition selects `receiver.kind: pupil-source` with exactly
+`owner`, `mirror`, `rtc_configuration`, `simulation_configuration`, `template`
+and `configuration`; graph-template, parameter and C fields are absent. The
+shared `prepare_feedback` entry point validates every selected CAL2 branch and
+its P/Q hashes. It reconstructs the original calibrated mirror/settings and
+requires exact Float32 OPD equality at zero and every accepted P column, with
+matching physical description/order, pupil contract, amplitude and support.
+Cross-prescription reuse requires the original definition and recorded executed
+settings; the new source prescription identity remains distinct.
+
+Preparation makes an intermediate sealed base with a generated selection under
+`generated/physical-offset-calibration`, retaining the original deployment,
+simulation, RTC and publication bytes. The selected RTC, publication and source
+configuration explicitly use the accepted P/Q calibration identity. The final
+normal composition binds that selected descriptor plus the original descriptor
+hash, both prescription identities and response comparison in its receipts.
+The generic compositor continues rejecting arbitrary publication overrides.
+This prepares a reviewable application and launches no process. Matched noisy
+loop, accelerator and physical-device qualification remain separate gates.
+
+## Application mode inheritance and telemetry queues
+
+An authored mode can set `extends` to another mode in the same `modes.yaml`.
+Mappings merge recursively; child arrays replace inherited arrays, including
+owners and configuration-file selections. Missing parents, cycles, unknown
+fields and inheritance deeper than 16 modes are rejected. Ordinary application
+and native session/core composition still appends arrays as before.
+
+Each session Link declares an `output` and an `input` as exact `node:port`
+addresses. The first colon separates the PipeWire Node name from the Port
+name. Export and admission use the same parsed declaration and preserve the
+names in native configuration. `passive` is a Boolean with a default of
+`false`. An ingress Link into an execution group requires `passive: true`.
+
+To publish a telemetry queue from a mode, supply the queue Node name, the
+playback media name and a session Link from the producer's output Port.
+
+```yaml
+core:
+  context.modules:
+    - template: telemetry
+      args:
+        node.name: residual-queue
+        playback.props:
+          media.name: residual
+session:
+  links:
+    - output: controller:modal-residual
+      input: residual-queue-input:playback_1
+```
+
+The Link must target the queue's capture Node and its `playback_1` Port.
+For an ndarray template, export generates the session sink with the linked
+producer's shape, element type, schema, layout and rate after resolving
+references and preparing graph port contracts. The producer must be a
+declared source or graph output Port. Each generated sink requires exactly
+one producer Link and gets the `core` role in `node-owners` when the
+application uses an explicit ownership map. Existing explicit sink
+declarations are also supported.
+
+Export expands the template to `libpipewire-module-queue` with
+`application/ndarray`, one buffer, copy storage and drop-oldest overflow.
+Capture runs on `rtc-data-loop` with the `-input` Node suffix. Playback runs on
+`telemetry-loop` with the `-output` Node suffix, `device.api: pipewireao.queue`
+and `media.class: Data/Source`. Playback repeats
+queue policy as string properties. Explicit supported arguments and capture or
+playback properties override these values; an explicit playback policy remains
+independent. Unknown template names and fields are rejected. Native module
+entries without `template` retain their existing values.

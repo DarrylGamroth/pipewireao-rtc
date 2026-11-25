@@ -82,7 +82,7 @@ authority.
 This is decision **RTC-ARCH-016**: make the RTC processing-node implementation
 substitutable at the ordinary PipeWire boundary. A declared processing role MAY
 be realized by a runner-owned `fgn-native` filter graph or by an externally
-owned `JuliaFilterGraph.jl` graph published through `FilterGraphPipeWire`. The
+owned `FilterGraphs` graph published through `FilterGraphPipeWire`. The
 session contract names identical scientific ports, shapes, schemas, properties,
 parameters, and links; it does not select behavior by implementation language
 or package identity.
@@ -108,7 +108,7 @@ through the same external HIL boundary. `REVOLTClassicSim.jl` remains
 transport-neutral. A separate `REVOLTClassicSimPipeWireHIL.jl` package maps
 its prepared 352-by-352 Shack–Hartmann frame and 277-element HSDM277 command
 boundary to ordinary PipeWire nodes. The RTC may place either the maintained
-`fgn-native` controller or an equivalent `JuliaFilterGraph.jl` processing node
+`fgn-native` controller or an equivalent `FilterGraphs` processing node
 between those endpoints without knowing how the plant or controller is
 implemented.
 
@@ -120,25 +120,63 @@ This supersedes RTC-ARCH-025's assignment to the WirePlumber daemon, without
 restoring the retired Rust Statig or Julia DeploymentRunner coordinators.
 The [headless design](HEADLESS_RTC_DESIGN.md) defines the implementation and gates.
 
+On 2026-11-04 the user selected a further implementation change: replace both
+the Lua session policy and libwireplumber dependency with the Julia
+`MediaSession` module using PipeWireAO.jl's public APIs directly. RTC-ARCH-026's
+single application authority remains unchanged. An independently configured
+WirePlumber process may provide declared site/device policy, but is not an RTC
+dependency and must not own RTC admission, lifecycle or declared application
+links. For the implemented scope and instrument qualification, see the
+[current roadmap](roadmap.md#current-work) and
+[migration record](SESSION_POLICY_MIGRATION.md). Previous WirePlumber results
+remain evidence for their original provider and scope.
+
+WirePlumber’s standard linking policy coalesces graph changes into a rescan
+and selects a target for each linkable session item. An explicit target,
+a configured default or device priority can determine that choice. Within a
+standard link between two session items, the implementation requests the
+matched port Links from PipeWire’s `link-factory` and asynchronously tracks
+their activation. It reports success when all have activated and clears the
+group on activation failure. [Linking hooks](https://pipewire.pages.freedesktop.org/wireplumber/scripting/existing_scripts/linking.html)
+· [Target selection](https://pipewire.pages.freedesktop.org/wireplumber/policies/linking.html)
+· [Standard Link creation](https://github.com/PipeWire/wireplumber/blob/0.5.19/modules/module-si-standard-link.c#L339-L350)
+· [Activation completion](https://github.com/PipeWire/wireplumber/blob/0.5.19/modules/module-si-standard-link.c#L187-L208)
+
+MediaSession uses the same native Link factory. Its unit of admission is
+the instrument’s declared topology. The session verifies each endpoint’s
+process, incarnation and port, requests independent Links, then advances
+dependent Links as their prerequisites negotiate. It validates NDArray
+formats, confirms the held controllers and obtains a fresh public Status
+before publishing Ready. Required loss revokes admission and cleanup fences
+the exact session-owned Links. An independent WirePlumber instance can manage
+site devices outside these routes. [Exact topology and cleanup](operations.md#rtc-dev-003--exact-topology-realization-and-cleanup)
+
 | Component | Selected responsibility |
 | --- | --- |
-| Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. Reuse libwireplumber hooks, discovery and public WpLink APIs. |
-| Upstream WirePlumber, with separately configured site/device policy where needed | Manage configured devices, access and shared routing; do not coordinate RTC application lifecycle or create its declared application links. |
+| Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. The Julia `MediaSession` owner uses PipeWireAO.jl's public interfaces. |
+| Independent WirePlumber, when declared | Provide separately configured site/device policy; do not own RTC application lifecycle, admission or declared application links. |
 | systemd | Start, stop, reap and supervise processes and apply configured service resource policy. |
 | PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
+| PipeWireAO.jl | Bind the native PipeWireAO and PipeWire interfaces for Julia callers. Manage Julia/native lifetimes and copy borrowed records when exposing owned values. |
 | FGN/JFG | Prepare and execute scientific graphs, manage workspaces/workers, and apply owner-local controls and adoption. |
 | AOS and its HIL adapter | Own instrument physics, model time and frame/command causality, and publish declared sources and sinks. |
 | AOC and Julia calibration clients | Own calibration algorithms/estimates and coordinate acquisition through deployed endpoints. |
 | Julia deployment tools and GUI/CLI | Export/install/preflight or request and observe bounded native operations as clients; do not duplicate live lifecycle ownership. |
 
-The headless executable uses public libwireplumber APIs as an ordinary
-application. Its minimal configuration excludes desktop auto-connect policy,
-manager-socket preference and the WirePlumber daemon identity. Selective
-`ObjectManager` features observe declared identities and Links without
-subscribing to unrelated scientific Node Props. Scientific owners retain
-internal graphs and workers. Startup alone does not authorize source release.
+The headless executable uses PipeWireAO.jl's public discovery, proxy, Link and
+main-loop interfaces from its Julia `MediaSession` owner. The RTC does not load
+Lua policy or libwireplumber. Scientific owners retain internal graphs and
+workers. Startup alone does not authorize source release.
 
-## Active scope
+Add new transport behavior in native PipeWireAO before exposing it through the
+Julia binding. Keep instrument policy in the systemd-managed RTC client. CAL2,
+SPIDERS and GPI2 supply that client with different Link and execution-group
+declarations. Loading their policy into a daemon module would couple its
+lifecycle to the PipeWire core. Detector frames travel directly between
+scientific nodes in either arrangement.
+[Controller admission and instrument profiles](validation/session-orchestration-20261121/README.md)
+
+## Earlier active scope (superseded)
 
 The former implementation began with the Rust Statig runner described below.
 The paragraphs and milestones through this historical scope record the
@@ -174,7 +212,7 @@ The next reference-system increment adds one externally owned AdaptiveOpticsSim
 WFS source, one externally owned simulated command sink, and one or more
 processing graphs between them. The first fixture uses a runner-owned FGN
 graph; the following substitution fixture uses an externally owned
-`JuliaFilterGraph.jl` node with the same public contract. The integration
+`FilterGraphs` node with the same public contract. The integration
 package, not AdaptiveOpticsSim, owns PipeWire stream and acquisition-metadata
 mapping.
 These minimal-fixture endpoint counts do not limit an AOS application's sources
@@ -203,70 +241,81 @@ These exclusions are deliberate. A later project may select one capability
 from the archive, revise it against current interfaces, and add it without
 changing scientist-authored algorithms.
 
-## Headless artifact catalog and configuration journal
+## Headless artifact catalog
 
 Selected by the user on 2026-10-20. Headless configuration tooling owns a
 Git repository of immutable artifact bytes and manifests, plus a local SQLite
-catalog and update journal. GUI, CLI and Julia calibration scripts are clients.
-Artifact registration does not apply a value or select a startup default.
-Scientific compatibility remains a declared owner contract.
+catalog. GUI, CLI and Julia calibration scripts are clients. Artifact
+registration does not apply a value or select a startup default. Scientific
+compatibility remains a declared owner contract.
+
+Durable streaming-message archiving is deferred to a separate standalone
+service. It is not part of the RTC session lifecycle, artifact catalog, or
+management API.
 
 Git blobs identify original FITS bytes and manifests; retained Git refs preserve
-registered commits and their objects. SQLite holds searchable metadata and
-correlated operation events. Git publication precedes SQLite references; the two
-stores are not one atomic transaction. Git maintenance, FITS decoding and database
-I/O remain outside scientific frame processing.
+registered commits and their objects. SQLite holds searchable catalog metadata.
+Git publication precedes SQLite references; the two stores are not one atomic
+transaction. Git maintenance, FITS decoding and database I/O remain outside
+scientific frame processing.
 
-The headless RTC remains the sole session admission/lifecycle authority. Its optional
-journal module asynchronously records native property/parameter requests before
-effects, then records the reported completion before publication. Newly generated
-sessions require the journal; existing sealed sessions retain their previous
-configuration and have no retroactive history. A failed pre-effect durable write
-refuses the request. An uncertain or interrupted effect remains unknown, without
-automatic retry or inferred rollback. Requested, submitted and active are distinct.
+On 2026-11-06, the user retired the RTC configuration-operation journal and its
+write-before-effect requirement. This retirement does not remove the separate
+management service's durable receipts for its own accepted operations.
 
-The headless management interface supports artifact registration, catalog reads,
-exact retrieval and paginated history. It does not introduce another live-control
-protocol, execute calibration acquisition or expose a browser gateway. The native
-GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
+The headless RTC remains the sole session admission/lifecycle authority. Native
+requests retain finite deadlines, correlation, and explicit unknown outcome
+semantics. The RTC does not persist a session operation history or require a
+durable write before an effect. An uncertain or interrupted effect is not
+automatically retried or treated as rolled back. Requested, submitted and active
+remain distinct.
+
+The headless management interface supports artifact registration, catalog reads
+and exact retrieval. It does not introduce another live-control protocol, execute
+calibration acquisition or expose a browser gateway. The native
+GUI connects to the [RTC-owned local endpoint](MANAGEMENT_ENDPOINT.md) off its UI
+thread. That per-user companion shares a bounded worker across clients and is
+installed/activated independently of GUI and live-session lifetimes. Legacy
+stdio handlers remain available to direct owner tools. Shared GUI panels remain
+WASM-buildable; browser profile admission stays with the existing bridge.
+
+Optional analysis graphs may compute finite/sliding statistics or exponentially
+weighted moments using ordinary scientific Algorithm declarations. A configured
+finite capture copies its completed products once to private bounded storage,
+then registers candidates through this same store outside frame processing.
+It does not apply a reference or establish a device/calibration authority. Source
+identity changes invalidate acquisition; observation sequence gaps remain explicit.
+The GUI reuses the existing catalog and parameter transaction interface.
 
 ## System boundary
 
-### WirePlumber and application tooling
+### Session policy and independent device policy
 
-Current runtime integration uses upstream WirePlumber; the ordinary Git fork
-is a contribution vehicle for upstream patches. Build and package integration lives in the sibling
-[PipeWireAO package guide](../../wireplumber/packaging/pipewireao/README.md).
-Site/device policy is configured separately through stock WirePlumber
-configuration. No AO-specific device policy is currently defined or qualified.
+The headless RTC's Julia `MediaSession` module is the sole application lifecycle
+owner. It uses PipeWireAO.jl's public APIs to discover declared endpoints, own
+application Links, serialize transitions and detect cohort failure. Production
+configuration, export and installation do not stage Lua or libwireplumber
+assets. A separate WirePlumber process may provide site/device policy when a
+profile declares it; it must not become a second RTC session authority.
+systemd owns process lifetime; AOS/JFG/FGN execute scientific work. Julia tools
+define application configuration, calibration bindings and one-shot deployment
+and control commands. The GUI observes these owners and submits operator
+requests.
 
-The headless RTC is the application lifecycle owner: it admits declared
-endpoints, owns application Links, serializes transitions and detects cohort
-failure. It uses libwireplumber's public discovery, hooks and WpLink APIs.
-Upstream WirePlumber may manage separately configured site/device policy. Julia
-tools define application configuration, calibration bindings and one-shot deployment/control
-commands. systemd owns process lifetime; AOS/JFG/FGN execute scientific work.
-The GUI observes these owners and submits operator requests.
+The installed service uses the systemd user manager for process supervision.
+Direct attachment uses that manager's public D-Bus API to identify the running
+services. A foreground MediaSession can use a private PipeWire core without
+a service manager or user bus. PipeWire carries RTC commands, status and
+detector frames in both cases. Only the installed service performs admission
+against systemd service identities.
 
-Selected on 2026-10-21, cold simulator settings management is a narrow
-application-replacement operation. Plants declare immutable defaults and JSON
-Schema metadata for their startup settings. A separate headless management
-interface describes that saved configuration and accepts a candidate for a
-systemd-owned, finite one-shot deployment job. The job prepares the candidate
-using the pinned application environment before requesting any old-session
-effect. It then uses the existing native RTC Quit/Status/Start controls
-and ordinary installation/admission path. Management messages carry candidate
-configuration and deployment receipts; they do not proxy live Start, Stop,
-Reset, properties, parameters or authoritative status. The artifact/catalog
-management interface above is unchanged.
-
-The GUI renders the declared settings in the simulator panel's Settings area.
-It does not write configuration files, prepare science, stop owners or manage
-links. A cold replacement resets scientific/controller state and reloads saved
-startup configuration; preserving unsaved runtime changes through a checkpoint
-remains deferred. The old saved application and operation receipts remain
-available for explicit recovery. GUI exit ends observation of an accepted job,
-without cancelling it or authorizing a retry.
+Standalone HIL owns simulation startup configuration and execution. With an
+independent input, systemd supervises the core and HIL separately from the RTC.
+MediaSession verifies the live provider and owns the Links to its controllers.
+Restarting the RTC leaves the simulator clock and provider-owned Links running.
+The [HIL configuration guide](HIL_CONFIGURATION.md#attach-an-rtc-to-an-already-publishing-source)
+describes the site bindings. The RTC management endpoint handles the artifact catalog. The earlier cold replacement
+service and its GUI request domain are retired.
 
 ```mermaid
 flowchart LR
@@ -305,8 +354,8 @@ flowchart LR
 | Sink | Consume graph output without addressing or controlling physical hardware. |
 | Observer | Inspect standard PipeWire objects and, where a suitable boundary exists, scientific samples. It is optional and never owns runner lifecycle or graph progress. |
 | AdaptiveOpticsSim | Own the simulated atmosphere, optics, WFS, deformable mirror, science diagnostics, model time, and frame-to-command causality without a PipeWire dependency. |
-| `AdaptiveOpticsSimPipeWireHIL.jl` | Map one prepared AdaptiveOpticsSim HIL boundary to an externally owned PipeWire source and non-actuating sink using public PipeWireAO interfaces. |
-| `JuliaFilterGraph.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
+| `AdaptiveOpticsSimPipeWireHIL.jl` | Own configured and prepared simulation execution over public PipeWireAO interfaces: lockstep HIL exchange, external-pupil and clocked optical runners. Portable products contain resolved AOS graphs, typed bindings and compiled models; AOS retains numerics and RTC retains admission/native controls. |
+| `FilterGraphs` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
 | Instrument directory | Own scientific prescriptions, ordered device geometry, pupil registration, AOS YAML graphs and calibration artifacts; shared RTC code prepares them through AOS and the HIL adapter. Classic is the first migrated instrument. |
 
 The headless RTC is the live application control plane for this session. It does not process
@@ -368,7 +417,7 @@ When not granted, the external application retains run control and the node
 cannot belong to an RTC-controlled execution group. Ownership never transfers
 in either case.
 
-This same boundary applies when `JuliaFilterGraph.jl` and its
+This same boundary applies when `FilterGraphs` and its
 `FilterGraphPipeWire` adapter publish a prepared Julia graph as one PipeWire
 node. The RTCW sees public ports, formats, schemas, and links—not Julia
 algorithms or the graph host. The owner-mediated public run-control contract
@@ -412,9 +461,12 @@ executor such as AdaptiveOpticsSim.
 
 ## Implementation language and placement
 
-Under RTC-ARCH-026, RTC-owned Lua implements the session policy through
-libwireplumber, C supplies
-native PipeWire control boundaries, and Julia supplies deployment tools and
+RTC-ARCH-026 assigns session policy to the headless RTC. The user selected
+replacement of both Lua and libwireplumber on 2026-11-04:
+the `MediaSession` Julia module owns the serialized policy in the same RTC
+process, using public PipeWireAO.jl APIs. This updates the library selection
+under RTC-ARCH-026 without changing its single-authority allocation.
+Julia also supplies deployment tools and
 scientific owners. systemd supervises the processes. These implementation
 languages are not part of the scientist-facing ABI; scientific Algorithms
 remain in their owning implementation language.
@@ -431,9 +483,73 @@ recovery behavior. RTC-ARCH-025 supersedes this implementation allocation;
 the identifier and original rationale remain reserved.
 
 The selected deployment uses separate PipeWire, headless RTC and scientific
-owner processes. Device profiles may additionally use upstream WirePlumber with
-separately configured site/device policy. It does not require one process per
-graph operation.
+owner processes. A declared device profile may use upstream WirePlumber as an
+independent process for separately configured site/device policy; it is not an
+RTC library dependency or application-session authority. The deployment does
+not require one process per graph operation.
+
+### Julia design conventions
+
+The user selected the following package-wide conventions on 2026-11-04.
+They guide implementation and review; recording them does not establish that
+every existing module has completed migration.
+
+- Define an interface by its operations, argument and result contracts,
+  invariants, failure behavior and ownership. Document required methods beside
+  the owning abstract type. Abstract type names start with `Abstract`.
+- Use concrete, parametric representations and multiple dispatch for different
+  domain kinds. Use a trait when a capability or property is independent of the
+  type hierarchy, such as observation scope or whether an effect has a deadline.
+  Document each trait's valid results and consuming methods. A trait must express
+  a real distinction; it must not conceal `isa` or field-presence selection.
+- Reuse the owning package's public interface and the RTC's existing codecs.
+  Share validation when its contract is identical. Keep genuinely different
+  protocol semantics explicit rather than introducing forwarding wrappers,
+  parallel codecs or a general framework for a single implementation.
+- Use Hsm.jl for Julia control state machines. Public functions dispatch typed
+  events; leaf and ancestor handlers decide state-dependent behavior. Handlers
+  produce typed effects, which the owner executes outside run-to-completion
+  dispatch. Loops deliver observations, ticks and effect results. Shared
+  ancestor handlers implement shared behavior without phase tests in the loop.
+- One task owns each machine and its mutable application state. Use Agent.jl
+  for a long-lived active object's duty cycle and bounded typed messages across
+  threads. Queue synchronization protects transport, not shared application
+  state. Existing single-task clients do not require an additional agent.
+- Use signed `Int64` nanoseconds returned by Clocks.jl for elapsed control time
+  and absolute monotonic deadlines. Inject `AbstractNanoClock` implementations;
+  update the owner's cached clock once at the beginning of a duty cycle. Preserve
+  producer receipt timestamps. Read fresh time at transport deadline validation;
+  convert units only at an interface that explicitly requires another unit.
+  Epoch timestamps and wire counters retain their own representations.
+- Use ordinary declarations and explicit methods for a fixed set of states and
+  protocol operations. Reserve `@eval` for a justified metaprogramming need;
+  repetitive handwriting alone does not establish one. Derive protocol constants
+  from the owning codecs and give policy limits names and documented units.
+- Follow upstream PipeWire/media-session concepts with Julia casing and mutation
+  suffixes. Names describe responsibilities and protocol versions rather than
+  implementation history. Keep instrument-specific adapters in their owning
+  packages. Preserve exact protocol vocabulary and immutable historical evidence.
+- Format maintained Julia with JuliaFormatter 2.14.8 BlueStyle, four-space
+  indentation and a 92-character margin. `.JuliaFormatter.toml` is authoritative.
+  Keep the formatter in an isolated tooling environment, not the package
+  dependencies. Disable optional syntax rewrites and implicit `Any` field
+  annotations. BlueStyle consistently spaces operators and expands chained
+  ternaries into ordinary `if`/`elseif` branches. Use explicit `return nothing`
+  for an empty early return. Preserve branch conditions, results, calls and
+  literal values; formatting does not authorize scientific changes. The
+  reproducible formatting command is:
+
+  ```sh
+  julia --project=/path/to/isolated-juliaformatter -e 'using JuliaFormatter; format("."; throw_on_error=true)'
+  ```
+
+  Generated files are changed through their authoritative generator, never by
+  a formatting pass. Historical evidence is excluded by the formatter
+  configuration.
+
+Apply these conventions to an affected interface and its callers together.
+Record temporary exceptions and verification boundaries in the current migration
+plan or evidence record; do not silently introduce a second design convention.
 
 ## Laboratory deployment profile
 
@@ -478,19 +594,39 @@ declare process arguments, environment, readiness and placement; it must not
 describe or reinterpret scientific operations. Runtime execution must not
 depend on benchmark scripts, temporary evidence directories or git worktrees.
 
-Startup loads the stopped session, prepares and warms owners without consuming
-recorded science input, verifies effective thread placement and requested
-resource rights, then explicitly starts the session. An external source must
-provide its own hold/release interface; graph READY alone cannot gate it.
-Required-dependency loss fails the whole deployment and revokes ingress. An
-explicit restart rebuilds and revalidates all owned processes; no mutation or
-RUNNING state is replayed automatically.
+On 2026-11-06 the user selected PipeWireAORTC as a registered application
+dependency rather than a copied SDK tree. New applications resolve the RTC
+implementation through their exported Project and Manifest. Pkg manages the
+registered dependency closure. The deployment catalog checksums runtime inputs
+outside that environment.
+Path/source overrides and application development workspaces are rejected.
+The package checkout retains its development test workspace; consuming the
+package as a dependency does not include that workspace in the application's
+dependency closure. Package resources come from the selected installed package.
+
+Instrument repositories own physical identity, simulation definitions, RTC
+configuration, graphs and profiles. Shared export code compiles those declarations
+into a fresh application. Only the small generated RTC shell launcher is
+staged under `rtc/bin`; authored RTC files are preserved. Installation and startup
+use the registered application environment without a copied-source fallback.
+Existing sealed SDKs retain their matching old tools rather than being converted.
+
+Startup loads the stopped session, verifies the required owners, effective
+thread placement and requested resource rights, and admits the held graph.
+Start releases processing with correction open. An independently publishing
+source retains its own acquisition clock. Required-dependency loss faults the
+session and revokes ingress. On restart, MediaSession verifies fresh native
+endpoints and Links. Session-scoped owners restart with it. Graph services
+installed for [independent operation](OWNER_BOOTSTRAP_DESIGN.md#graph-service-lifetime-across-rtc-sessions)
+retain their loaded code and calibration and discard the previous session's
+mutable state. Each new session requires live priming and explicit closure
+for its declared correction loops.
 
 The private native PipeWire control endpoint and console share one typed command executor.
 Reader/preparation/writer work stays outside the sole owner. Requests, clients,
 queues, parameter bytes and reply sizes have finite bounds. Replies distinguish
 submission, requested generation and observed active generation. The headless RTC
-coordinates asynchronous effects with finite deadlines; its Lua policy must
+coordinates asynchronous effects with finite deadlines; its session policy must
 not block on process, filesystem or scientific work. Health and stop must not
 claim a bound shorter than the effects they depend on. A client timeout or
 disconnect has an unknown mutation outcome until generations are observed.
@@ -510,10 +646,11 @@ science topology remains unchanged, including extrapolation, limits and clipping
 feedback. Detector backgrounds, Classic sensing references and Copper's PDM
 flat follow the simulated plant as specified by RTC-DEV-027. A simulator backend
 is selected independently of the RTC graph owner.
-CPU, CUDA and AMDGPU select explicit AOS execution targets; an unavailable
-selected device fails preparation rather than falling back to CPU.
+CPU, CUDA and AMDGPU select explicit AOS execution targets. An unavailable
+selected device fails preparation. HIL is the simulation process. RTC's
+cold authoring and calibration tools may resolve the same scientific assets.
 
-In the selected workstation/WirePlumber integration, AOS HIL is an optional
+In the selected workstation session integration, AOS HIL is an optional
 instrument provider that becomes a required session participant when selected.
 An instance may provide multiple sensor/diagnostic sources and command sinks on
 the selected PipeWireAO core. The session declares endpoint roles, exact owner
@@ -543,7 +680,7 @@ bounded, acknowledged pause/resume/reset interface. The RTC releases
 that source only after stopped-session admission and acknowledged RTC start.
 The source completes its outstanding command before acknowledging pause; stop
 and reset then reach the graph owner. The native session endpoint admits
-client requests to the single Lua session policy; scientific commands use
+client requests to the single RTC session policy; scientific commands use
 the existing owner endpoints. It adds no data scheduler or second scientific parser.
 Unconfirmed source control fails the owned deployment; mutations are not retried.
 
@@ -688,14 +825,16 @@ parameter update is not used as evidence of adoption. Stage results remain
 candidates; successful acquisition does not establish matrix precision,
 reconstructor acceptance, closed-loop correction or instrument cadence.
 
-For finite dark/training evidence, the calibration owner may write bounded
-immutable raw and WFS payloads to an explicitly selected local staging directory
-outside callbacks. The completion channel returns a manifest descriptor and
-digest after publication completes. This is a temporary calibration evidence
-transfer, not an RTC recording service or graph configuration format. The
-campaign owns the files through verification and reduction. Exposure association,
-capacity, deadlines and interrupted-stage disposition are specified in
-RTC-DEV-029; interaction response quality requirements remain unchanged.
+Dark and training reference campaigns consume bounded correlated exposures
+through live Collect. The calibration owner passes the declared sample arrays
+to the online reducer before admitting another exposure. The campaign owns the
+published numerical products. Historical finite capture files remain evidence;
+the live calibration owner no longer publishes them.
+
+The shared instrument tools run offline optical calibration from built
+applications and instrument YAML. AdaptiveOpticsCalibration supplies numerical
+operations. RTC supplies graph preparation, typed artifact admission and the
+live acquisition interface.
 
 The owner observes both the actual demanded figure with constraint feedback and
 the simulator's correlated adoption before generating exposures. Probe tokens
@@ -716,6 +855,12 @@ supervised HEART wrapper. The completed simulator source path retains its
 prepared native SPA run/reset/query contract. Persisted configuration, recipes,
 immutable captures and reports retain their current formats.
 
+PipeWire and PipeWireAO own SPA POD serialization and the Node, parameter,
+registry and loop primitives. The RTC defines the acquisition lifecycle
+profile carried over them. It includes the calibration cursor, hold and
+restore state, and the operations supported by the calibration owner.
+The generic control envelope is a separate layer from those profile fields.
+
 Existing owners and their serialized dispatchers remain authoritative. Cold
 owners may publish an inactive Filter with no ports or process callback; it
 owns no scientific graph, frame queue or scheduling policy. A callback stages
@@ -724,10 +869,10 @@ callback and publishes its typed completion afterward. Scientists continue to
 write ordinary transport-neutral algorithms and properties.
 
 The migration is dependency ordered under RTC-DEV-030. The
-[design](NATIVE_CONTROL_MIGRATION_DESIGN.md),
-[control inventory](LIVE_CONTROL_INVENTORY.md),
-[mechanism proof](NATIVE_CONTROL_FILTER_PROOF.md) and
-[independent review](NATIVE_CONTROL_MIGRATION_REVIEW.md) distinguish selected
+[design](CONTROL_MIGRATION_DESIGN.md),
+[control inventory](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/LIVE_CONTROL_INVENTORY.md),
+[mechanism proof](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_FILTER_PROOF.md) and
+[independent review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_MIGRATION_REVIEW.md) distinguish selected
 behavior from implementation evidence. Native serialization does not itself
 establish application, finite owner execution, restoration or real-time
 qualification. Existing JSON interfaces remain explicitly unmigrated until
@@ -745,6 +890,14 @@ scientific APIs; the integration adapter checks compatibility before execution.
 GUI operator-view files select sources/components and presentation, rather than
 carrying copies of instrument or calibration arrays.
 
+A physical DM can declare `units: opd_m` for metres of wavefront optical
+path difference or `units: native` for device command values. Published
+instrument metadata and calibration products use the labels `m OPD` and
+`native command`. A `pdm-command-f32` template can use
+`config = { mirror = woofer }`. Export resolves that mirror's actuator count,
+stroke limits and demanded output schema. Optional `slew_limit` and
+`initial_current` values use the same command units.
+
 The first implementation uses existing read-only properties on the freshly
 verified native public session endpoint. `pipewireao.rtc.session.instrument`
 contains one bounded JSON document (maximum 1 MiB), and the companion
@@ -760,7 +913,25 @@ instrument components, not GUI panel IDs. DM declarations carry source-grid
 `layout` in explicit `command_positions` order, `units`, `command_scale_m`,
 amplitude `limiter` bounds and `shape_control` declarations. Optional
 `pupil_coordinates` use the scientific model's normalized pupil radius convention;
-they are distinct from source-grid Zernike/Fourier coordinates.
+they are distinct from source-grid Zernike/Fourier coordinates. A nonidentity
+mirror-to-pupil registration also publishes `pupil_registration` alongside these
+coordinates. It contains `actuator_pitch_pupil_radius`, `rotation_deg`, `flip_y`
+and `offset_actuators: [dx, dy]`. The native mirror coordinates V have x to the
+right and y upward, centered on the physical source grid and retained in command
+order. With pitch p, pupil coordinates P are
+
+```text
+P = R(rotation_deg) × diag(1, flip_y ? -1 : 1) × (V - p × offset_actuators)
+V = diag(1, flip_y ? -1 : 1) × R(rotation_deg)ᵀ × P + p × offset_actuators
+```
+
+Rotation is counterclockwise in degrees. Offsets locate the optical pupil center
+in native actuator pitches; reflection precedes rotation. Clients that display
+native mirror axes use the inverse and place the circular optical pupil at
+p × offset_actuators. This changes coordinates, never command order. Registration
+is omitted from publication for the identity transform; older metadata retains
+its existing interpretation.
+
 An optional DM `pupil` supplies `inner_radius` and `outer_radius` in the same
 normalized Cartesian frame, with 0 ≤ inner < outer. It requires command-indexed
 `pupil_coordinates`; coordinates may lie outside the annulus. This optical
@@ -775,8 +946,9 @@ scientific definition and its identity unchanged. Plant verification compares
 the published pupil with the selected scientific source, including the telescope
 fallback for older scientific definitions.
 
-An optional DM `clear_aperture: {radius: ...}` describes a centered circular
-mirror clear aperture in that same registered Cartesian frame. It requires
+An optional DM `clear_aperture: {radius: ...}` describes the circular mirror
+clear aperture centered at the native physical mirror origin V = 0. Its radius
+uses the same normalized-pupil unit; registration does not rescale it. It requires
 `pupil_coordinates` and a positive renderable radius. The clear aperture is the
 mirror's optically usable circular aperture; it is distinct from the instrument's
 illuminated optical `pupil`, the actuator footprint and the full mechanical
@@ -974,10 +1146,9 @@ Each process declares native `data-loops` by their existing PipeWire loop names
 and optional framework `workers` by role. All assigned CPUs must belong to that
 process's CPU envelope. The builder writes each process's affinity and priority
 into its own native context. Application owners explicitly select `kind: jfg`
-or `kind: aos`; shared launcher adapters derive Julia thread counts and worker
-arguments. JFG's ordered `workers.julia` starts with the process leader CPU.
-AOS's `workers.pipewire` places its PipeWire loop; optional
-`workers.optical-diagnostics` places diagnostics separately from its source thread.
+to derive Julia thread counts and graph worker arguments. Ordered `workers.julia`
+starts with the process leader CPU. External providers configure their own
+workers and use the process placement declared for their role.
 Application role names and executable strings do not select adapters. The shared
 core's `rtc-data-loop` carries control-path data; `telemetry-loop` serves monitoring
 queue outputs. Native loop names are local to their process, not shared threads.
@@ -1054,7 +1225,24 @@ inconsistent hidden projections/allocation dimensions before writing files.
 spacing in metres. It does not rescale
 optical geometry. Instrument `pupil_registration.actuator_pitch_pupil_radius`
 is dimensionless spacing divided by the registered pupil radius; Classic retains
-0.125. The optional intrinsic `clear_aperture_diameter_m` is a finite positive
+0.125. Physical `pupil_registration` additionally accepts optional `rotation_deg`
+(default 0), `flip_y` (default false) and `offset_actuators` (default [0, 0]),
+with the transform defined in the instrument publication contract above. Pitch
+is finite and positive; rotation and offsets are finite real numbers and the
+reflection flag is Boolean. Equivalent whole turns are removed from the angle.
+For nonidentity registration, pitch, scaled offsets and transformed grid
+coordinates must remain renderable in Float32. The generic measured-influence
+FITS resampler and `grid_gaussian` grid-index binding support only identity
+registration. Their source-grid paths do not apply rotation, reflection or
+offset; they reject those registrations before FITS access or grid-index
+preparation. `coordinate_gaussian` consumes the registered pupil coordinates.
+Already registered influence arrays and coordinates may remain explicit
+scientific graph inputs; this metadata extension does not transform their
+samples or select a different profile. Explicit identity defaults
+resolve to the original pitch-only value, preserving existing coordinates,
+metadata and physical/publication identities. Intrinsic mirror geometry and
+command order remain independent of this registration. The optional intrinsic
+`clear_aperture_diameter_m` is a finite positive
 circular clear-aperture diameter in metres and requires `actuator_pitch_m`.
 The cold metadata resolver computes the dimensionless registered radius as
 `(clear_aperture_diameter_m / actuator_pitch_m) × actuator_pitch_pupil_radius / 2`.
@@ -1088,6 +1276,18 @@ Graph-bearing authored definitions can instead select imported Zemax components
 alongside their ordinary atmosphere, mirrors and sensors. Shared AOS preparation
 retains their symbolic mode graphs under `generated/` and publishes an
 `optical_model` reference to the canonical authored `simulation/definition.yaml`.
+Per-graph component overrides can declare runtime `phase_screens` by active
+surface ID, named input, source size, axis permutation, physical diameter and OPD
+schema. A `pupil_grid` override gives the entrance amplitude and OPD the same
+explicit physical grid. AOS derives native sampling/centers and emits typed
+`add_opd` steps; RTC does not propagate optics or reinterpret command units.
+Runtime sampled screens support scalar CPU and captured CUDA Proper execution.
+Monochromatic planar-reference complex fields can feed an analytic PWFS through
+a declared ideal pupil relay. The cold compiler derives its grid from the connected
+optical train and sensor, checks wavelength equality, and applies source radiometry
+once in the PWFS field adapter. This optional path does not establish as-built optics. A graph
+selection can add a relay diagnostic while retaining a separate analytic sensor;
+that selection alone does not establish a higher-fidelity control measurement.
 The generated HIL loader validates all source and execution hashes and parsed
 content before returning a declaration. Cold settings replan components from the
 verified extraction. Calibration prescription identity remains the authored
@@ -1132,6 +1332,12 @@ hashed FITS artifact contract. Authored sources with observations require explic
 SHA-256 hashes on all FITS bindings and validate their decoded shape and hash.
 Optional detector settings stay absent unless
 authored, so scientific noise defaults remain with AOS.
+Detector component `rows` and `columns` explicitly define its ROI-local output
+shape. When physical camera dimensions are declared, the ROI must fit those
+dimensions and retain their pixel pitch. An optional acquisition `roi_origin`
+additionally constrains the ROI within the full sensor. An omitted origin remains
+unknown; it does not imply a crop at `[0,0]`. Published detector properties report
+whether that origin is known and retain the local output shape.
 
 `load_simulation_source` returns the expanded authored response graphs in
 `observation_graphs`, without inventing optical graphs or reading generated
@@ -1232,11 +1438,10 @@ queue fragments under `rtc/`, optional analysis under `analysis/`, GUI views
 under `gui/`, and calibration recipe/inputs/artifacts/records under `calibration/`.
 `InstrumentExport.prepare` copies this source into fresh output, applies an
 explicit host deployment profile, renders shared core/client templates, generates
-the publication and seals the deployment catalog. Source contains neither a
-sealed runtime deployment nor a generated publication. Registered dependency
-validation is unchanged: output without a matching sealed registered Manifest
-is usable only for offline preparation, not installation. The exporter owns no
-processes, links or live controls.
+the publication and records runtime input checksums in the deployment catalog.
+A matching registered Manifest is required for installation. Output without
+a Manifest supports offline preparation. The exporter owns no processes,
+links or live controls.
 
 Authoring `rtc/application.conf` may additionally declare `graph-configurations`,
 an array of `{path}` entries, optionally with a `source` filename inside the

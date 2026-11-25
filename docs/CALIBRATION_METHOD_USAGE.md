@@ -2,28 +2,35 @@
 
 ## Built-application calibration bundles — 2026-10-26
 
-`PipeWireAORTC.InstrumentCalibration` provides one shared API for calibration
-procedures selected from a built instrument application:
+The shared instrument tools select the offline procedure from the built
+application's calibration recipe. Run `tools/calibrate.jl` to produce a fresh
+bundle, `tools/validate-calibration.jl` to replay the calibrated model, and
+`tools/stage-calibration.jl` to select the bundle for a fresh export. RTC supplies
+the recipe, typed graph and bundle APIs and owns live acquisition.
 
-- `calibrate_system(application, fresh_bundle; target=...)` reads the compiled
-  instrument recipe and dispatches to the declared sensor procedure.
-- `validate_system(application, bundle, fresh_report; target=...)` checks that
-  the selected recipe matches the bundle before finite model validation.
-- `stage_calibration(source, application, bundle, fresh_destination)` verifies bundle and
-  source identities, then copies the authored source and selects the calibrated startup context
-  in a fresh destination.
+Since RTC 0.2.51, optical interaction calibration accepts an explicit CUDA target.
+The mirror and optical graphs use captured execution, with uploads and readback
+in each prepared graph's device context. The chopped measurement frontend and
+the separately qualified upstream expected-reference acquisition remain on Host.
 
 The version-1 bundle contains `result.yaml`, `context.yaml`, concrete
 `graph.conf` and typed FITS files in `artifacts/`. The result hashes context,
 graph and artifacts. Git retains earlier selections and provenance; staging
 does not copy archive directories or create `history_sha256` manifests.
 
-Calibration context uses the existing FITS binding terms: a `kind: fits` entry
-declares `path`, `hdu`, `axes`, logical `shape`, `type`, `sha256` and
-`storage_order: row-major`. Paths are relative to `context.yaml`. Cold preparation
-checks one bounded file snapshot and resolves it to a flat typed row-major
-vector. Boolean values must be exactly zero or one. The context remains a small
-declaration; GPI2 construction and runtime use the same `pupil-mask.fits` bytes.
+A `kind: fits` context entry declares `path`, `hdu`, `axes`, logical `shape`,
+`type` and `storage_order: row-major`. Paths resolve inside the directory
+containing `context.yaml`. A frozen bundle verifies each artifact against
+`result.yaml` even when the context omits `sha256`. A supplied `sha256` must
+match the selected file, including a retained input outside the artifact
+manifest. References to files with identical bytes can use different paths.
+
+When loading an RTC configuration, the FITS loader accepts an optional
+lowercase SHA-256 field and resolves current file bytes to a flat typed
+row-major vector. It checks the HDU, shape, axes and values. Boolean values
+must be exactly zero or one. An installed application with a pinned Git
+export verifies file integrity against that snapshot. GPI2 construction and
+runtime use the same `pupil-mask.fits` input.
 RTC configuration selects `calibration/context.yaml`, without a duplicate
 `rtc/calibration.yaml`. The regular instrument graph still supplies topology.
 Generated YAML writes short numeric vectors inline, including coordinate pairs,
@@ -50,16 +57,47 @@ does not establish scientific equivalence.
 `read_bundle` verifies these bytes without loading a sensor or accelerator;
 sensor procedures own array interpretation and optical checks. Authored recipes
 live in the instrument source at `calibration/recipe.yaml`. Its `graph_source`
-selects the retained authored graph template; `graph` selects the compiled
-execution graph for typed contracts. Both are carried in the built application,
-and calibration
-consumes the built application. CLI commands follow the same flow:
+selects the retained graph template and `graph` selects the compiled execution
+graph for typed contracts. Calibration consumes both from the built application.
+Shack–Hartmann interaction calibration recompiles the application's declared
+controller graph template when it updates controller dimensions or mirror limits.
+
+Run the shared CLI commands from the
+[adaptive-optics-simulations instrument repository](https://github.com/DarrylGamroth/adaptive-optics-simulations).
+Its staging tool uses the RTC bundle graph and export APIs to validate a
+candidate before writing a fresh authored source copy.
 
 ```sh
 julia --project=/path/to/environment tools/calibrate.jl APPLICATION FRESH_BUNDLE [cpu|cuda|amdgpu]
 julia --project=/path/to/environment tools/validate-calibration.jl APPLICATION BUNDLE FRESH_REPORT.yaml [cpu|cuda|amdgpu]
 julia --project=/path/to/environment tools/stage-calibration.jl SOURCE APPLICATION BUNDLE FRESH_DESTINATION
 ```
+
+Pyramid calibration and validation accept `execution=CapturedGraphExecution()`
+from `AdaptiveOpticsSim.AlgorithmGraphs`; the existing default remains streamed
+execution. The shared CLIs accept a final `capture` after the backend selection
+for these procedures. This uses the same prepared command buffers and graph;
+the receipt records the selected execution policy. CUDA calibration should use
+the captured path explicitly rather than silently falling back to streamed work.
+
+For a propagated-field plant, validation can additionally select
+`pupil_field_output=:pwfs_pupil_field` (the CLI takes the output name after
+`capture`). It compares the receiving field with a separately copied flat
+reference using `|⟨E₀,E⟩|² / (‖E₀‖₂² ‖E‖₂²)`. This normalized coherent overlap
+is invariant to piston and uniform attenuation. It tests phase and relative
+amplitude profile, not total throughput or a phase-unwrapped wavefront.
+Overlap loss must improve by 20% for each deterministic disturbance. When a field
+output is selected, OPD RMS remains a diagnostic rather than an acceptance gate:
+a common-pupil sum cannot represent propagation between distinct DM planes.
+Without a field output, the existing 20% OPD-RMS improvement gate remains in force.
+Failed validation retains the error
+and collected case histories; no failed candidate is activated.
+
+The `calibration` graph role still suppresses dynamic actuator responses. To
+calibrate another sensing model, author its deterministic optical topology as
+that role in a fresh candidate source, regenerate and build it, and bind the
+new bundle to that source's prescription. Selecting a noisy production graph
+does not turn it into a held-probe calibration graph.
 
 The modal-only API names and CLIs and the active Classic TOML result loaders
 have been removed. Imported selected bundles retain historical source identity
@@ -239,16 +277,16 @@ actual basis, canonical order, source identities and completion records. It
 labels acceptance as none. Matrix dimensions and a finite result alone are not
 scientific acceptance.
 
-[Method review and comparison design](CALIBRATION_METHOD_COMPARISON.md) records
+[Method review and comparison design](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_METHOD_COMPARISON.md) records
 software review, pilot evidence and the remaining method-selection gates.
-[Quality validation](CALIBRATION_QUALITY_VALIDATION.md) records the independently
+[Quality validation](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_QUALITY_VALIDATION.md) records the independently
 qualified baseline against which methods will be compared.
 
 ## Qualification record
 
 This section records the earlier Python-owned workflow. Current Julia migration
 qualification is tracked in the
-[migration record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md).
+[migration record](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/JULIA_CALIBRATION_MIGRATION_VALIDATION.md).
 
 The maintained owner completed a Classic FGN CPU reverse-modal smoke on
 2026-10-03: two declared physical directions, four signed batches, 16 accepted
@@ -272,24 +310,24 @@ The evidence ledger binds their material inputs, outputs and failed prelaunch
 record. This qualifies the finite workflow and ordering behavior. Subsequent two-sweep
 zonal, complete Hadamard, 221-coordinate controller-modal and 64-mode spatial
 runs also completed through this entry point. Their finite prediction, energy
-and timing results are in [method measurements](CALIBRATION_METHOD_VALIDATION.md).
+and timing results are in [method measurements](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_METHOD_VALIDATION.md).
 Candidate completion does not select a new method or inverse; fresh common
 validation and a locked test remain necessary for that decision.
 
 ## Optical branch calibration and generated selection
 
-`InstrumentCalibration.calibrate_optical(upstream_built, optical_built,
-fresh_bundle; recipe="calibration/optical.yaml", target=..., prefix=...)`
-consumes sealed built applications. By default,
+The instrument repository’s `tools/calibrate-optical.jl` consumes built
+applications. The shared `OpticalCalibration` module runs the offline campaign
+against the declared recipe and uses RTC’s graph and export APIs. By default,
 `configuration="calibration/materialize.yaml"` selects its `graphs` mapping of
 branch names to retained authored templates; `graphs=...` can select that mapping
-explicitly. After acquisition, the shared extension resolves those templates
+explicitly. After offline measurement, the shared tool resolves those templates
 using actual measured masks, native sensor schemas and cold RTC dimensions. It
 checks R/P shapes and prepares each published graph with its real typed FITS
 parameters before publishing the index. Existing callers may still supply both
-`concrete_graphs` and `contexts` NamedTuples. The shared optional extension owns numerical
-acquisition and AOC inversion. The callback path uses the actual native
-`PupilOutput.pack!` orientation, then packet `[quantity,y,x]` planes, for the
+`concrete_graphs` and `contexts` NamedTuples through the module API.
+AdaptiveOpticsCalibration supplies reconstruction and diagnostics. The callback
+path uses the HIL pupil packer and packet `[quantity,y,x]` planes for the
 external optical input. A direct GPI `[x,y]` copy is not equivalent.
 
 The first optical build needs no controller calibration. Use an ordinary
@@ -299,8 +337,13 @@ configuration retains the future controller dimensions and omits `calibration`
 until selection. The default controller mode adds the controller declarations;
 it rejects missing calibration rather than substituting zero R/P arrays.
 Mode-selected runtime YAML is compiled after application composition. The
-instrument repository's thin `tools/calibrate-optical.jl` client selects an
-explicit CPU or AMDGPU target and never installs or starts a session.
+shared API accepts an explicit Host, AMDGPU or CUDA target. Offline measurement
+runs without installing or starting a session. CPU graphs stream. Accelerator
+mirror and optical F/U graphs require captured execution. Command
+and pupil uploads and output readback use each graph's retained device context.
+The chopped measurement frontend remains the authored CPU graph. The separate
+upstream reference acquisition retains its existing target restrictions;
+`host-expectation` still requires an explicit Host target.
 
 Publication emits one standard bundle per branch and a `calibration.yaml` index.
 The index hashes each branch result and the common command projection P, physical
@@ -314,6 +357,47 @@ simulator effective settings are part of the selected C provenance. Changing
 brightness, readout settings, frontend nodes or their FITS bindings requires
 matching calibration. Neither a relaxed gate nor a diagnostic dither is an
 implicit production selection.
+
+When the optical source declares detector `observations`, optical calibration uses
+that same external-pupil exposure owner and response graph. Held probes reset the
+owner, integrate complete exposures and collect the actual F/U detector frames
+before the authored measurement prefix. Detector photon/readout noise must be
+disabled, with zero dark/glow rates; calibration does not silently change the
+selected response. The scale, exposure, quantum efficiency and other deterministic
+response settings remain part of the optical prescription identity. The retained
+`relative-intensity-optical` recipe kind names this calibration method; declared
+camera observations supply detector frames to it. Branch reports retain the
+measurement units and frame schema, and the existing FITS writer records those
+units on reference images, F/U differences and measured matrices.
+
+A centroid branch selects `measurements: {llowfs: {kind: center-of-gravity}}`.
+Its two measurements fit only its owned modes; every other mode is still probed
+to measure cross-talk. Pupil tip/tilt orthogonality does not imply zero centroid
+response to those other modes.
+
+The explicit recipe option `measurement_nulling: [llowfs]` removes that branch's
+measured linear response from unowned command modes. The initial implementation
+supports one declared centroid branch. With normalized command projection P,
+owned columns O and unowned columns U, it constructs:
+
+```text
+C = D_O⁺ D_U
+P′_U = P_U − P_O C
+```
+
+Here D has units px/m OPD, C is dimensionless, and ⁺ is the AOC TSVD inverse
+using the recipe cutoff. D_O must retain full row rank. Each proposed command
+column is rescaled to unit maximum absolute value before the native-command
+normalization probe is applied again. Calibration then remeasures pupil RMS,
+full/half push-pull responses and held-out mixtures with the unchanged gates.
+A rejected initial candidate supplies measurements, never accepted evidence.
+
+When `tip_tilt: true` is also selected, measured pupil tip/tilt removal occurs
+first and measurement nulling occurs second. The final unowned modes include
+compensating owned components; they are not claimed to remain pure pupil
+TT-orthogonal Fourier modes. Provenance retains the original basis order and
+pupil removal, the candidate identity, D, C, units, column scales and final
+normalization order. Omitting `measurement_nulling` preserves the original basis.
 
 For a chopped branch, the bounded recipe selects
 `measurements: {scc: {kind: chopped-pixel-residual}}`; its branch names must
@@ -341,8 +425,14 @@ remote command. No phase-command feedforward, carrier/FIR/ROI choice, pipelined
 closed-loop stability or noisy simultaneous-loop acceptance follows from the
 static calibration tests.
 
-The optional upstream reference method `host-expectation` estimates the mean
-residual of the executed stochastic detector and frozen frontend. For example:
+An upstream optical reference takes its simulation and mirror from the optical
+recipe. Its `upstream_reference` section declares the raw and residual
+endpoints, probe amplitudes and derivative tolerance. The lower-level Julia
+entry point requires the same inputs.
+
+The optional `host-expectation` method estimates the mean residual of the
+executed stochastic detector and frozen frontend. CAL2 declares the following
+settings.
 
 ```yaml
 upstream_reference:
@@ -401,6 +491,27 @@ zero_command="physical-offset-zero.fits")` selects those accepted bundles in
 an authored instrument source. All validation precedes publication. It checks the
 sealed built input, recipe/source/provenance hashes, branch acceptance and shared
 identities, then verifies that the context reproduces each authored graph.
+The only permitted graph difference is appended named exports of existing
+`node:port` outputs. Original exports remain an exact ordered prefix; all other
+decoded fields and scalar types remain exact. The existing owner compiler checks
+added names, endpoints and formats. Nodes, links, inputs, parameters, execution
+settings and optical/recipe/provenance hash checks retain their strict checks.
+
+The generated selection records `graph_exports` with the frozen
+`calibrated_graph_sha256`, `authored_graph_sha256` and `added_outputs`. Ordinary
+builds using that optical selection recheck the frozen bundle hashes and the
+same graph rule, including selections written before this metadata existed.
+They generate a separate `graph-exports.yaml` receipt with the calibrated and
+`executed_graph_sha256` hashes and added exports. Frozen bundle files and the
+authored selection remain untouched. The declared graph paths must exactly match
+the selected branches; missing or extra graphs reject.
+
+These checks preserve calibration provenance, not application or timing
+qualification. Added native outputs require real consumers and can change
+buffer admission, copying cost and accelerator layouts. `application_accepted`
+remains false; validate command equality and delivery separately. The cold
+compiler/numerical check is `test/calibrated_graph_exports.jl` in an environment
+with FilterGraphAlgorithms, FilterGraphs and FilterGraphPipeWire.
 The generated destination must be fresh. Standard branch bundles are copied
 unchanged; a shared context, exact-zero Float32 physical command and selection
 receipt are generated there. A generated `rtc.yaml` selects the context and

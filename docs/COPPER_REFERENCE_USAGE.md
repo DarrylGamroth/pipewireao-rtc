@@ -3,7 +3,7 @@
 `REVOLTRTC.jl/bin/copper_reference.jl` acquires three finite batches through the
 existing deployed calibration endpoint: dark, lamp training and independently
 seeded lamp qualification. It uses public AdaptiveOpticsCalibration moments;
-the [plan](COPPER_REFERENCE_PLAN.md) and [review](COPPER_REFERENCE_REVIEW.md)
+the [plan](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/COPPER_REFERENCE_PLAN.md) and [review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/COPPER_REFERENCE_REVIEW.md)
 describe the coordinate and acceptance boundaries.
 
 ## Inputs and invocation

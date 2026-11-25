@@ -2,11 +2,11 @@
 Description=Headless PipeWireAO RTC session %i
 
 [Service]
-Type=exec
-ExecStartPre=@LAUNCHER@ prepare --package @PACKAGE@ --prefix @PIPEWIRE_PREFIX@ --unit %n --launcher @LAUNCHER@ --runtime-root %t/pipewireao-session-%i
-EnvironmentFile=-%t/pipewireao-session-%i/current.env
-ExecStart=@RTC_EXECUTABLE@ -c ${RTC_CONFIG}
-ExecStartPost=@LAUNCHER@ publish --package @PACKAGE@ --prefix @PIPEWIRE_PREFIX@ --unit %n --runtime-root %t/pipewireao-session-%i
+Type=notify
+NotifyAccess=main
+@ACTIVATION_ENVIRONMENT@
+Environment=PIPEWIREAORTC_SYSTEMD_UNIT=%n
+ExecStart=@RTC_INSTALLED_COMMAND@ -c %t/pipewireao-session-%i/${INVOCATION_ID}/rtc/rtc.conf
 ExecStop=@LAUNCHER@ stop --unit %n --runtime-root %t/pipewireao-session-%i
 ExecStopPost=@LAUNCHER@ cleanup --invocation ${INVOCATION_ID} --runtime-root %t/pipewireao-session-%i --source-role @SOURCE_ROLE@
 RuntimeDirectory=pipewireao-session-%i
@@ -17,6 +17,7 @@ LimitRTPRIO=95
 LimitMEMLOCK=4294967296
 CPUAffinity=@CPUS@
 KillMode=control-group
+KillSignal=SIGINT
 TimeoutStartSec=300
 TimeoutStopSec=300
 Restart=no

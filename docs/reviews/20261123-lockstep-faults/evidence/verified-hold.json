@@ -1,0 +1,23 @@
+{
+  "fault_hold_passed": true,
+  "managed_launcher_passed": false,
+  "unit": "pipewireao-session@ec85145c5eac.service",
+  "invocation": "3ecdaf5df0be4e40a4b65d3fccb2ec24",
+  "woofer_link": {
+    "id": 253,
+    "serial": 254
+  },
+  "retained_links_before": 31,
+  "retained_links_after": 0,
+  "running_token": 11,
+  "matched_stopped_token": 27,
+  "source_generation": 1,
+  "source_sequence": 46,
+  "held_recheck_seconds": 4.442318268,
+  "managed_quit": {
+    "accepted": false,
+    "attempted": true
+  },
+  "managed_final_phase": "failed",
+  "test_residue_removed": true
+}

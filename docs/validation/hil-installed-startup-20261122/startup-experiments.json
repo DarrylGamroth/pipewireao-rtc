@@ -1,0 +1,731 @@
+[
+  {
+    "label": "retry",
+    "unit": "pipewireao-session@2b9546b5efe8.service",
+    "profile": "gpi2",
+    "ready_s": 61.774,
+    "passed_native_flow": true,
+    "acknowledged_quit": true,
+    "native_quit": {
+      "accepted": true,
+      "attempted": true
+    },
+    "startup_times": {
+      "unit": "pipewireao-session@2b9546b5efe8.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 61.774,
+      "service_to_RTC_exec_s": 13.829,
+      "RTC_exec_to_ready_s": 47.935,
+      "RTC_exec_to_endpoint_seen_by_client_s": 33.528,
+      "service_to_simulator_exec_s": 6.949,
+      "simulator_exec_to_model_prepared_s": 22.404,
+      "model_prepare_s": 12.069,
+      "simulator_exec_to_connected_s": 35.807,
+      "simulator_connected_to_service_ready_s": 19.008,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 4.43,
+      "owner_exec_after_unit_start_s": {
+        "core": 5.739,
+        "julia": 6.949,
+        "parameters": 6.949,
+        "simulator": 6.949
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@2b9546b5efe8.service": 0.0,
+        "Started pipewireao-session@2b9546b5efe8.service": 61.764,
+        "Waiting for RTC control endpoint": 44.779,
+        "Waiting for owner preparation and RTC warmup": 47.357,
+        "RTC warmup completed": 57.334,
+        "SIMULATOR_PREPARING": 17.284,
+        "SIMULATOR_PREPARED": 29.353,
+        "SIMULATOR_CONNECTED": 42.756
+      }
+    },
+    "observed_streams": {
+      "detector": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4245
+      },
+      "tiptilt": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 8.2487475e-09
+      },
+      "tweeter": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4.4686251e-07
+      },
+      "woofer": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 3.1625376e-07
+      }
+    },
+    "helper_schedstat": {
+      "publish": {
+        "main_cpu_s": 9.092,
+        "main_runnable_wait_s": 26.751,
+        "observed_span_s": 41.931,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 55377
+      }
+    }
+  },
+  {
+    "label": "cli-o0",
+    "unit": "pipewireao-session@f22f88e98c57.service",
+    "profile": "gpi2",
+    "ready_s": 55.742,
+    "passed_native_flow": true,
+    "acknowledged_quit": true,
+    "native_quit": {
+      "accepted": true,
+      "attempted": true
+    },
+    "startup_times": {
+      "unit": "pipewireao-session@f22f88e98c57.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 55.742,
+      "service_to_RTC_exec_s": 9.338,
+      "RTC_exec_to_ready_s": 46.394,
+      "RTC_exec_to_endpoint_seen_by_client_s": 27.426,
+      "service_to_simulator_exec_s": 4.398,
+      "simulator_exec_to_model_prepared_s": 24.03,
+      "model_prepare_s": 12.755,
+      "simulator_exec_to_connected_s": 36.137,
+      "simulator_connected_to_service_ready_s": 15.197,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 3.166,
+      "owner_exec_after_unit_start_s": {
+        "core": 3.608,
+        "julia": 4.398,
+        "parameters": 4.398,
+        "simulator": 4.398
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@f22f88e98c57.service": 0.0,
+        "Started pipewireao-session@f22f88e98c57.service": 55.732,
+        "Waiting for RTC control endpoint": 34.321,
+        "Waiting for owner preparation and RTC warmup": 36.764,
+        "RTC warmup completed": 52.566,
+        "SIMULATOR_PREPARING": 15.673,
+        "SIMULATOR_PREPARED": 28.427,
+        "SIMULATOR_CONNECTED": 40.535
+      }
+    },
+    "observed_streams": {
+      "detector": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4245
+      },
+      "tiptilt": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 8.2487475e-09
+      },
+      "tweeter": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4.4686251e-07
+      },
+      "woofer": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 3.1625376e-07
+      }
+    },
+    "helper_schedstat": {
+      "prepare": {
+        "main_cpu_s": 4.527,
+        "main_runnable_wait_s": 2.16,
+        "observed_span_s": 9.028,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 59014
+      },
+      "publish": {
+        "main_cpu_s": 5.641,
+        "main_runnable_wait_s": 22.789,
+        "observed_span_s": 45.931,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 59266
+      }
+    },
+    "policy": "0",
+    "probe_success": true,
+    "duration_s": 83.01590712199686,
+    "start_loadavg": [
+      "6.19",
+      "6.32",
+      "7.04"
+    ],
+    "end_loadavg": [
+      "6.48",
+      "6.47",
+      "7.04"
+    ]
+  },
+  {
+    "label": "cli-default",
+    "unit": "pipewireao-session@0f889100caf7.service",
+    "profile": "gpi2",
+    "ready_s": 63.148,
+    "passed_native_flow": true,
+    "acknowledged_quit": true,
+    "native_quit": {
+      "accepted": true,
+      "attempted": true
+    },
+    "startup_times": {
+      "unit": "pipewireao-session@0f889100caf7.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 63.148,
+      "service_to_RTC_exec_s": 14.499,
+      "RTC_exec_to_ready_s": 48.64,
+      "RTC_exec_to_endpoint_seen_by_client_s": 34.423,
+      "service_to_simulator_exec_s": 7.329,
+      "simulator_exec_to_model_prepared_s": 23.076,
+      "model_prepare_s": 12.404,
+      "simulator_exec_to_connected_s": 36.808,
+      "simulator_connected_to_service_ready_s": 19.001,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 4.553,
+      "owner_exec_after_unit_start_s": {
+        "core": 6.079,
+        "julia": 7.329,
+        "parameters": 7.329,
+        "simulator": 7.329
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@0f889100caf7.service": 0.0,
+        "Started pipewireao-session@0f889100caf7.service": 63.138,
+        "Waiting for RTC control endpoint": 46.324,
+        "Waiting for owner preparation and RTC warmup": 48.922,
+        "RTC warmup completed": 58.585,
+        "SIMULATOR_PREPARING": 18.001,
+        "SIMULATOR_PREPARED": 30.405,
+        "SIMULATOR_CONNECTED": 44.137
+      }
+    },
+    "observed_streams": {
+      "detector": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4245
+      },
+      "tiptilt": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 8.2487475e-09
+      },
+      "tweeter": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4.4686251e-07
+      },
+      "woofer": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 3.1625376e-07
+      }
+    },
+    "helper_schedstat": {
+      "prepare": {
+        "main_cpu_s": 8.179,
+        "main_runnable_wait_s": 3.758,
+        "observed_span_s": 14.302,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 62926
+      },
+      "publish": {
+        "main_cpu_s": 9.208,
+        "main_runnable_wait_s": 27.543,
+        "observed_span_s": 48.441,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 63180
+      }
+    },
+    "policy": "default",
+    "probe_success": true,
+    "duration_s": 90.45716585498303,
+    "start_loadavg": [
+      "6.92",
+      "6.68",
+      "7.02"
+    ],
+    "end_loadavg": [
+      "5.81",
+      "6.43",
+      "6.90"
+    ]
+  },
+  {
+    "label": "cli-generated",
+    "unit": "pipewireao-session@667c7bf8927b.service",
+    "profile": "gpi2",
+    "ready_s": 54.044,
+    "passed_native_flow": true,
+    "acknowledged_quit": true,
+    "native_quit": {
+      "accepted": true,
+      "attempted": true
+    },
+    "startup_times": {
+      "unit": "pipewireao-session@667c7bf8927b.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 54.044,
+      "service_to_RTC_exec_s": 8.973,
+      "RTC_exec_to_ready_s": 45.061,
+      "RTC_exec_to_endpoint_seen_by_client_s": 26.59,
+      "service_to_simulator_exec_s": 4.313,
+      "simulator_exec_to_model_prepared_s": 22.642,
+      "model_prepare_s": 12.182,
+      "simulator_exec_to_connected_s": 35.173,
+      "simulator_connected_to_service_ready_s": 14.548,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 3.103,
+      "owner_exec_after_unit_start_s": {
+        "core": 3.463,
+        "julia": 4.313,
+        "parameters": 4.313,
+        "simulator": 4.313
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@667c7bf8927b.service": 0.0,
+        "Started pipewireao-session@667c7bf8927b.service": 54.034,
+        "Waiting for RTC control endpoint": 33.088,
+        "Waiting for owner preparation and RTC warmup": 35.563,
+        "RTC warmup completed": 50.931,
+        "SIMULATOR_PREPARING": 14.773,
+        "SIMULATOR_PREPARED": 26.955,
+        "SIMULATOR_CONNECTED": 39.486
+      }
+    },
+    "observed_streams": {
+      "detector": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4245
+      },
+      "tiptilt": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 8.2487475e-09
+      },
+      "tweeter": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4.4686251e-07
+      },
+      "woofer": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 3.1625376e-07
+      }
+    },
+    "helper_schedstat": {
+      "prepare": {
+        "main_cpu_s": 4.331,
+        "main_runnable_wait_s": 2.056,
+        "observed_span_s": 8.776,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 73395
+      },
+      "publish": {
+        "main_cpu_s": 5.492,
+        "main_runnable_wait_s": 22.076,
+        "observed_span_s": 44.68,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 73593
+      }
+    },
+    "policy": "generated",
+    "probe_success": true,
+    "duration_s": 82.04588234302355,
+    "start_loadavg": [
+      "3.90",
+      "5.23",
+      "6.17"
+    ],
+    "end_loadavg": [
+      "5.18",
+      "5.39",
+      "6.15"
+    ]
+  },
+  {
+    "label": "cli-cpu14",
+    "unit": "pipewireao-session@0540dedad0f9.service",
+    "profile": "gpi2",
+    "ready_s": 49.688,
+    "passed_native_flow": true,
+    "acknowledged_quit": true,
+    "native_quit": {
+      "accepted": true,
+      "attempted": true
+    },
+    "startup_times": {
+      "unit": "pipewireao-session@0540dedad0f9.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 49.688,
+      "service_to_RTC_exec_s": 8.847,
+      "RTC_exec_to_ready_s": 40.831,
+      "RTC_exec_to_endpoint_seen_by_client_s": 14.967,
+      "service_to_simulator_exec_s": 4.207,
+      "simulator_exec_to_model_prepared_s": 22.572,
+      "model_prepare_s": 11.959,
+      "simulator_exec_to_connected_s": 29.854,
+      "simulator_connected_to_service_ready_s": 15.616,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 2.365,
+      "owner_exec_after_unit_start_s": {
+        "core": 3.417,
+        "julia": 4.207,
+        "parameters": 4.207,
+        "simulator": 4.207
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@0540dedad0f9.service": 0.0,
+        "Started pipewireao-session@0540dedad0f9.service": 49.678,
+        "Waiting for RTC control endpoint": 11.716,
+        "Waiting for owner preparation and RTC warmup": 23.814,
+        "RTC warmup completed": 47.314,
+        "SIMULATOR_PREPARING": 14.821,
+        "SIMULATOR_PREPARED": 26.78,
+        "SIMULATOR_CONNECTED": 34.062
+      }
+    },
+    "observed_streams": {
+      "detector": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4245
+      },
+      "tiptilt": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 8.2487475e-09
+      },
+      "tweeter": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 4.4686251e-07
+      },
+      "woofer": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 1,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        },
+        "last_header_sequence": 5,
+        "max_abs_payload": 3.1625376e-07
+      }
+    },
+    "helper_schedstat": {
+      "prepare": {
+        "main_cpu_s": 4.26,
+        "main_runnable_wait_s": 2.031,
+        "observed_span_s": 8.527,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 74906
+      },
+      "publish": {
+        "main_cpu_s": 4.006,
+        "main_runnable_wait_s": 0.134,
+        "observed_span_s": 40.405,
+        "first_seen_affinity": [
+          14
+        ],
+        "pid": 75101
+      }
+    },
+    "policy": "publish-cpu14",
+    "probe_success": true,
+    "duration_s": 79.18544616200961,
+    "start_loadavg": [
+      "5.18",
+      "5.39",
+      "6.15"
+    ],
+    "end_loadavg": [
+      "5.59",
+      "5.51",
+      "6.13"
+    ]
+  },
+  {
+    "label": "cli-single",
+    "unit": "pipewireao-session@5c999f344998.service",
+    "profile": "spiders-single",
+    "ready_s": 34.728,
+    "passed_native_flow": true,
+    "acknowledged_quit": true,
+    "native_quit": {
+      "accepted": true,
+      "attempted": true
+    },
+    "startup_times": {
+      "unit": "pipewireao-session@5c999f344998.service",
+      "flow": true,
+      "quit": true,
+      "service_to_ready_s": 34.728,
+      "service_to_RTC_exec_s": 5.145,
+      "RTC_exec_to_ready_s": 29.574,
+      "RTC_exec_to_endpoint_seen_by_client_s": 7.358,
+      "service_to_simulator_exec_s": 3.965,
+      "simulator_exec_to_model_prepared_s": 17.17,
+      "model_prepare_s": 6.18,
+      "simulator_exec_to_connected_s": null,
+      "simulator_connected_to_service_ready_s": null,
+      "simulator_exec_to_optical_warmup_end_s": null,
+      "optical_warmup_s": null,
+      "RTC_warmup_ack_to_service_ready_s": 2.045,
+      "owner_exec_after_unit_start_s": {
+        "core": 3.225,
+        "simulator": 3.965,
+        "spiders-scc": 3.965
+      },
+      "journal_markers_since_service_start_s": {
+        "Starting pipewireao-session@5c999f344998.service": 0.0,
+        "Started pipewireao-session@5c999f344998.service": 34.719,
+        "Waiting for RTC control endpoint": 11.304,
+        "Waiting for owner preparation and RTC warmup": 12.503,
+        "RTC warmup completed": 32.674,
+        "Preparing optical model": 14.955,
+        "Optical model prepared": 21.135
+      }
+    },
+    "observed_streams": {
+      "demand": {
+        "buffers_seen": 5,
+        "distinct_header_sequences": 5,
+        "first_header_sequence": 2,
+        "header_sequence_gaps": 0,
+        "last_acquisition_identity": {
+          "domain": "c7763e6bb13f7c8fd4405cf5e0284d08",
+          "generation": 1,
+          "sequence": 6
+        },
+        "last_header_sequence": 6,
+        "max_abs_payload": 0.0
+      }
+    },
+    "helper_schedstat": {
+      "prepare": {
+        "main_cpu_s": 3.807,
+        "main_runnable_wait_s": 0.045,
+        "observed_span_s": 5.015,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 76332
+      },
+      "publish": {
+        "main_cpu_s": 3.962,
+        "main_runnable_wait_s": 3.563,
+        "observed_span_s": 29.116,
+        "first_seen_affinity": [
+          3
+        ],
+        "pid": 76458
+      }
+    },
+    "policy": "generated",
+    "probe_success": true,
+    "duration_s": 98.22160370700294,
+    "start_loadavg": [
+      "5.59",
+      "5.51",
+      "6.13"
+    ],
+    "end_loadavg": [
+      "4.86",
+      "5.28",
+      "5.98"
+    ]
+  }
+]

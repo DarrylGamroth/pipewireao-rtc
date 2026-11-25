@@ -1,150 +1,168 @@
-# Repository agent instructions
+# PipeWireAORTC agent instructions
 
 ## Start here
 
-- Inspect the branch, revision and complete worktree status. Preserve unrelated
-  edits and processes; keep substantial work on a dedicated branch/worktree.
-- Read [the task index](docs/README.md) and only the requirement/design sections
-  relevant to the change. Use `rg` for IDs/headings before opening long files.
-  The index links current work; do not reconstruct status from old reports.
-- Architecture, requirements and delivery order are authoritative in
-  `docs/architecture.md`, `docs/operations.md` and `docs/roadmap.md`, respectively.
-  Preserve `RTC-ARCH-*`/`RTC-DEV-*` identities and meanings. Evidence is not a
-  requirement, and documentation is not implementation or qualification.
-- Read a historical review/receipt only for an affected finding or claim. Reuse
-  verified results while their source, dependency, configuration and measurement
-  assumptions still apply; rerun affected gates when those assumptions change.
+- Check the branch, revision and full worktree status. Preserve unrelated edits
+  and running processes. Use a dedicated branch and worktree for substantial work.
+  Edit sibling repositories only when the task includes them.
+- Start with the [task index](docs/README.md) and the affected sections of the
+  [architecture](docs/architecture.md), [operating contract](docs/operations.md)
+  and [current roadmap](docs/roadmap.md#current-work). Use `rg` to locate
+  requirements and follow the relevant delivery dependencies. Preserve the
+  identities and meanings of `RTC-ARCH-*` and `RTC-DEV-*`.
+- Maintain delivery status in the roadmap's **Current work** section. Use the
+  [evidence index](docs/EVIDENCE_INDEX.md) to find or record dated results. Reuse
+  evidence only within its source, dependency, configuration and measurement
+  scope. Leave the inactive full-RTC archive alone unless the task changes scope.
 
-## Scope and owners
+## Ownership
 
-- This repository owns the non-actuating development RTC: configuration, exact
-  session/links, lifecycle, execution groups, deployment supervision, diagnostics
-  and system tests. Optional GUI/CLI clients do not own the science lifecycle.
-- PipeWireAO owns ndarray/FGN transport, graph hosting, properties, parameters,
-  metadata, polling, row blocks, progressive scheduling, buffers and workers.
-- Scientific packages own transport-neutral Algorithms and declarations;
-  device-plugin repositories own adapters. External Julia owners run their own
-  graphs. Use public versioned contracts, never daemon-private layouts/callbacks.
-- Current backend/qualification selections are in the roadmap's **Current work**
-  section. Functional, numerical, allocation, cadence and latency evidence are
-  separate. Simulated offsets come from the plant; measured matrices imply a
-  declared hybrid calibration. HEART remains an unchanged external owner.
-- Physical devices/authority, durable recording, remote access, RTC-owned data
-  scheduling and target-host qualification remain deferred. Do not load or
-  promote `docs/archive/full-rtc/` without an explicit scope decision.
-- Sibling edits need task scope and must preserve unrelated changes.
+- This repository owns the non-actuating development RTC. Under RTC-ARCH-026,
+  [MediaSession](src/media_session/MediaSession.jl) is the sole application
+  authority for lifecycle, exact admission, declared PipeWire Links and
+  execution groups. Use the public PipeWireAO.jl bindings to native APIs.
+  Keep RTC policy in MediaSession and implement new transport behavior in
+  native PipeWireAO before exposing it in the binding. systemd owns process
+  lifetime. GUI and CLI tools are clients. Independent WirePlumber may provide
+  site/device policy. Keep Lua, libwireplumber and retired coordinators out of
+  the RTC runtime.
+- PipeWireAO owns NDArray transport, negotiation and data scheduling. FGN and
+  FilterGraphs own graph execution. Scientific packages own transport-neutral,
+  array-testable Algorithms. External graph and device owners expose public,
+  versioned contracts. Compose declared complete-frame and row-block owners
+  through those contracts. Keep frame processing and scheduling outside the RTC
+  runner and keep SPA callbacks and worker machinery out of Algorithms.
+- AdaptiveOpticsSimPipeWireHIL owns simulator execution and startup settings.
+  RTC retains cold export, calibration assets and native source-control and
+  bootstrap contracts for independent providers. HEART remains an external
+  owner. For an already-publishing input, use the
+  [independent service binding](docs/HIL_CONFIGURATION.md#attach-an-rtc-to-an-already-publishing-source).
+  Verify live endpoints and placement on each RTC activation. The provider owns
+  its process, publication and model clock across RTC restarts. Follow the
+  [offset calibration contract](docs/operations.md#rtc-dev-027--simulation-derived-calibration-offsets)
+  for simulated and declared hybrid inputs.
+- RTC owns calibration projections, native live acquisition and its clients,
+  preparation evidence, bundle validation and export. Shared instrument tools
+  own dark, lamp, qualification, offline optical and interaction campaigns and
+  bundle staging. AdaptiveOpticsCalibration owns numerical reductions.
+- Physical-device authority, durable recording, remote access and target-host
+  qualification remain deferred.
 
 ## Implementation
 
-- RTC-ARCH-026 supersedes RTC-ARCH-025's ownership allocation. The headless RTC
-  application owns session lifecycle, admission and declared application links.
-  It reuses libwireplumber hooks, discovery and public WpLink APIs as a library;
-  upstream WirePlumber remains the runtime, while site/device policy is
-  configured separately. The WirePlumber fork carries build integration and
-  independent upstream fixes, not another runtime API. systemd owns process
-  lifetime; Julia tools export, install, inspect and send native controls as
-  one-shot clients. Rust Statig and Julia DeploymentRunner coordinators remain
-  retired. Do not introduce a second session authority or supervisor fallback.
-  One-shot clients and scientific owners remain; qualify each profile separately.
-- Production calibration orchestration uses Julia and the existing acquisition,
-  protocol, analysis and AdaptiveOpticsCalibration APIs. Maintained repository
-  scripts and scripting tests use Julia; do not add Python implementations.
-  Historical Python tools remain in Git history with their recorded evidence.
-- Live controls use native PipeWire serialization (`RTC-ARCH-024`/`RTC-DEV-030`).
-  Saved reports/configuration may use JSON. Saved files never prove live readiness.
-- Native PipeWire configuration uses maintained standard relaxed SPA-JSON.
-  Human-authored instrument, simulation, RTC, process/profile, calibration and
-  GUI configuration uses bounded YAML and is compiled to existing native runtime
-  contracts at export. Do not create another optical graph language or executor.
-- Humans and agents must not edit generated files directly, including headers,
-  formatting, recorded hashes or generated fixtures. Change the authoritative
-  source or generator, then regenerate the affected outputs and their dependent
-  hashes/receipts with the supported tooling. Review the source and generated
-  diffs together. If the generation path is missing or unclear, establish it
-  before changing the output; do not treat the generated copy as authoring input.
-- Generated files must identify themselves as generated. Comment-capable text starts
-  with a `Generated` header, retained by the writer on regeneration; include
-  source/regeneration guidance when known. FITS uses native header cards.
-  Strict JSON and fixed binary payloads must retain their required format;
-  keep their generation/provenance in schema-supported metadata or the owning
-  manifest rather than injecting comments or changing payload bytes.
-- Keep the runner outside frame processing. Scientists declare typed Algorithms,
-  ports, properties, parameters, shapes and schemas; they do not write SPA
-  callbacks, pointer/errno handling, publication or worker machinery.
-- Algorithms must remain array-testable and usable by other executors. Support
-  declared full-frame/row-block owners without adding an RTC data scheduler.
-- Follow the relevant roadmap dependencies unless the user changes their order.
-
+- Follow the [Julia design conventions](docs/architecture.md#julia-design-conventions),
+  including [.JuliaFormatter.toml](.JuliaFormatter.toml). Put `using`, `import`,
+  `export` and `public` at the top. Include child modules before importing them
+  and preserve optional package loading and import-order checks. Use `#` for
+  implementation comments. Document public and exported functions with a
+  triple-quoted docstring, indented signature and imperative summary. Describe
+  units, ownership and failure behavior where relevant.
 - Keep shared Julia code in `src/`, package tests in `test/` and native protocol
-  records in `test/data/`. Independent instrument projects own their named graphs,
-  resources and calibration integration. The RTC Rust crate is retired; the GUI
-  owns its native Rust client. Preserve protocol names and historical report fields.
-  Use domain names for test inputs instead of “fixture”.
+  records in `test/data/`. Use Julia for maintained scripts and scripting tests.
+  Reuse public interfaces and codecs. Use upstream PipeWire terms with Julia
+  naming, retain exact wire and historical report fields, and name test inputs
+  by their domain role.
+- Use documented abstract interfaces, concrete representations and dispatch for
+  domain behavior. Use traits for independent capabilities. Normalize native
+  records at ingress, keep correlated facts together and preserve the partial
+  ordering of coupled-controller generations.
+- Use Hsm.jl for Julia control state machines. Public operations dispatch domain
+  events and state handlers decide phase-dependent behavior. Keep scientific
+  commands outside entry and exit handlers, preserve one-shot effects, and use
+  internal handling for updates that keep the existing entry deadline. Record
+  consequential execution-boundary exceptions and their verification evidence.
+- Give each long-lived cross-thread controller a single Agent.jl owner of its
+  Hsm and mutable state. Use bounded typed messages, replies or immutable
+  snapshots. Define queue capacity, full and closed behavior, and shutdown
+  acknowledgements. Keep native callbacks nonblocking, retain required PipeWire
+  locks for native transactions and release those locks before waiting for
+  replies. Keep scientific execution on the PipeWire data thread. Use the
+  public native command endpoint for blocking calibration graph workers and
+  reclaim their storage after explicit release and task completion. Cold-bound
+  calibration nodes omit live sparse Parameter Ports.
+- Use Clocks.jl monotonic time for control deadlines. Sample the owned cached
+  clock once per duty cycle, preserve producer receipt times and validate
+  transport deadlines with fresh time. Preserve public units and deterministic
+  clock injection. Keep elapsed time separate from epoch and reference times.
+- Use native PipeWire serialization for live controls (RTC-ARCH-024 and
+  RTC-DEV-030). Preserve finite deadlines, exact correlation and unknown
+  outcomes without an operation journal or a durable write gate. Artifact
+  provenance and management receipts have separate contracts. Require live
+  protocol evidence for readiness.
+- Use bounded YAML for human-authored instrument, RTC, simulation, profile,
+  calibration and GUI configuration, and relaxed SPA-JSON for native PipeWire
+  configuration. Keep instrument declarations and named graphs in the
+  instrument repository. Use the sealed application Project/Manifest to deploy
+  PipeWireAORTC as a registered dependency. Keep copied SDK runtimes and the
+  development test workspace out of new payloads. Preserve existing sealed
+  applications and their pinned launchers.
+- Change the authoritative source or generator, then regenerate affected
+  outputs, hashes and receipts with the supported tooling. Locate the generation
+  path before editing, and review source and output diffs together. Start
+  generated text with a `Generated` header where the format permits comments.
+  Add regeneration guidance where known. Use FITS header cards or
+  schema-supported provenance for strict formats and preserve binary layouts.
 
-## Validation and documentation
+## Validation
 
-- Use Julia 1.13 or newer for development, validation and release tooling.
-- Run the core Julia suite from the package environment, with the native prefix
-  selected explicitly: `julia --project=. -e 'using PipeWireAO;
-  ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir);
-  include("test/runtests.jl")'`. The optional science environment alone does not
-  expose all core-test dependencies. This selector does not qualify hardware.
-- Keep commits focused; never rewrite published history without authorization.
-- Choose checks for the changed behavior. Rust code: formatting, focused tests,
-  workspace tests and Clippy in proportion to the change. Live/hardware gates
-  are opt-in; do not stop an existing daemon, instrument or experiment.
-- Documentation-only changes: local links/anchors, whitespace, final newlines,
-  requirement-ID preservation and Markdown structure. No runtime rebuild is
-  needed solely because prose or navigation changed.
-- Render changed Mermaid diagrams with the local Podman image
-  `ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest`; mount source read-only and
-  write temporary output. Keep diagrams VS Code-compatible; prose is authoritative.
-- Keep observed, derived and unconfirmed conclusions distinct. A functional
-  check/microbenchmark does not establish deadline, tail-latency, physical-loop,
-  safety or real-time qualification. Preserve failed gates and their scope.
-- Maintain current work in the roadmap's **Current work** section. Keep dated
-  integration/review/validation records as evidence, indexed in
-  `docs/EVIDENCE_INDEX.md`; do not append another competing status narrative.
+Use Julia 1.13 or newer. Check [Project.toml](Project.toml) for package
+compatibility and the selected environment for the resolved Julia and native
+dependencies. Run the core tests from the RTC package environment with the
+matching native prefix:
 
-## Instrument export checks
+```sh
+julia --startup-file=no --project=. -e 'using Pkg; Pkg.test(; allow_reresolve=false)'
+```
 
-- `test/test_instrument_export.jl` is the focused cold export/profile/template
-  selector; it runs without scientific optional packages or GPU access.
-- `julia --project=. test/test_aos_graph_selection.jl` checks version-3 graph
-  selection and Preparing-before-Proper load order without science packages.
-  `julia --project=/path/to/science-environment test/aos_selected_graph_loading.jl`
-  checks the real optional loaders and selected CPU optics/observation contracts
-  in a fresh process, without a PipeWire core.
-- `julia --project=/path/to/science-environment test/aos_owner_science_loading.jl
-  /path/to/built-application/simulation.conf` checks the version-4 owner's real
-  optional science/Proper loaders in a fresh process. Supply a real built
-  external-pupil configuration and direct AOS/HIL/Proper dependencies; do not
-  preload those packages. The selector explicitly chooses CPU preparation,
-  injects only the bootstrap boundary and prepares the declared optics without
-  a PipeWire core, service, GPU import or instrument/configuration mutation.
-  This catches extension world-age failures; it does not qualify native owner
-  lifecycle or the application's selected accelerator execution.
-- `julia --project=. test/test_zemax_components.jl` checks composable imported
-  optics, physical pupil-plane metadata and named HIL graph selection without
-  scientific packages. `julia --project=/path/to/science-environment
-  test/zemax_component_preparation.jl` checks ordinary linked CPU graphs with
-  AOS/HIL and explicit Proper. These selectors create no PipeWire core or files
-  in the instrument source.
-- `julia --project=/path/to/science-environment test/test_session_configuration_integration.jl`
-  checks session metadata against the optional JFG and AOS/HIL packages. It
-  prepares small CPU Shack-Hartmann and Pyramid products without a live session
-  or GPU access; the core exporter selector remains independent of these packages.
-- The optional CPU selector `test/aos_instrument_preparation.jl cpu` requires
-  `REVOLT_CLASSIC_MIRROR_DESCRIPTION` to name `mirrors/alpao/hsdm277.yaml`
-  in the instrument repository, in addition to the scientific test environment.
-  The test serializes that authoring YAML to native JSON for the legacy package
-  reader; the source and live deployment remain untouched.
-- Instrument-source build/calibration/private-core selectors live in the
-  instrument repository. Its README owns environment prerequisites and commands.
-  Builds do not install or launch sessions. Keep source files and live RTCs
-  unchanged while validating a fresh output.
-- `julia --project=/path/to/science-environment test/calibration_chopped.jl`
-  checks the actual CPU chopped measurement prefix, signed numerical calibration,
-  typed reference-difference publication and old-calibration rejection without
-  a core or GPU. `test/calibration_optical_publication.jl` retains the ordinary
-  intensity publication regression. These tests do not qualify a rolling loop.
+- Choose focused checks by behavior. For cold instrument export and profile
+  validation, use [test_instrument_export.jl](test/test_instrument_export.jl).
+  For export, registered resolution, installation and software relocation,
+  run `julia --startup-file=no --project=. test/runtime_install_registry.jl`
+  after instantiating the workspace. This selector registers the Git `HEAD`
+  tree in a disposable depot under `/var/tmp` and verifies the installed
+  dependency trees against the workspace lock. It uses the PipeWireAO JLL
+  prefix unless `PIPEWIREAO_PREFIX` selects a compatible SDK. Pass an LCOV
+  output path as the optional argument to record the registered CLI's
+  coverage against the checkout. For offline export without a registry
+  entry, pass `--prepare-only` to
+  [runtime_install.jl](test/runtime_install.jl). Add `--direct-session` to the
+  registry selector to start the installed RTC on a private core, admit a
+  software detector, and verify native Quit using a Linux systemd user manager.
+  Reinstall generated units
+  after moving an application with absolute service paths.
+- Use the [HIL configuration guide](docs/HIL_CONFIGURATION.md) for simulation
+  export selectors. Use the instrument repository's README for instrument
+  build, calibration and private-core commands. For optional science or
+  accelerator checks, use an environment containing the relevant extension
+  dependencies. The compiled simulation export selector needs matching HIL
+  test sources. For [captured optical preparation](test/captured_optical_preparation.jl),
+  select `PIPEWIREAORTC_TEST_BACKEND=cpu`, `cuda` or `amdgpu` in the matching
+  environment.
+- Use the [integration guide](test/integration/README.md) for MediaSession
+  private-core and installed-session checks. For the
+  [calibration command endpoint](docs/reviews/20261104-calibration-worker/REVIEW.md),
+  match the client libraries and `PIPEWIREAO_PREFIX`. Run
+  `calibration_transport.jl` with `--threads=3,1` and
+  `calibration_named_transport.jl` and `calibration_readiness.jl` with
+  `--threads=4,1`. The extra interactive thread runs the control task.
+  Use three default threads for
+  `test_calibration_capture_private_core.jl`.
+- The [physical-offset private-core selectors](docs/reviews/20261105-graph-buffers/REVIEW.md)
+  use the HIL helper. Use three default threads for
+  `physical_offset_inputs_private_core.jl` and `--threads=4,0` for
+  `physical_offsets_private_core.jl`. The helper selects its daemon via
+  `PIPEWIREAO_HIL_TEST_PREFIX` or the JLL default. Match client libraries to that
+  daemon.
+- For changes to the C management companion, use the
+  [Meson and private-socket checks](runtime/README.md#compiled-management-companion).
+  Live and hardware checks are opt-in. Leave existing daemons, instruments and
+  experiments running. Preserve failed gates and their scope. Report functional,
+  numerical, allocation, cadence, latency and hardware results with their own
+  validation scopes.
+- For documentation changes, check local links and anchors, Markdown structure,
+  whitespace, final newlines and requirement IDs. Render changed Mermaid
+  diagrams with the local Podman image
+  `ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest`, mounting source read-only
+  and writing to a temporary directory. Keep diagrams VS Code-compatible.
+- Commit each coherent, verified changeset. Keep commits focused and preserve
+  local dependency order and published history.

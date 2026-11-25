@@ -1,43 +1,226 @@
 using Test, PipeWireAORTC
 import Hsm
+import Clocks
 import PipeWireAO
 
 const CL = PipeWireAORTC.CorrectionLoops
 const OWNER = Int64(1701)
 
-function loop_at(closed::Bool; generation=Int64(0))
+function loop_at(closed::Bool; generation = Int64(0))
     sm = CL.Loop("correction:closed", OWNER)
     CL.observed!(sm, OWNER, generation, generation, closed)
     return sm
 end
 
-function loop_props(closed; requested=Int64(0), active=requested,
-        property="correction:closed", node="correction")
-    return PipeWireAO.SPA.Props(property => closed,
+@testset "Unknown events latch the first reason from every correction state" begin
+    opening = loop_at(true)
+    CL.requested!(opening, OWNER, 1, 0, false)
+    closing = loop_at(false)
+    CL.requested!(closing, OWNER, 1, 0, true)
+    for sm in (
+        CL.Loop("correction:closed", OWNER), loop_at(false), loop_at(true), opening, closing
+    )
+        @test Hsm.dispatch!(sm, :Unknown, :observer_error) === Hsm.EventHandled
+        @test CL.state(sm) === :Unknown
+        @test Hsm.current(sm) === :Unknown
+        @test sm.failure === :observer_error
+        @test sm.pending_since_ns == 0
+        @test Hsm.dispatch!(sm, :Unknown, :later_error) === Hsm.EventHandled
+        @test sm.failure === :observer_error
+        retained = (
+            sm.requested_generation,
+            sm.active_generation,
+            sm.requested_closed,
+            sm.applied_closed,
+            sm.initialized,
+        )
+        Hsm.dispatch!(
+            sm,
+            :Requested,
+            (;
+                instance = OWNER,
+                requested_generation = Int64(2),
+                active_generation = Int64(1),
+                closed = false,
+            ),
+        )
+        Hsm.dispatch!(
+            sm,
+            :Observed,
+            (;
+                instance = OWNER,
+                requested_generation = Int64(2),
+                active_generation = Int64(2),
+                closed = true,
+            ),
+        )
+        @test (
+            sm.requested_generation,
+            sm.active_generation,
+            sm.requested_closed,
+            sm.applied_closed,
+            sm.initialized,
+        ) == retained
+        CL.observed!(sm, OWNER, 1, 1, true)
+        CL.requested!(sm, OWNER, 2, 1, false)
+        @test CL.state(sm) === :Unknown
+    end
+end
+
+@testset "Accepted events preserve same-value states and duplicate deadlines" begin
+    for closed in (false, true)
+        now = Clocks.CachedNanoClock(70)
+        sm = CL.Loop("correction:closed", OWNER; clock = now)
+        Hsm.dispatch!(
+            sm,
+            :Observed,
+            (;
+                instance = OWNER,
+                requested_generation = Int64(0),
+                active_generation = Int64(0),
+                closed,
+            ),
+        )
+        @test sm.initialized
+        @test CL.state(sm) === (closed ? :Closed : :Open)
+        Hsm.dispatch!(
+            sm,
+            :Requested,
+            (;
+                instance = OWNER,
+                requested_generation = Int64(1),
+                active_generation = Int64(0),
+                closed,
+            ),
+        )
+        @test sm.requested_generation == 1
+        @test sm.pending_since_ns == 0
+        Hsm.dispatch!(
+            sm,
+            :Observed,
+            (;
+                instance = OWNER,
+                requested_generation = Int64(1),
+                active_generation = Int64(1),
+                closed,
+            ),
+        )
+        @test sm.active_generation == 1
+        request = (;
+            instance = OWNER,
+            requested_generation = Int64(2),
+            active_generation = Int64(1),
+            closed = !closed,
+        )
+        Hsm.dispatch!(sm, :Requested, request)
+        @test CL.state(sm) === (closed ? :Opening : :Closing)
+        @test Hsm.ancestor(sm, CL.state(sm)) === :Pending
+        @test Hsm.ancestor(sm, :Pending) === :Operational
+        @test sm.pending_since_ns == 70
+        Clocks.advance!(now, 1)
+        Hsm.dispatch!(sm, :Requested, request)
+        @test sm.pending_since_ns == 70
+        Hsm.dispatch!(
+            sm,
+            :Observed,
+            (;
+                instance = OWNER,
+                requested_generation = Int64(2),
+                active_generation = Int64(2),
+                closed = !closed,
+            ),
+        )
+        @test CL.state(sm) === (closed ? :Open : :Closed)
+        @test sm.pending_since_ns == 0
+    end
+end
+
+struct BrokenTraceClock <: Clocks.AbstractNanoClock end
+Clocks.time_nanos(::BrokenTraceClock) = Int64(70)
+function Hsm.trace_dispatch_start(::CL.Loop{BrokenTraceClock}, event::Symbol, arg)
+    event === :Unknown && error("Hsm dispatch instrumentation failed")
+    return nothing
+end
+
+@testset "An Hsm dispatch failure cannot escape the unknown publication boundary" begin
+    sm = CL.Loop("correction:closed", OWNER; clock = BrokenTraceClock())
+    CL.observed!(sm, OWNER, 0, 0, true)
+    @test CL.unknown!(sm, :observer_error) === nothing
+    @test CL.state(sm) === :Unknown
+    @test sm.failure === :observer_error
+    @test CL.unknown!(sm, :later_error) === nothing
+    @test sm.failure === :observer_error
+    CL.observed!(sm, OWNER, 0, 0, true)
+    @test CL.state(sm) === :Unknown
+end
+
+function loop_props(
+    closed;
+    requested = Int64(0),
+    active = requested,
+    property = "correction:closed",
+    node = "correction",
+)
+    return PipeWireAO.SPA.Props(
+        property => closed,
         node * ":requested-generation" => requested,
-        node * ":active-generation" => active)
+        node * ":active-generation" => active,
+    )
 end
 
 function correction_status(props::PipeWireAO.SPA.Props, name, ::Type{T}) where {T}
-    return PipeWireAO.pod_value(T, only(pod for (key, pod) in props.values
-        if key == "pipewireao.correction-control." * name))
+    return PipeWireAO.pod_value(
+        T,
+        only(
+            pod for
+            (key, pod) in props.values if key == "pipewireao.correction-control." * name
+        ),
+    )
+end
+
+@testset "Cached nanosecond clocks preserve adoption deadlines and validation" begin
+    clock = Clocks.CachedNanoClock(70)
+    observer = CL.Observer(["correction:closed"], OWNER; clock, timeout_ms = 5)
+    observer(Val(:observed), loop_props(false))
+    observer(Val(:requested), loop_props(true; requested = 1, active = 0))
+    sm = only(observer.loops)
+    @test sm.clock === observer.sampled_clock && sm.pending_since_ns == 70
+    Clocks.advance!(clock, 4_999_999)
+    observer(Val(:observed), loop_props(false; requested = 1, active = 0))
+    @test CL.state(sm) === :Closing && sm.pending_since_ns == 70
+    Clocks.advance!(clock, 1)
+    observer(Val(:observed), loop_props(true; requested = 1))
+    @test CL.state(sm) === :Unknown && sm.failure === :adoption_timeout
+    clock = Clocks.CachedNanoClock(70)
+    observer = CL.Observer(["correction:closed"], OWNER; clock)
+    observer(Val(:observed), loop_props(false))
+    Clocks.update!(clock, -1)
+    observer(Val(:observed), loop_props(false))
+    @test only(observer.loops).failure === :observer_error
+    @test CL.Observer(["correction:closed"], OWNER; clock).clock === clock
 end
 
 @testset "Correction-control publication reuses exact graph properties" begin
-    now = Ref(UInt64(100))
-    observer = CL.Observer(["correction:closed"], OWNER; clock=() -> now[])
+    now = Clocks.CachedNanoClock(100)
+    observer = CL.Observer(["correction:closed"], OWNER; clock = now)
     infos = CL.property_info(observer)
     names = [info.name for info in infos]
-    @test names == ["pipewireao.correction-control.version",
+    @test names == [
+        "pipewireao.correction-control.version",
         "pipewireao.correction-control.owner-instance",
         "pipewireao.correction-control.correction:closed.state",
         "pipewireao.correction-control.correction:closed.fault",
-        "pipewireao.correction-control.correction:closed.requested"]
+        "pipewireao.correction-control.correction:closed.requested",
+    ]
     @test all(info -> info.flags == PipeWireAO.SPA.PROPERTY_READONLY, infos)
     @test all(info -> info.params, infos)
-    @test getfield.(infos, :group) == ["Correction control", "Correction control",
-        "Correction control/correction:closed", "Correction control/correction:closed",
-        "Correction control/correction:closed"]
+    @test getfield.(infos, :group) == [
+        "Correction control",
+        "Correction control",
+        "Correction control/correction:closed",
+        "Correction control/correction:closed",
+        "Correction control/correction:closed",
+    ]
     @test getfield.(infos, :display_name) ==
         ["Control version", "Owner instance", "State", "Fault", "Requested closed"]
     @test PipeWireAO.pod_value(Int32, infos[1].type) === Int32(1)
@@ -54,14 +237,14 @@ end
     @test correction_status(initial, "correction:closed.fault", String) == ""
     @test correction_status(initial, "correction:closed.requested", Bool) === true
     @test CL.check_ready(observer) === nothing
-    observer(Val(:requested), loop_props(false; requested=1, active=0))
-    pending = observer(loop_props(true; requested=1, active=0), true)
+    observer(Val(:requested), loop_props(false; requested = 1, active = 0))
+    pending = observer(loop_props(true; requested = 1, active = 0), true)
     @test correction_status(pending, "correction:closed.state", String) == "Opening"
     @test correction_status(pending, "correction:closed.requested", Bool) === false
     @test_throws ArgumentError CL.check_ready(observer)
     # The getter reconciles this supplied applied snapshot; it must not publish
     # cached Opening after the target has coherently adopted this generation.
-    applied = observer(loop_props(false; requested=1), true)
+    applied = observer(loop_props(false; requested = 1), true)
     @test correction_status(applied, "correction:closed.state", String) == "Open"
     @test correction_status(applied, "correction:closed.fault", String) == ""
     @test all(name -> !startswith(name, "correction:"), first.(applied.values))
@@ -69,21 +252,20 @@ end
 
 @testset "Closure adoption expires before late confirmation" begin
     for (initial, desired, pending) in ((false, true, :Closing), (true, false, :Opening))
-        now = Ref(UInt64(70))
-        observer = CL.Observer(["correction:closed"], OWNER;
-            timeout_ms=5, clock=() -> now[])
+        now = Clocks.CachedNanoClock(70)
+        observer = CL.Observer(["correction:closed"], OWNER; timeout_ms = 5, clock = now)
         observer(Val(:observed), loop_props(initial))
-        observer(Val(:requested), loop_props(desired; requested=1, active=0))
+        observer(Val(:requested), loop_props(desired; requested = 1, active = 0))
         sm = only(observer.loops)
         @test CL.state(sm) === pending
         @test sm.pending_since_ns == 70
-        now[] += UInt64(4_000_000)
-        observer(Val(:requested), loop_props(desired; requested=1, active=0))
+        Clocks.advance!(now, Int64(4_000_000))
+        observer(Val(:requested), loop_props(desired; requested = 1, active = 0))
         @test sm.pending_since_ns == 70
-        observer(Val(:observed), loop_props(initial; requested=1, active=0))
+        observer(Val(:observed), loop_props(initial; requested = 1, active = 0))
         @test CL.state(sm) === pending
-        now[] += UInt64(1_000_000)
-        late = observer(loop_props(desired; requested=1), true)
+        Clocks.advance!(now, Int64(1_000_000))
+        late = observer(loop_props(desired; requested = 1), true)
         @test sm.failure === :adoption_timeout
         @test CL.state(sm) === :Unknown
         @test Hsm.current(sm) === :Unknown
@@ -92,74 +274,78 @@ end
         @test correction_status(late, "correction:closed.fault", String) ==
             "Applied correction did not confirm before the adoption timeout"
         @test correction_status(late, "correction:closed.requested", Bool) === desired
-        now[] += UInt64(1)
-        observer(Val(:observed), loop_props(desired; requested=1))
-        observer(Val(:requested), loop_props(initial; requested=2, active=1))
+        Clocks.advance!(now, Int64(1))
+        observer(Val(:observed), loop_props(desired; requested = 1))
+        observer(Val(:requested), loop_props(initial; requested = 2, active = 1))
         @test CL.state(sm) === :Unknown
         @test sm.failure === :adoption_timeout
         @test_throws ArgumentError CL.check_ready(observer)
     end
 end
 
-@testset "Pending-state entry and exit own the adoption deadline" begin
-    now = Ref(UInt64(70))
+@testset "Pending transitions retain adoption time and own the timer lifetime" begin
+    now = Clocks.CachedNanoClock(70)
     for (initial, desired) in ((false, true), (true, false))
-        sm = CL.Loop("correction:closed", OWNER; clock=() -> now[], timeout_ms=5)
+        sm = CL.Loop("correction:closed", OWNER; clock = now, timeout_ms = 5)
         CL.observed!(sm, OWNER, 0, 0, initial)
         @test sm.pending_since_ns == 0
         # Direct machine events, without the Observer callback, must run the
         # same entry/exit behaviors as RTC property observation.
         CL.requested!(sm, OWNER, 1, 0, desired)
-        @test sm.pending_since_ns == now[]
-        now[] += UInt64(1)
+        @test sm.pending_since_ns == Clocks.time_nanos(now)
+        Clocks.advance!(now, Int64(1))
         CL.requested!(sm, OWNER, 1, 0, desired)
-        @test sm.pending_since_ns == now[] - 1
+        @test sm.pending_since_ns == Clocks.time_nanos(now) - 1
         CL.observed!(sm, OWNER, 1, 1, desired)
         @test sm.pending_since_ns == 0
         CL.requested!(sm, OWNER, 2, 1, desired)
         @test sm.pending_since_ns == 0
         CL.observed!(sm, OWNER, 2, 2, desired)
         CL.requested!(sm, OWNER, 3, 2, initial)
-        @test sm.pending_since_ns == now[]
+        @test sm.pending_since_ns == Clocks.time_nanos(now)
         CL.unknown!(sm, :observer_error)
         @test sm.pending_since_ns == 0
     end
 end
 
 @testset "Timely adoption and same-Boolean updates do not expire" begin
-    now = Ref(UInt64(0))
-    observer = CL.Observer(["correction:closed"], OWNER;
-        timeout_ms=1, clock=() -> now[])
+    now = Clocks.CachedNanoClock(0)
+    observer = CL.Observer(["correction:closed"], OWNER; timeout_ms = 1, clock = now)
     observer(Val(:observed), loop_props(false))
-    observer(Val(:requested), loop_props(true; requested=1, active=0))
-    now[] = UInt64(999_999)
-    timely = observer(loop_props(true; requested=1), true)
+    observer(Val(:requested), loop_props(true; requested = 1, active = 0))
+    Clocks.update!(now, Int64(999_999))
+    timely = observer(loop_props(true; requested = 1), true)
     @test correction_status(timely, "correction:closed.state", String) == "Closed"
-    now[] = UInt64(10_000_000)
-    @test correction_status(observer(loop_props(true; requested=1), true),
-        "correction:closed.state", String) == "Closed"
-    observer(Val(:requested), loop_props(true; requested=2, active=1))
-    now[] = UInt64(100_000_000)
-    gain_pending = observer(loop_props(true; requested=2, active=1), true)
+    Clocks.update!(now, Int64(10_000_000))
+    @test correction_status(
+        observer(loop_props(true; requested = 1), true), "correction:closed.state", String
+    ) == "Closed"
+    observer(Val(:requested), loop_props(true; requested = 2, active = 1))
+    Clocks.update!(now, Int64(100_000_000))
+    gain_pending = observer(loop_props(true; requested = 2, active = 1), true)
     @test correction_status(gain_pending, "correction:closed.state", String) == "Closed"
     @test only(observer.loops).failure === nothing
-    observer(Val(:observed), loop_props(true; requested=2))
+    observer(Val(:observed), loop_props(true; requested = 2))
     @test CL.check_ready(observer) === nothing
-    # UInt64 elapsed subtraction also covers the monotonic clock wrapping.
-    now[] = typemax(UInt64) - UInt64(50)
-    observer(Val(:requested), loop_props(false; requested=3, active=2))
-    now[] += UInt64(999_999)
-    @test correction_status(observer(loop_props(true; requested=3, active=2), true),
-        "correction:closed.state", String) == "Opening"
-    now[] += UInt64(1)
-    @test correction_status(observer(loop_props(false; requested=3), true),
-        "correction:closed.state", String) == "Unknown"
+    # Adjacent signed ticks remain exact above the Float64 integer range.
+    Clocks.update!(now, Int64(2)^53 + 1)
+    observer(Val(:requested), loop_props(false; requested = 3, active = 2))
+    Clocks.advance!(now, Int64(999_999))
+    @test correction_status(
+        observer(loop_props(true; requested = 3, active = 2), true),
+        "correction:closed.state",
+        String,
+    ) == "Opening"
+    Clocks.advance!(now, Int64(1))
+    @test correction_status(
+        observer(loop_props(false; requested = 3), true), "correction:closed.state", String
+    ) == "Unknown"
     @test only(observer.loops).failure === :adoption_timeout
 end
 
 @testset "Unavailable or malformed observation publishes a latched fault" begin
-    now = Ref(UInt64(0))
-    observer = CL.Observer(["correction:closed"], OWNER; clock=() -> now[])
+    now = Clocks.CachedNanoClock(0)
+    observer = CL.Observer(["correction:closed"], OWNER; clock = now)
     observer(Val(:observed), loop_props(true))
     unavailable = observer(loop_props(true), false)
     @test correction_status(unavailable, "correction:closed.state", String) == "Unknown"
@@ -167,11 +353,15 @@ end
         "Authoritative property observation is unavailable"
     @test correction_status(unavailable, "correction:closed.requested", Bool) === true
     @test only(observer.loops).failure === :observer_unavailable
-    @test correction_status(observer(loop_props(true), true),
-        "correction:closed.state", String) == "Unknown"
-    for props in (loop_props(Int64(1)), loop_props(true; active=Int32(0)),
-            PipeWireAO.SPA.Props("correction:closed" => true))
-        malformed = CL.Observer(["correction:closed"], OWNER; clock=() -> now[])
+    @test correction_status(
+        observer(loop_props(true), true), "correction:closed.state", String
+    ) == "Unknown"
+    for props in (
+        loop_props(Int64(1)),
+        loop_props(true; active = Int32(0)),
+        PipeWireAO.SPA.Props("correction:closed" => true),
+    )
+        malformed = CL.Observer(["correction:closed"], OWNER; clock = now)
         malformed(Val(:observed), loop_props(false))
         status = malformed(props, true)
         @test correction_status(status, "correction:closed.state", String) == "Unknown"
@@ -187,19 +377,21 @@ end
         @test_throws ArgumentError CL.Observer(["correction:closed"], OWNER; timeout_ms)
     end
     @test CL.Observer(["correction:closed"], OWNER).timeout_ns == UInt64(5_000_000_000)
-    @test CL.Observer(["correction:closed"], OWNER; timeout_ms=60_000).timeout_ns ==
+    @test CL.Observer(["correction:closed"], OWNER; timeout_ms = 60_000).timeout_ns ==
         UInt64(60_000_000_000)
     for clock in (() -> -1, () -> true, () -> 1.5, () -> typemax(UInt128))
-        @test_throws ArgumentError CL.Observer(["correction:closed"], OWNER; clock)
+        @test_throws TypeError CL.Observer(["correction:closed"], OWNER; clock)
     end
-    now = Ref(Int64(0))
-    observer = CL.Observer(["correction:closed"], OWNER; clock=() -> now[])
+    now = Clocks.CachedNanoClock(0)
+    observer = CL.Observer(["correction:closed"], OWNER; clock = now)
     observer(Val(:observed), loop_props(true))
-    now[] = -1
-    @test observer(Val(:requested), loop_props(false; requested=1, active=0)) === nothing
+    Clocks.update!(now, -1)
+    @test observer(Val(:requested), loop_props(false; requested = 1, active = 0)) ===
+        nothing
     @test only(observer.loops).failure === :observer_error
-    @test correction_status(observer(loop_props(true), true),
-        "correction:closed.state", String) == "Unknown"
+    @test correction_status(
+        observer(loop_props(true), true), "correction:closed.state", String
+    ) == "Unknown"
 end
 
 @testset "Correction loop starts from applied owner readback" begin
@@ -208,7 +400,9 @@ end
     @test_throws ArgumentError CL.Loop("node:", OWNER)
     @test_throws ArgumentError CL.Loop("node:property:extra", OWNER)
     @test_throws ArgumentError CL.Loop("correction:closed", Int64(0))
-    @test_throws ArgumentError CL.Observer(["correction:closed", "correction:closed"], OWNER)
+    @test_throws ArgumentError CL.Observer(
+        ["correction:closed", "correction:closed"], OWNER
+    )
     for (closed, expected) in ((false, :Open), (true, :Closed))
         sm = CL.Loop("correction:closed", OWNER)
         @test CL.state(sm) === :Unknown
@@ -233,7 +427,7 @@ end
 
 @testset "Accepted requests remain pending until exact adoption" begin
     for (initial, requested, pending, applied) in
-            ((false, true, :Closing, :Closed), (true, false, :Opening, :Open))
+        ((false, true, :Closing, :Closed), (true, false, :Opening, :Open))
         sm = loop_at(initial)
         @test CL.requested!(sm, OWNER, 1, 0, requested) === nothing
         @test CL.state(sm) === pending
@@ -312,7 +506,7 @@ end
 
 @testset "Contradictory applied snapshots cannot confirm closure" begin
     for (requested, active, closed) in
-            ((1, 1, false), (2, 2, true), (1, 2, true), (-1, 0, true), (1, 0, true))
+        ((1, 1, false), (2, 2, true), (1, 2, true), (-1, 0, true), (1, 0, true))
         sm = loop_at(false)
         CL.requested!(sm, OWNER, 1, 0, true)
         CL.observed!(sm, OWNER, requested, active, closed)
@@ -340,30 +534,48 @@ end
 @testset "Typed native observer selects exact qualified Boolean properties" begin
     observer = CL.Observer(["tip-tilt:enabled", "woofer:enabled"], OWNER)
     @test_throws ArgumentError CL.check_ready(observer)
-    initial = PipeWireAO.SPA.Props("tip-tilt:enabled" => true,
-        "tip-tilt:requested-generation" => Int64(0), "tip-tilt:active-generation" => Int64(0),
+    initial = PipeWireAO.SPA.Props(
+        "tip-tilt:enabled" => true,
+        "tip-tilt:requested-generation" => Int64(0),
+        "tip-tilt:active-generation" => Int64(0),
         "woofer:enabled" => false,
-        "woofer:requested-generation" => Int64(3), "woofer:active-generation" => Int64(3))
+        "woofer:requested-generation" => Int64(3),
+        "woofer:active-generation" => Int64(3),
+    )
     @test observer(Val(:observed), initial) === nothing
     @test CL.check_ready(observer) === nothing
     @test CL.state.(observer.loops) == [:Closed, :Open]
-    pending = PipeWireAO.SPA.Props("tip-tilt:enabled" => false,
-        "tip-tilt:requested-generation" => Int64(1), "tip-tilt:active-generation" => Int64(0),
+    pending = PipeWireAO.SPA.Props(
+        "tip-tilt:enabled" => false,
+        "tip-tilt:requested-generation" => Int64(1),
+        "tip-tilt:active-generation" => Int64(0),
         "woofer:enabled" => false,
-        "woofer:requested-generation" => Int64(3), "woofer:active-generation" => Int64(3))
+        "woofer:requested-generation" => Int64(3),
+        "woofer:active-generation" => Int64(3),
+    )
     @test observer(Val(:requested), pending) === nothing
     @test CL.state.(observer.loops) == [:Opening, :Open]
-    applied = PipeWireAO.SPA.Props("tip-tilt:enabled" => false,
-        "tip-tilt:requested-generation" => Int64(1), "tip-tilt:active-generation" => Int64(1),
+    applied = PipeWireAO.SPA.Props(
+        "tip-tilt:enabled" => false,
+        "tip-tilt:requested-generation" => Int64(1),
+        "tip-tilt:active-generation" => Int64(1),
         "woofer:enabled" => false,
-        "woofer:requested-generation" => Int64(3), "woofer:active-generation" => Int64(3))
+        "woofer:requested-generation" => Int64(3),
+        "woofer:active-generation" => Int64(3),
+    )
     @test observer(Val(:observed), applied) === nothing
     @test CL.state.(observer.loops) == [:Open, :Open]
-    for props in (loop_props(Int64(1)), loop_props(true; requested=Int32(0)),
-            PipeWireAO.SPA.Props("correction:closed" => true),
-            PipeWireAO.SPA.Props("correction:closed" => true, "correction:closed" => false,
-                "correction:requested-generation" => Int64(0),
-                "correction:active-generation" => Int64(0)))
+    for props in (
+        loop_props(Int64(1)),
+        loop_props(true; requested = Int32(0)),
+        PipeWireAO.SPA.Props("correction:closed" => true),
+        PipeWireAO.SPA.Props(
+            "correction:closed" => true,
+            "correction:closed" => false,
+            "correction:requested-generation" => Int64(0),
+            "correction:active-generation" => Int64(0),
+        ),
+    )
         malformed = CL.Observer(["correction:closed"], OWNER)
         @test malformed(Val(:observed), props) === nothing
         @test CL.state(only(malformed.loops)) === :Unknown
@@ -371,5 +583,61 @@ end
         @test_throws ArgumentError CL.check_ready(malformed)
         @test malformed(Val(:observed), loop_props(true)) === nothing
         @test CL.state(only(malformed.loops)) === :Unknown
+    end
+end
+
+mutable struct CountingCorrectionClock <: Clocks.AbstractNanoClock
+    now::Int64
+    reads::Int
+end
+function Clocks.time_nanos(clock::CountingCorrectionClock)
+    clock.reads += 1
+    return clock.now
+end
+
+@testset "Signed adoption clocks preserve origins, precision and one source sample" begin
+    for origin in (Int64(-10_000_000), Int64(0), Int64(2)^53 + 1)
+        clock = CountingCorrectionClock(origin, 0)
+        observer = CL.Observer(["correction:closed"], OWNER; clock, timeout_ms = 1)
+        before = clock.reads
+        observer(Val(:observed), loop_props(false))
+        @test clock.reads == before + 1
+        before = clock.reads
+        observer(Val(:requested), loop_props(true; requested = 1, active = 0))
+        sm = only(observer.loops)
+        @test clock.reads == before + 1 && sm.pending_since_ns === origin
+        clock.now = origin + 999_999
+        observer(Val(:observed), loop_props(false; requested = 1, active = 0))
+        @test CL.state(sm) === :Closing
+        clock.now += 1
+        observer(Val(:observed), loop_props(true; requested = 1))
+        @test sm.failure === :adoption_timeout
+    end
+    clock = Clocks.CachedNanoClock(typemax(Int64) - 1)
+    observer = CL.Observer(["correction:closed"], OWNER; clock, timeout_ms = 1)
+    observer(Val(:observed), loop_props(false))
+    observer(Val(:requested), loop_props(true; requested = 1, active = 0))
+    @test CL.state(only(observer.loops)) === :Unknown
+    @test only(observer.loops).failure === :clock_error
+    clock = Clocks.CachedNanoClock(typemin(Int64))
+    observer = CL.Observer(["correction:closed"], OWNER; clock, timeout_ms = 1)
+    observer(Val(:observed), loop_props(false))
+    observer(Val(:requested), loop_props(true; requested = 1, active = 0))
+    Clocks.update!(clock, typemax(Int64))
+    observer(Val(:observed), loop_props(true; requested = 1))
+    @test only(observer.loops).failure === :clock_error
+end
+
+@testset "Standalone correction requests fail closed on deadline overflow" begin
+    for initial in (false, true)
+        clock = Clocks.CachedNanoClock(typemax(Int64) - 1)
+        sm = CL.Loop("correction:closed", OWNER; clock, timeout_ms = 1)
+        CL.observed!(sm, OWNER, 0, 0, initial)
+        @test CL.requested!(sm, OWNER, 1, 0, !initial) === nothing
+        @test CL.state(sm) === :Unknown && Hsm.current(sm) === :Unknown
+        @test sm.failure === :clock_error
+        @test sm.pending_since_ns === Int64(0) && sm.timer === nothing
+        CL.observed!(sm, OWNER, 1, 1, !initial)
+        @test CL.state(sm) === :Unknown && sm.failure === :clock_error
     end
 end

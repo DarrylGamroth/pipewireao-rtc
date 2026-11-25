@@ -1,0 +1,258 @@
+# Standalone simulation configuration
+
+AdaptiveOpticsSimPipeWireHIL runs configured simulations over PipeWire without
+an RTC runtime dependency. AOS owns numerical models, graphs and model time.
+A separate session authority owns admission and links to the selected RTC or
+SPA protocol plugins.
+
+Schema 1 retains the lockstep frame/command product. Schema 2 supports current
+external-pupil and clocked-optical execution, independent camera exposures,
+chopping, detector responses and compiled optical models. Both use ordinary AOS
+graph YAML and exact typed FITS bindings. No graph language or numerical
+executor is added. The higher-level instrument/settings resolver remains in RTC
+for cold export; HIL neither imports nor copies it.
+
+## Export existing authoring once
+
+For an external pupil, write a transport selection such as `hil.yaml`:
+
+```yaml
+schema_version: 2
+mode: external_pupil
+pipewire:
+  remote: simulation-core
+  pupil_node_name: simulation-pupil
+  sensor_node_names:
+    llowfs: simulation-llowfs
+    scc: simulation-scc
+  sensor_buffers: 3
+  reference_clock: realtime
+```
+
+Names must match the physical paths in the authored simulation. Optional
+`chopping` selects an existing unfringed graph, initial optical phase and
+independent electrical trigger polarity:
+
+```yaml
+chopping:
+  scc:
+    unfringed_graph: scc_unfringed
+    initial_phase: fringed
+    trigger_high_is_fringed: true
+```
+
+Resolve the authoring with the existing compiler:
+
+```julia
+using PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
+
+manifest = PipeWireAORTC.InstrumentConfiguration.export_simulation(
+    "instrument/generated/simulation.yaml",
+    "build/simulation";
+    configuration = "hil.yaml",
+)
+```
+
+Use the executable authored graph declaration when no generated optical model
+is needed. The exporter loads optional Proper only when selected graphs need
+it. Settings use the existing `settings` keyword. A mapping can also supply
+`configuration` directly.
+
+Export resolves the declared optical/response/source graphs and bindings once,
+retains physical pupil/sensor contracts and copies compiled models with unchanged
+content hashes. It verifies the independent HIL loader before exposing a new
+directory. The destination must not exist. Authoring files remain unchanged;
+export opens no core and starts no services. Regenerate products from authoring
+rather than editing generated payloads or hashes.
+
+For the earlier lockstep product, pass the existing `PipeWireHILConfiguration`
+instead of a mapping or filename. `simulation_graph="production"` selects its
+ordinary AOS graph; its schemas and command scale must match the authored wire
+contract.
+
+## Clocked optical source
+
+A clocked selection replaces the pupil input with a command sink and a declared
+AOS source graph. It has no `pupil_node_name`, because that node does not exist:
+
+```yaml
+schema_version: 2
+mode: clocked_optical
+pipewire:
+  remote: simulation-core
+  sensor_node_names:
+    llowfs: simulation-llowfs
+    scc: simulation-scc
+  sensor_buffers: 3
+  reference_clock: realtime
+  command:
+    node_name: simulation-command
+    schema: example.mirror-command/1
+    buffers: 3
+    properties:
+      optics.command-units: m
+source:
+  graph: source
+  command_input: command
+  amplitude_binding: source_amplitude
+  pupil_axes: [2, 1]
+  period_ns: 2000000
+  command_limit: 0.000001
+  pacing_period_ns: 2000000
+```
+
+These example graph/binding names, schema and command limit must match the
+actual simulation. Commands are copied without unit conversion. `period_ns`
+advances model time; `pacing_period_ns` delays the next permitted step after
+actual completion, so it is not a wall-cadence guarantee. The source graph stays
+on the host; selected optical/response graphs use the requested compute target.
+Accelerator optics require captured execution, with no stream fallback.
+
+The loader checks source-command and detector-response schemas against public
+AOS boundary contracts before numerical preparation. Raw or relative intensity
+cannot acquire calibrated-pixel meaning merely by changing a schema string.
+Model axes, physical planes and detector response remain scientific declarations.
+
+## Run independently
+
+An optical consumer needs HIL and the declared scientific dependencies:
+
+```julia
+using AdaptiveOpticsSimPipeWireHIL: Simulation, ExternalPupil
+using Proper # when the configured optical graph requires it
+
+prepared = Simulation.prepare(Simulation.load("build/simulation/simulation.yaml"))
+Simulation.run!(prepared; frames = 100) do execution, streams, now_ns
+    # A separate session authority admits and links these endpoints.
+    ExternalPupil.Run(ExternalPupil.snapshot(execution).deadline_ns)
+end
+```
+
+The optical callback returns `Run(deadline)`, `Hold()` or `Stop()`. Return the
+execution's deadline to retain its configured completion-relative pacing.
+Controls run serially with science; `reset!` belongs at this boundary. The frame
+budget counts actual source advances, including an upstream generation change;
+Hold and reset do not consume it. Lockstep retains its Boolean admission callback.
+Stream lifetime is closed on completion, stopped admission or failure. Create
+caller-owned links through a separate session connection.
+
+Loading checks bounded YAML, confined paths, hashes, exact array types and
+logical dimensions. It owns snapshots of graph, binding and compiled model
+assets; each graph role receives independent mutable numerical state. Compiled
+assets are materialized privately for AOS construction/preparation and then
+removed; repeated preparation recreates them from the verified snapshots. The
+product can be moved and loaded after the original source has been deleted.
+Preparation opens no core, quietly warms and resets the optical models, and
+publishes no synthetic camera frames. Science runs outside PipeWire callbacks.
+
+Sensor and source streams honor the selected reference clock. These labels
+identify host timestamp readings; they do not establish clock synchronization
+or physical acquisition time. Execution/capture properties are refreshed from
+actual prepared owners, including after changing the compute target.
+
+### Attach an RTC to an already-publishing source
+
+Provision a private PipeWire core and a detector or HIL service as separate
+user services. Start each with its own lifetime. The core must provide any
+queue and factory Nodes that the instrument declares as core-owned. The source
+service's MainPID must own the declared data Nodes. Configure both services
+to meet the placement declared in the instrument profile. The RTC checks
+placement again at admission. A clocked optical source
+advances its model clock with the most recently accepted command. An external
+pupil source needs an independently delivered stream of timestamped pupils.
+A lockstep frame/command simulation still needs its matching command peer.
+
+On an installation with independent-source support, bind the three site values
+when installing the RTC, or set them in a drop-in for its service instance.
+For example, a site using two separately started services could use this drop-in.
+
+```ini
+[Unit]
+After=ao-private-core.service ao-simulator.service
+
+[Service]
+Environment=PIPEWIREAORTC_CORE_UNIT=ao-private-core.service
+Environment=PIPEWIREAORTC_CORE_SOCKET=%t/ao-private/core
+Environment=PIPEWIREAORTC_SOURCE_UNIT=ao-simulator.service
+```
+
+Use an absolute socket path when setting the installer environment directly.
+The socket and its private parent directory must belong to the service user.
+Installation with these bindings records them in the RTC unit and prepares
+only the controller startup assets. Install and prepare the simulator under
+its own service. Existing sealed applications can supply the primary source's
+data port declarations. A new RTC-only deployment can declare its primary
+owner with `role` and `control-protocol: external-stream`. Its instrument
+declares exact Node names, ports, formats and Links in the usual way.
+
+Each RTC activation verifies both service incarnations and admits fresh Links
+to the live source. Start, Stop and Reset apply to RTC-owned processing.
+Quitting withdraws RTC-owned Links and services. The simulator retains its
+process, model time, acquisition generation and separately owned connections.
+A replacement RTC repeats admission against the current live endpoints.
+This mode supports one independent primary source. Profiles requiring managed
+auxiliary acquisition or explicit source End use the managed launch contract.
+
+### Start CAL2 with correction open
+
+With the live-priming CAL2 profile, installation tests the configured SCC
+and LLOWFS controllers against their calibration. It passes synthetic
+exposures to each graph, checks the required physical-offset output and
+discards the results. The installer runs this test even if Julia can
+reuse a compiled package image. The graph services skip that test on
+ordinary RTC restart.
+
+Service Ready means the replacement RTC has admitted the expected live
+source, controller ports, Links and placement. The operator can now
+Start processing. Both correction loops start open. LLOWFS needs one
+usable exposure, while SCC needs both members of a valid chopped pair.
+While open, neither controller integrates the residual. Each controller's
+`pipewireao.correction-control.correction:closed.primed` readback identifies
+when its declared modal residual has been observed from live camera data.
+A close request before that point is refused. Submit a new close request
+when the loop is ready. A fresh RTC starts both loops open. Within an
+existing session, Reset clears the priming evidence and preserves the
+applied closure setting. Open the loop first to repeat open-loop priming.
+Operate each loop independently through its `correction:closed` property.
+
+## Migrate an RTC application
+
+Export the simulation from the selected instrument declaration before changing
+its application profile. Use the generated manifest in a separate HIL project
+with the selected science dependencies. Match the remote, node names, shapes,
+element types, schemas, command units and metadata to the receiving RTC profile
+or SPA plugin. The session authority owns links and admission.
+
+For a managed instrument profile, select `kind: hil` and start the HIL package's
+`src/managed.jl` launcher in a separate process. The launcher publishes
+Preparing before loading HIL and AOS. Its optional PipeWireAORTC extension
+accepts the existing sealed `simulation.conf`, the private remote and the
+specified control and bootstrap identities. Cold authoring and calibration preparation use the
+shared configuration APIs. HIL owns simulation execution and publishes the
+data and source-control Nodes. RTC verifies the incarnation, admits the
+endpoint set and creates the Links.
+
+The same device boundary applies to cameras and DMs. A driver publishes the
+Nodes and Ports that carry device data. A filter graph host publishes its graph
+Nodes and Ports. RTC binds the declared endpoints and coordinates lifecycle
+through their controls. A PipeWire `Device` object can describe the physical
+driver's device. Links connect Ports.
+
+The profile keeps its original endpoint names, metadata and source-control
+protocol. A version-5 pupil-source profile supplies the existing
+`--physical-offsets` receiver configuration. The managed HIL extension uses
+that receiver and publishes the scientific pupil and declared applied command.
+The ordinary standalone loader and callback API serve independent consumers.
+
+A managed version-6 clocked source can enable `applied_command_observation`.
+When enabled, declare `simulator-<mirror>-applied:output_1` as a Float32
+ndarray source with the `applied_pdm_command` schema and link it to the
+observation queue. Each sample reports the physical command used by a
+completed model step, in its declared command units.
+
+The [optical configuration record](reviews/20261107-hil-optical-configuration/REVIEW.md)
+records exact source cohorts and CPU/CUDA, relocation, schema and private-core
+checks. RTC selectors are `test/simulation_export.jl`,
+`test/simulation_optical_export.jl` and `test/simulation_compiled_export.jl`.
+HIL owns parser, optical preparation, compiled asset and native runner checks.
+These establish software behavior, not hardware or real-time qualification.

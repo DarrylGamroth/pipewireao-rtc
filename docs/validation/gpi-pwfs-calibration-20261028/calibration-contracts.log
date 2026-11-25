@@ -1,0 +1,16 @@
+Test Summary:                     | Pass  Total   Time
+Cold calibration bundle integrity |   46     46  18.5s
+Test Summary:                                    | Pass  Total  Time
+Authored inputs and Git-only calibration history |    5      5  0.4s
+Test Summary:                                     | Pass  Total  Time
+Fresh calibration publication and failure cleanup |   17     17  0.9s
+Test Summary:                                         | Pass  Total  Time
+first-order low-pass temporal coefficient preparation |  238    238  0.7s
+Test Summary:                                         | Pass  Total  Time
+bounded optional temporal recipe and declared cadence |   22     22  1.3s
+Test Summary:                                                   | Pass  Total  Time
+calibration FITS preserves non-square and coefficient-bank axes |    3      3  1.2s
+Test Summary:                                                          | Pass  Total  Time
+shape calibration aliases track completion dimensions and owned values |   21     21  0.4s
+Test Summary:                            | Pass  Total  Time
+Propagated pupil-field validation metric |    9      9  0.9s

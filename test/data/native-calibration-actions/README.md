@@ -3,9 +3,11 @@
 These 43 binary SPA Props PODs were produced by
 `deployment/julia/test/test_native_calibration_action_codec.jl` on Linux x86_64
 (little endian). The Julia test compares its encoder output byte for byte with
-each sample. The Rust test decodes and re-encodes the same samples.
+each supported sample. The original Rust test decoded and re-encoded the
+same samples. The current Julia test rejects the historical Capture request
+and Captured reply. Their IDs remain reserved.
 
-There are 22 valid records: nine requests (including all three settling rules),
+There were 22 valid records in the original profile: nine requests (including all three settling rules),
 seven success results, four typed failure reasons, one negative transport
 completion with None, and one transport rejection. Every valid request and
 completion carries run=UInt64 max and serial=2⁶³. Cursor domain/sequence are
@@ -21,5 +23,5 @@ exposure duration/end. Both action codecs must reject them. Separate pure tests
 mutate common-envelope metadata and exercise request/reply byte limits.
 
 The wire contract and validation limits are recorded in
-[`NATIVE_CALIBRATION_ACTION_CONTROL.md`](../../../docs/NATIVE_CALIBRATION_ACTION_CONTROL.md).
+[the calibration wire contract](../../../docs/CALIBRATION_ACTION_CONTROL.md).
 These samples verify serialization behavior only.

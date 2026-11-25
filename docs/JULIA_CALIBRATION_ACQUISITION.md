@@ -8,31 +8,13 @@ names, optical algorithms, graph scheduling or session lifecycle policy.
 
 ## Entry points
 
-A fresh calibration export provides `bin/rtc-calibrate` as a thin Julia
-entrypoint. The exporter includes and seals the operational package; an external
-Rust calibrator is no longer an export input. The native binding flags, saved
-v1 plan and stdout result shape are retained:
-
-```sh
-PACKAGE/bin/rtc-calibrate \
-  --remote /absolute/path/to/private-core \
-  --node declared-calibration-owner.actions \
-  --owner-pid OWNER_PID --owner-instance OWNER_INSTANCE \
-  --plan /absolute/path/to/prepared-plan.json
-```
-
-Binding values are hints until the native client proves the current owner and
-controller. Start/admit the selected session through the existing systemd and
-WirePlumber tools first. This command does not start a session or grant physical
-actuation authority. Existing sealed exports keep their original executable;
-create a fresh export to select the Julia driver.
-
-The reusable Julia API uses the same driver:
+Start and admit the selected session through systemd. Binding values are hints
+until the native client proves the current owner and controller.
 
 ```julia
 using PipeWireAORTC
 const Acquisition = PipeWireAORTC.CalibrationAcquisition
-const Native = PipeWireAORTC.NativeCalibrationActionClient
+const Native = PipeWireAORTC.CalibrationActionClient
 
 plan = Acquisition.read_plan(plan_path)
 binding = Native.Binding(remote, action_node, owner_pid, owner_instance)
@@ -68,8 +50,6 @@ submissions; there is no automatic retry, reconnect or rebind. A fault report
 cannot authorize resume. `acquire` closes its own controller on every exit;
 `acquire!` leaves ordinary connection cleanup with its caller.
 
-A successful CLI run exits 0. A completed aborted/fault acquisition exits 1 and
-prints its v1 result. Input, binding or diagnostic-output failure exits 2.
 Scientific acceptance remains the instrument/AOC consumer's responsibility.
 
 ## Event-driven procedures and online numerical consumers
@@ -84,6 +64,14 @@ endpoint failure. A terminal procedure has `command === nothing` and `result`.
 There is no transport, file I/O, sleep, polling loop or device callback inside
 the procedure. The existing `acquire`/`acquire!` functions drive the same state
 machine over the existing version-1 native action protocol.
+
+The procedure uses Hsm.jl. Public mutation functions dispatch events; leaf and
+ancestor handlers own phase-dependent behavior and command selection.
+`Acquiring` contains Holding, Adopting, Settling, Collecting and Processing;
+`Recovery` contains Restoring and Releasing. Both share the Active parent.
+The Terminal parent contains Complete, Aborted and Fault. Shared failure
+handlers distinguish a known completed action from an unknown in-flight outcome,
+and never start another restoration attempt while already recovering.
 
 This is the ownership and data flow for the first shared procedure:
 
@@ -136,6 +124,37 @@ with an explicitly bounded handoff. The procedure does not create an unbounded
 worker queue or asynchronous recorder. Its existing finite response-retention
 bound remains in force.
 
+One typed delivery slot holds the consumer snapshot. The consumer runs between
+Hsm dispatch steps, so it can call `cancel!` without recursive event dispatch.
+The Processing handler receives the consumption event, polls cancellation and
+selects the next command. Command submission and consumer work do not occur in
+state entry or exit behaviors.
+
+The `clock` keyword accepts Clocks.jl `AbstractNanoClock` implementations directly.
+Absolute `deadline`, completion `at`, preparation `issued_at`/`observed_at` and
+the clock regression watermark are signed `Int64` nanoseconds. Negative origins
+are valid. Seconds callables are unsupported. A cached clock has one updating
+owner; tests can advance it explicitly without sleeping:
+
+```julia
+using Clocks
+clock = CachedNanoClock(0)
+procedure = Acquisition.Procedure(plan; clock)
+advance!(clock, 1_000_000_000) # nanoseconds; choose the plan's action timeout
+Acquisition.expire!(procedure)
+```
+
+Preparation accepts the same clock interface. A control agent samples its source
+once at the start of a duty cycle and updates its owned cache for that cycle's
+handlers. Producers retain their own event receipt timestamps. Advancing a test
+clock changes logical time; it does not run a timer or deliver a deadline event.
+The synchronous acquisition driver samples once at each prepared exchange start
+and retains a separate local receipt sample when that exchange returns. The
+action-client and reference-server APIs receive nanosecond deadlines directly.
+Saved reference reports retain their `observed_at` and `deadline` fields in seconds;
+the report writer performs that conversion explicitly. Scientific model times,
+exposure durations, acquisition cursors and run/serial identities keep their units.
+
 For an external event loop, prepare `Procedure(plan; consume, clock)` and submit
 its `command`. After owner/controller validation, deliver
 `complete!(procedure, run, serial, result)`. The optional `at` keyword is the
@@ -153,11 +172,33 @@ not required to calculate a response during acquisition.
 cold projections from a built regular graph. For the Classic initial session,
 select raw `pixel-calibration:raw` to existing `slopes`, `flux`, `validity` outputs,
 and absolute `pdm-command:requested` to `demanded`, `constraint-feedback`.
+The result is a `GraphProjection` record. Its existing graph, configuration and
+provenance properties remain readable. Replace `merge(projection, overrides)`
+with `GraphProjection(projection; overrides...)`; obtain the constructor from
+`Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)`. Copy construction
+retains the same prepared graph and arrays. It does not transfer ownership or
+authorize either copy to close a graph still in use. Named command projections
+are a NamedTuple of these records; a command named `graph` has no special meaning.
+
 `prepare_initial_calibration(application, remote, frontend, command;
 reference, name, instance, deadline)` owns both prepared projections and returns
-`NativeCalibrationEndpoint.Endpoint`. Serve it with `serve!(endpoint; deadline)`
+`CalibrationEndpoint.Endpoint`. Serve it with `serve!(endpoint; deadline)`
 on a control task and close it after the native client disconnects. Use at least
 three Julia default threads; the private-core optical selector uses four.
+
+Each graph worker receives bounded stop commands and publishes readiness and
+completion receipts. Its node lifecycle and Hsm stay on a dedicated control
+thread; FilterGraphs processing remains on the PipeWire data thread.
+The controller does not inspect the running graph. Parameter values are bound
+before lending the graph, and these calibration nodes expose no live sparse
+Parameter Ports. Completion must explicitly release storage and the worker task
+must finish before prepared graph storage can be closed or reused.
+
+This requires PipeWireAO 0.9.1, FilterGraphPipeWire 0.4.1 and a native SDK exporting
+`pw_ndarray_filter_get_loop`. The currently registered artifact lacks that
+accessor; use the [validated source cohort](reviews/20261104-calibration-worker/REVIEW.md)
+until its artifact release. Client-library selection and the test daemon prefix
+must identify the same SDK.
 
 This CPU simulation endpoint uses normal configured detector noise and ADC,
 actual transported command adoption and correlated raw/WFS streams. It rechecks
@@ -173,8 +214,8 @@ An in-flight synchronous HIL operation resolves or reaches its finite deadline
 before the owner can check revocation. The owner checks the native ticket before
 starting another exposure and during capture notifications. Unknown outcomes
 fence endpoints without restoration or retry. This initial-session API does not
-transfer a running controller's state, actuate devices, publish a calibration
-bundle or implement the optional `Capture` file-export action.
+transfer a running controller's state, actuate devices or publish a calibration
+bundle.
 
 See the [implementation and verification record](validation/calibration-owner-20261027/PLAN.md)
 and [independent review](validation/calibration-owner-20261027/REVIEW.md).
@@ -183,8 +224,8 @@ and [independent review](validation/calibration-owner-20261027/REVIEW.md).
 
 The shared Julia boundary is `CalibrationPreparation`. Its `Request` identifies
 one run, serial, stage, named condition, configuration identity, evidence kind
-and finite monotonic time window. `Confirmation` binds that exact request to a
-fresh observation and a named witness (operator or exact simulator/service
+and signed nanosecond monotonic time window. `Confirmation` binds that exact
+request to a fresh observation and a named witness (operator or exact simulator/service
 incarnation). `Procedure` owns one pending request and its confirmation;
 `complete!`, `cancel!`, `expire!`, `invalidate!` and `check_current!` are events
 and admission checks on its single owning control task. These names describe
@@ -194,6 +235,13 @@ its configured authority before emitting confirmation and invalidate the gate
 on observed condition/authority loss. No message format or device protocol is
 introduced by this Julia interface.
 
+Preparation also uses Hsm.jl. Pending and Ready share the Active parent, which
+handles cancellation, deadline events and invalidation. Cancelled, Expired and
+Invalidated share Terminal; a terminal gate cannot become ready again.
+`check_current!` dispatches a deadline event followed by an admission event.
+The existing lowercase `procedure.state` property is a read-only projection of
+the active Hsm state, rather than a second stored phase.
+
 The shared procedure describes the required optical condition, rather than a
 manufacturer's commands. A dark blocks light at the detector while retaining the
 selected exposure, gain, temperature/readout policy and raw ADC contract. An
@@ -201,10 +249,9 @@ illuminated acquisition uses a declared source and optical path. A reference
 additionally binds the nominal mirror figure and mechanism positions. An
 illuminated image is not automatically a detector flat field or a WFS reference;
 these remain separate scientific operations.
-Dark reduction consumes raw ADC images. Capture retains the deployed WFS
-validity flags even when unilluminated ROIs are invalid; interaction-response
-eligibility is not reused as a dark-image acceptance rule. Detector quality and
-background-estimation acceptance need their own declared checks.
+Dark reduction consumes raw ADC images through Collect. The reducer applies
+its own detector and background checks because unilluminated WFS measurements
+can be intrinsically invalid.
 
 | Endpoint | Preparation owner | Evidence needed before acquisition |
 | --- | --- | --- |
@@ -297,82 +344,32 @@ cannot change a frozen training mask. Optional recording supports diagnosis and
 replay while scientific consumers reduce candidate data online. Source levels,
 masks, thresholds, filters and gains retain their own acceptance requirements.
 
-### CPU simulator reference candidates
+### CPU simulator reference campaigns
 
-`InstrumentCalibration.calibrate_references(application, output; remote,
-reference, run=1, timeout_s=300, cancelled=()->false)` consumes the built Classic
-recipe's `references` section. `remote` is a caller-owned private core path or
-`(dark=..., lamp=..., qualification=...)`; no default core is selected.
-`reference` explicitly supplies the absolute Float32 physical mirror figure in
-the existing command units. Every stage has a fresh native owner and simulator
-acquisition domain, a correlated `CalibrationPreparation` gate and known
-Restore/Release completion before the next stage. The stage deadline includes
-preparation and acquisition; one additional equal timeout bounds cleanup and the
-server lifetime. Unknown native outcomes fence the candidate without retry.
-Cancellation is observed at completed-action and sample boundaries, followed by
-restoration only when the native outcome permits it.
+The shared instrument tool `tools/calibrate-references.jl` in
+[adaptive-optics-simulations](https://github.com/DarrylGamroth/adaptive-optics-simulations)
+owns dark, lamp training and independent qualification. Its
+`ReferenceCalibration.calibrate_references` Julia entry point replaces
+`InstrumentCalibration.calibrate_references`. The built application's recipe
+still selects the sensor, ports and sample windows. Candidate publication and
+acceptance stay with the campaign. AdaptiveOpticsCalibration owns the numerical
+reductions.
 
-Dark samples reduce raw UInt16 ADC images online through AOC 0.17.2
-`DarkFrameState`; WFS validity does not decide dark acceptance. Lamp training
-uses the new Float32 background, the full declared ROI universe, zero subtraction
-reference and the original per-ROI thresholds. The procedure checks that the
-production coordinates are centered pixel axes with scale one, then supplies
-interleaved absolute x/y centroids to AOC `LampReferenceState`. The resulting
-eligible mask and Float32 reference are frozen as typed FITS inputs to a fresh
-qualification stage. Qualification reconstructs absolute centroids from measured
-residuals plus that frozen reference and processes explicit active ROI indices.
-Its data never retune the training mask or reference.
+A campaign calls `InstrumentCalibration.calibration_graph` for the declared
+frontend and command projections, then passes them to
+`prepare_initial_calibration` on a validated caller-owned private socket.
+Close untransferred projections with `close`. After successful preparation
+the endpoint owns the executions and closes them at retirement.
+`InstrumentCalibration.acquisition_domain(endpoint)` returns the identity
+used to correlate the preparation witness and live exposures.
 
-The detector's normal photon/readout noise, ADC bit depth, seed and source level
-are retained. Because each simulator stage resets with the same seed, the
-qualification discard count must cover the entire lamp discard-plus-training
-window. The authored 16 dark, 16 lamp and 16 later qualification exposures are a
-bounded pilot, with no precision claim. AOC eligibility and reference-difference
-diagnostics are reported separately from interaction-matrix acceptance. An
-ineligible lamp product can be retained as a rejected candidate; if no ROI is
-eligible, qualification is explicitly skipped.
-
-GPI uses the same entry point with a NamedTuple of explicit Float32 figures for
-all declared woofer, tweeter and tip/tilt ports. Every command adoption and
-restoration verifies that complete set under one token, including conditioner
-feedback. Native v1 action vectors address the first mirror in the declared
-calibration recipe; other ports retain their immutable references. Names, physical
-schemas and shapes come from the regular graph and simulator declarations.
-
-For GPI dark acquisition the frontend projects the normal pixel-calibration node,
-while the reducer consumes separately captured raw ADC data. The cold selection
-`measurements=nothing` requires that synchronous consumer and requests a Collect
-with zero response measurements: the reply carries complete exposure receipts,
-while the full raw arrays go directly to AOC. This additive native v1 value-domain
-extension retains the existing layout and 128 KiB reply bound. Earlier endpoints
-reject zero before acquisition; there is no retry or synthetic scalar fallback.
-Ordinary interaction calibration retains positive measurement dimensions. This
-avoids requiring illuminated pyramid processing or recording raw files for a dark. Lamp and qualification project the
-normal normalized pupil pixels and mean-intensity diagnostic; the first successful
-lamp frame is discarded because normalization uses the previous successful
-frame's full-pupil mean, including masked pixels. AOC averages these already
-normalized pixels without renormalization and computes the candidate modal
-reference as the negative frozen reconstructor times the pupil-major mean.
-Explicit selection matrices, mirror OPD units and the retained calibration
-normalization establish row units. The original flat, pupil mask, pupil origins
-and reconstructor remain frozen; only background is overridden. Comparison
-errors are dimensionless pupil-pixel differences, with no invented ROI eligibility
-or acceptance threshold. Modal-reference candidates are not activated in the
-upstream sensor projection. GPI requires at least five default Julia threads;
-`test/pyramid_reference_calibration.jl` supplies the cold and optional private-core
-selectors. This extension is still under qualification.
-
-The fresh output directory is published atomically after all successful native
-cleanup. Generated FITS and YAML record types, shapes, axis order, byte hashes,
-stage sample boundaries, simulator identities and input provenance. Built
-application hashes are checked across the campaign. No raw recorder is required,
-and nothing activates or stages these products into the application. This CPU
-simulator procedure does not qualify physical preparation, timing or hardware.
-The optional `confirm(request,witness)` seam supplies correlated simulator
-preparation evidence after the owner exists; it does not add a physical adapter.
-The focused selector is `test/reference_calibration.jl`; set
-`PIPEWIREAORTC_REFERENCE_APPLICATION` and run with at least four Julia threads to
-include the caller-owned private-core campaign.
+Drive `CalibrationActionClient` with the existing Hold, Adopt, Settle,
+Collect, Restore and Release actions. The synchronous Collect consumer borrows
+each frame for reduction. A zero-measurement Collect still returns exposure
+receipts and requires a consumer for the raw frames. Query
+`CalibrationActionClient.can_restore(connection)` before recovery. Unknown
+transport outcomes fence the connection. The moved Classic and GPI2 selectors
+live with the instrument tools and run on caller-owned private cores.
 
 ### Delivery state and next gates
 
@@ -408,15 +405,5 @@ before Hold. Projected retained figures/responses are limited to 512 MiB,
 including a conservative per-probe metadata charge. This payload bound is not
 an allocator-independent Julia heap/RSS limit. Acquisition and serialization
 are cold control work; the driver imposes no new allocation in frame callbacks.
-
-Optional `--evidence NEW_PATH` creates an exclusive file before connecting and
-retains a completion journal until the workflow returns. It performs no file
-writes from the completion observer while ownership is held. The charged
-journal budget is 64 MiB; exhausting it does not interrupt safe recovery, and
-finalization reports the diagnostic failure. Journal **version 2** records typed
-completed actions and the final acquisition outcome. It does not claim that an
-unconfirmed request was accepted and is not byte-compatible with the temporary
-Rust journal. Saved plans, reports and this journal use JSON; live controls use
-native SPA PODs throughout.
 
 See [software/native verification and limitations](validation/julia-acquisition-20261008/README.md).

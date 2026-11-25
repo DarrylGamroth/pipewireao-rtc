@@ -1,0 +1,253 @@
+# Optional native host selector: use the source cohort and --threads=1,0.
+module MediaSessionHostTests
+using Test, PipeWireAORTC, PipeWireAO
+const S = PipeWireAORTC.MediaSession
+const C = PipeWireAORTC.ControlCodec
+const R = PipeWireAORTC.RunnerCodec
+const Clocks = S.Clocks
+const SECOND = Int64(1_000_000_000)
+include("control_private_core.jl")
+include("media_session_acquisition_private_core.jl")
+
+function host_session(socket, directory, daemon)
+    policy = Dict{String,Any}(
+        "instance" => "101",
+        "controller.instance" => "102",
+        "admission.controller-instance" => "103",
+        "node.name" => "host-session",
+        "controller.node.name" => "pipewireao.rtc.controller.host-session",
+        "startup.timeout-ms" => 300000,
+        "session.uuid" => "23af16ce-86f6-4d06-b8fc-eb03c6c63776",
+        "properties" => Dict{String,String}(),
+        "core.owner" => Dict("pid" => getpid(daemon), "nodes" => String[]),
+        "owners" => [],
+        "node.pids" => Dict{String,Int}(),
+        "source" => Dict(
+            "role" => "missing-source",
+            "control-node" => "missing-source",
+            "pid" => getpid(),
+        ),
+        "session" => Dict(
+            "sources" => [],
+            "graphs" => [],
+            "sinks" => [],
+            "links" => [
+                Dict("output" => "missing-source:output", "input" => "missing-sink:input"),
+            ],
+        ),
+    )
+    config = Dict(
+        "context.properties" => Dict(
+            "remote.name" => socket,
+            "library.use-fallback" => false,
+            "support.dbus" => false,
+        ),
+        "context.modules" => [
+            Dict("name" => "libpipewire-module-protocol-native"),
+            Dict("name" => "libpipewire-module-client-node"),
+        ],
+        "pipewireao.session" => policy,
+    )
+    path = joinpath(directory, "host.conf")
+    PipeWireAORTC.ScienceExport.write_spa_config(path, config)
+    return S.Session(path; clock = Clocks.CachedNanoClock(Int64(0)))
+end
+
+function wait_host(predicate, session)
+    clock = Clocks.SystemNanoClock()
+    deadline = Base.Checked.checked_add(Clocks.time_nanos(clock), 60 * SECOND)
+    while true
+        S.Agent.do_work(session)
+        predicate() && return nothing
+        Clocks.time_nanos(clock) < deadline || error("native host observation timed out")
+        sleep(0.001)
+    end
+end
+
+function stop_effect_task!(session)
+    session.active_job === nothing || (session.active_job.cancelled = true)
+    session.active_task === nothing || wait(session.active_task)
+    session.active_job = nothing
+    session.active_task = nothing
+    session.effect_result = nothing
+    return nothing
+end
+
+function prepare_host!(session)
+    wait_host(session) do
+        session.controller === nothing && return false
+        # The test sends commands through a client proxy for the session endpoint.
+        endpoint = S.bind_object!(session, node_id(session.endpoint), "PipeWire:Interface:Node")
+        return endpoint !== nothing && endpoint.info !== nothing
+    end
+    stop_effect_task!(session)
+    # These receipts prepare only the policy test. No scientific owner exists.
+    for _ in 1:16
+        ticket = session.machine.effect
+        ticket === nothing && break
+        S.complete!(session.machine, ticket)
+    end
+    id = something(session.controller)
+    launcher = S.Identity(id.global_id, id.serial, UInt64(id.instance), UInt32(getpid()))
+    S.submit!(session.machine, S.Request(S.InspectWarmup(); controller = launcher))
+    S.take_replies!(session.machine)
+    S.submit!(session.machine, S.Request(S.Admit(); controller = launcher))
+    S.take_replies!(session.machine)
+    @test session.machine.lifecycle == R.Ready
+    S.drain!(session)
+    return nothing
+end
+
+function send_pending!(session, command)
+    header = C.RequestHeader(
+        something(session.controller),
+        Int64(101),
+        Int64(1),
+        R.operation_id(command),
+        60 * SECOND,
+    )
+    request = R.encode_request(header, command)
+    endpoint = session.objects[node_id(session.endpoint)]
+    set_param!(endpoint.proxy, PipeWireAO.SPA.PARAM_PROPS, request)
+    wait_host(() -> length(session.requests) == 1, session)
+    @test session.ingress.pending !== nothing
+    return only(values(session.requests))
+end
+
+function disconnect_pending!(session, operation)
+    stop_effect_task!(session)
+    S.fail!(
+        session.machine,
+        something(session.machine.effect),
+        "injected operation failure";
+        submitted = true,
+    )
+    S.drain!(session)
+    if operation === :properties_set
+        hold = something(session.machine.effect)
+        @test hold.effect === S.HoldSources()
+        S.fail!(session.machine, hold, "injected source Hold failure"; submitted = true)
+        S.drain!(session)
+    end
+    ticket = something(session.machine.effect)
+    @test ticket.effect === S.Disconnect()
+    S.perform!(session, S.Job(ticket, false), ticket.effect)
+    @test !isopen(session.endpoint) && !isopen(session.core) && !session.done
+    S.update!(session, S.EffectCompleted(ticket, nothing, Clocks.time_nanos(session.clock)))
+    @test session.done && session.exitcode == 1
+    return nothing
+end
+
+function drain_failure(session)
+    try
+        S.drain!(session)
+        return nothing
+    catch error
+        return error
+    end
+end
+
+@testset "Native host terminal paths" begin
+    @testset "Native acquisition acknowledges shutdown before Connect" begin
+        with_control_private_core() do socket, directory, daemon
+            chmod(dirname(socket), 0o700)
+            # The standalone acquisition selector measures the cold deadline.
+            # This check holds time fixed while proving the native receipts.
+            acquisition = MediaSessionAcquisitionPrivateCoreTests
+            acquisition.check_initial_quit(
+                socket, directory, daemon, acquisition.Acquisition.Preparing;
+                clock = Clocks.CachedNanoClock(Int64(0)), observation_timeout = 60.0,
+            )
+        end
+    end
+    @testset "A quiet deadline schedules fault compensation as work" begin
+        with_control_private_core() do socket, directory, daemon
+            session = host_session(socket, directory, daemon)
+            try
+                prepare_host!(session)
+                wait_proof(() -> iszero(S.Agent.do_work(session)), 10, "idle owner turn")
+                S.submit!(session.machine, S.Request(S.SetProperties(); payload = "graph"))
+                ticket = something(session.machine.effect)
+                S.submitted!(session.machine, ticket)
+                Clocks.update!(session.source_clock, ticket.deadline)
+                @test S.Agent.do_work(session) > 0
+                @test something(session.active_job).ticket.effect === S.HoldSources()
+                @test S.start_effect!(session) == 0
+            finally
+                close(session)
+            end
+        end
+    end
+
+    for operation in (:quit, :properties_set)
+        @testset "Disconnect with mapped ingress, operation=$operation" begin
+            with_control_private_core() do socket, directory, daemon
+                session = host_session(socket, directory, daemon)
+                try
+                    prepare_host!(session)
+                    command =
+                        operation === :properties_set ?
+                        R.RunnerCommand(
+                            :properties_set,
+                            "graph",
+                            Dict("controller:gain" => R.RunnerScalar(:int, Int32(1))),
+                        ) : R.RunnerCommand(:quit)
+                    ticket = send_pending!(session, command)
+                    disconnect_pending!(session, operation)
+                    @test drain_failure(session) === nothing
+                    @test isempty(session.requests)
+                    completion = R.decode_completion(session.ingress.completion)
+                    @test completion.header.token == ticket.header.token
+                    @test completion.header.result == -5
+                    @test occursin("outcome unknown", something(completion.error).message)
+                    @test session.ingress.pending === nothing
+                    @test session.done && session.exitcode == 1
+                finally
+                    close(session)
+                end
+            end
+        end
+    end
+
+    for disposition in (:fail, :expire)
+        @testset "Accepted Quit publication fence $disposition" begin
+            with_control_private_core() do socket, directory, daemon
+                session = host_session(socket, directory, daemon)
+                try
+                    prepare_host!(session)
+                    S.submit!(session.machine, S.Request(S.Quit()))
+                    S.drain!(session)
+                    for _ in 1:16
+                        pending = something(session.machine.effect)
+                        pending.effect isa S.PublishQuit && break
+                        S.complete!(session.machine, pending)
+                    end
+                    ticket = something(session.machine.effect)
+                    @test ticket.effect === S.PublishQuit()
+                    @test !session.done
+                    if disposition === :fail
+                        S.update!(
+                            session, S.EffectFailed(ticket, "publication failed", false)
+                        )
+                    else
+                        Clocks.update!(session.source_clock, ticket.deadline)
+                        Clocks.update!(session.clock, ticket.deadline)
+                        S.tick!(session.machine)
+                    end
+                    S.drain!(session)
+                    @test session.done && session.exitcode == 0
+                    @test session.machine.lifecycle == R.Offline
+                    @test session.machine.effect === nothing
+                    @test session.machine.cleanup_failure !== nothing
+                    S.update!(session, S.EffectCompleted(ticket, nothing, ticket.deadline))
+                    S.update!(session, S.EffectFailed(ticket, "late failure", false))
+                    @test session.done && session.exitcode == 0
+                    @test isempty(S.take_replies!(session.machine))
+                finally
+                    close(session)
+                end
+            end
+        end
+    end
+end
+end

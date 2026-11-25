@@ -1,0 +1,38 @@
+Test Summary:                                  | Pass  Total  Time
+array statistics declaration and configuration |   24     24  1.3s
+Test Summary:                                         | Pass  Total  Time
+finite and sliding match independent batch statistics | 2120   2120  2.6s
+Test Summary:                                      | Pass  Total  Time
+long sliding history rejects large-DC cancellation |  335    335  0.7s
+Test Summary:                                                                    | Pass  Total  Time
+exponential mean and population variance match independent weighted batch oracle |  284    284  0.8s
+Test Summary:                                             | Pass  Total  Time
+candidate discard, atomic rejection, completion and reset |   68     68  0.1s
+Test Summary:                                        | Pass  Total  Time
+array shapes, views, aliases and allocation contract |   54     54  1.5s
+Test Summary:                                            | Pass  Total  Time
+statistics retain small signals after large level shifts |   76     76  0.1s
+Test Summary:                                           | Pass  Total  Time
+SIMD elements and tails preserve compensated statistics |  102    102  0.6s
+Test Summary:                                    | Pass  Total  Time
+Every public algorithm binding has documentation |    7      7  0.2s
+Test Summary:                                                  | Pass  Total  Time
+leaky integrator declaration metadata matches the FGN contract |   48     48  0.1s
+Test Summary:                                                          | Pass  Total  Time
+operation markers describe mathematical shape without execution policy |    9      9  0.0s
+Test Summary:                                                  | Pass  Total  Time
+leaky numerical rejection preserves output and committed state |   13     13  0.2s
+Test Summary:                                        | Pass  Total  Time
+native declaration matches direct stateful execution |   21     21  0.1s
+Test Summary:                                              | Pass  Total  Time
+leaky integrator accepts transport-neutral vector wrappers |    4      4  0.1s
+Test Summary:                                               | Pass  Total  Time
+ordinary Julia matrices and sparse parameters remain native |   18     18  0.5s
+Test Summary:                                              | Pass  Total  Time
+source declarations do not invent an input metadata source |    4      4  0.0s
+Test Summary:                                | Pass  Total  Time
+declaration validation and warmed processing |    8      8  0.0s
+Test Summary:                                       | Pass  Total  Time
+built-in Algorithm inventory is explicit and unique |    3      3  0.3s
+Test Summary:                                                        | Pass  Total  Time
+complete-array statistics prepares and publishes as a headless Graph |   29     29  3.1s

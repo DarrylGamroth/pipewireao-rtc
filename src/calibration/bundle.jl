@@ -1,0 +1,307 @@
+# Included inside InstrumentCalibration. This contract checks bytes and metadata;
+# scientific owners remain responsible for array shapes and optical semantics.
+
+const _BUNDLE_INTEGRITY_FIELDS = (
+    "version",
+    "context_sha256",
+    "graph_sha256",
+    "artifact_sha256",
+    "parameter_names",
+    "parameter_files",
+)
+
+_bundle_name(value; artifact = false) =
+    throw(ArgumentError("calibration artifact names must be plain filenames"))
+function _bundle_name(value::AbstractString; artifact = false)
+    occursin(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$", value) ||
+        throw(ArgumentError("calibration artifact names must be plain filenames"))
+    artifact &&
+        !endswith(value, ".fits") &&
+        throw(ArgumentError("calibration artifacts must have a .fits extension"))
+    return String(value)
+end
+
+function _bundle_file(directory, name; maximum = Artifacts.MAX_FITS_BYTES)
+    path = joinpath(directory, name)
+    isfile(path) && !islink(path) && filesize(path) <= maximum || throw(
+        ArgumentError("calibration bundle file is missing, linked or too large: $name")
+    )
+    return DeploymentConfiguration.relative_asset(directory, name)
+end
+
+_bundle_hash(value, label) = throw(ArgumentError("invalid calibration $label SHA-256"))
+function _bundle_hash(value::AbstractString, label)
+    occursin(r"^[0-9a-f]{64}$", value) ||
+        throw(ArgumentError("invalid calibration $label SHA-256"))
+    return value
+end
+
+_bundle_report(report) =
+    throw(ArgumentError("calibration result must be a mapping with string keys"))
+function _bundle_report(report::AbstractDict)
+    foreach(_bundle_report_key, keys(report))
+    haskey(report, "history_sha256") &&
+        throw(ArgumentError("calibration history belongs in Git, not the bundle"))
+    for key in ("recipe", "source_prescription_identity", "source_graph_sha256")
+        haskey(report, key) || throw(ArgumentError("calibration result is missing $key"))
+    end
+    _bundle_mapping(report["recipe"], "recipe")
+    identity = report["source_prescription_identity"]
+    _bundle_identity(identity)
+    _bundle_hash(report["source_graph_sha256"], "source graph")
+    return report
+end
+
+_bundle_report_key(key) =
+    throw(ArgumentError("calibration result must be a mapping with string keys"))
+_bundle_report_key(::String) = nothing
+_bundle_mapping(value, label) = throw(ArgumentError("calibration $label must be a mapping"))
+_bundle_mapping(value::AbstractDict, label) = value
+_bundle_identity(value) =
+    throw(ArgumentError("calibration source prescription identity must be nonempty text"))
+_bundle_identity(value::AbstractString) =
+    !isempty(strip(value)) ||
+    throw(ArgumentError("calibration source prescription identity must be nonempty text"))
+_bundle_version(value) = throw(ArgumentError("calibration bundle requires version 1"))
+_bundle_version(value::Bool) = throw(ArgumentError("calibration bundle requires version 1"))
+_bundle_version(value::Integer) =
+    value == 1 || throw(ArgumentError("calibration bundle requires version 1"))
+_bundle_parameter_names(value) =
+    throw(ArgumentError("calibration parameter_names must be a list of names"))
+_bundle_parameter_names(value::AbstractVector) = foreach(_bundle_parameter_name, value)
+_bundle_parameter_name(value) =
+    throw(ArgumentError("calibration parameter_names must be a list of names"))
+_bundle_parameter_name(::AbstractString) = nothing
+_bundle_parameter_files(files, names) = throw(
+    ArgumentError("calibration parameter_files must cover exactly the runtime parameters"),
+)
+_bundle_parameter_files(files::AbstractDict, names) =
+    Set(keys(files)) == Set(names) || throw(
+        ArgumentError(
+            "calibration parameter_files must cover exactly the runtime parameters"
+        ),
+    )
+_bundle_artifact_mappings(parameters, diagnostics) =
+    throw(ArgumentError("calibration parameters and diagnostics must be mappings"))
+_bundle_artifact_mappings(::AbstractDict, ::AbstractDict) = nothing
+_bundle_artifact_name(key) = throw(ArgumentError("invalid calibration artifact name"))
+_bundle_artifact_name(key::Union{Symbol,AbstractString}) = _bundle_name(String(key))
+_bundle_array(array, name) =
+    throw(ArgumentError("calibration artifact $name must be an array"))
+_bundle_array(::AbstractArray, name) = nothing
+
+# Frozen bundle descriptors bind manifested artifacts or retained input bytes.
+function _bundle_fits_data(source, T, shape, reference, hashes, verified)
+    manifested = haskey(hashes, source.path)
+    declared = get(reference, "sha256", nothing)
+    expected = get(hashes, source.path, declared)
+    if manifested && declared !== nothing && declared != expected
+        throw(
+            ArgumentError(
+                "calibration context FITS sha256 differs from bundle artifact manifest: " *
+                reference["path"],
+            ),
+        )
+    end
+    expected === nothing && return Artifacts.read_fits_data(source, T, shape)
+    # Hash and decode one bounded snapshot, including hashless manifested refs.
+    # Retained inputs use their declared digest without joining the manifest.
+    check = Returns(nothing)
+    original = Artifacts.snapshot(source.path; check)
+    bytes2hex(sha256(original)) == expected || throw(
+        ArgumentError(
+            "calibration context FITS sha256 differs from bundle file snapshot: " *
+            reference["path"],
+        ),
+    )
+    manifested && push!(verified, source.path)
+    return Artifacts.decode_fits(source, T, shape, original; check) do data, _...
+        data
+    end
+end
+
+"""
+    read_bundle(directory)
+
+Validate a version-1 calibration bundle without loading scientific packages.
+Return the report, parsed context, graph path, artifact paths keyed by FITS
+basename, and runtime parameter names. Verify context, graph and artifact
+hashes and any declared FITS reference hashes before return. Scientific array
+interpretation belongs to the caller.
+"""
+function read_bundle(directory::AbstractString)
+    isdir(directory) && !islink(directory) ||
+        throw(ArgumentError("calibration bundle must be a non-symlink directory"))
+    entries = Set(readdir(directory))
+    required = Set(("result.yaml", "context.yaml", "graph.conf", "artifacts"))
+    allowed = union(required, Set(("recipe.yaml", "recipe.conf", "inputs", "README.md")))
+    issubset(required, entries) && issubset(entries, allowed) ||
+        throw(ArgumentError("calibration bundle contains missing or unknown files"))
+    for name in entries
+        path = joinpath(directory, name)
+        islink(path) && throw(ArgumentError("calibration bundle contains a symlink: $name"))
+        if name in ("artifacts", "inputs")
+            isdir(path) ||
+                throw(ArgumentError("calibration bundle $name must be a directory"))
+        else
+            isfile(path) ||
+                throw(ArgumentError("calibration bundle $name must be a regular file"))
+        end
+    end
+    report = _bundle_report(
+        Common.read_yaml(_bundle_file(directory, "result.yaml"; maximum = 1024^2))
+    )
+    _bundle_version(get(report, "version", nothing))
+    for key in _BUNDLE_INTEGRITY_FIELDS
+        haskey(report, key) || throw(ArgumentError("calibration result is missing $key"))
+    end
+    context_path = _bundle_file(directory, "context.yaml"; maximum = 1024^2)
+    graph = _bundle_file(directory, "graph.conf"; maximum = 16 * 1024^2)
+    for (key, path) in (("context_sha256", context_path), ("graph_sha256", graph))
+        Common.sha256_file(path) == _bundle_hash(report[key], key) ||
+            throw(ArgumentError("calibration bundle $key mismatch"))
+    end
+    context = Common.read_yaml(context_path)
+    _bundle_mapping(context, "context")
+    artifact_directory = joinpath(directory, "artifacts")
+    isdir(artifact_directory) && !islink(artifact_directory) ||
+        throw(ArgumentError("calibration artifacts must be a non-symlink directory"))
+    manifest = report["artifact_sha256"]
+    _bundle_mapping(manifest, "artifact_sha256")
+    for name in keys(manifest)
+        _bundle_name(name; artifact = true)
+    end
+    Set(readdir(artifact_directory)) == Set(keys(manifest)) || throw(
+        ArgumentError(
+            "calibration artifact manifest does not exactly cover artifact files"
+        ),
+    )
+    artifacts = Dict{String,String}()
+    hashes = Dict{String,String}()
+    for (name, expected) in manifest
+        path = _bundle_file(artifact_directory, name)
+        artifacts[name] = path
+        hashes[path] = _bundle_hash(expected, "artifact $name")
+    end
+    # Reuse cold preparation's typed and aggregate size checks while preserving
+    # the frozen bundle's declared hashes. The stored context stays compact.
+    verified = Set{String}()
+    InstrumentConfiguration._calibration_context(
+        context,
+        directory,
+        Ref(Artifacts.MAX_IMAGE_BYTES),
+        (source, T, shape, reference) ->
+            _bundle_fits_data(source, T, shape, reference, hashes, verified),
+    )
+    for (name, path) in artifacts
+        path in verified && continue
+        # Unreferenced artifacts still require the bounded no-follow snapshot.
+        bytes = Artifacts.snapshot(path; check = Returns(nothing))
+        bytes2hex(sha256(bytes)) == hashes[path] ||
+            throw(ArgumentError("calibration artifact hash mismatch: $name"))
+    end
+    parameter_names = report["parameter_names"]
+    _bundle_parameter_names(parameter_names)
+    length(unique(parameter_names)) == length(parameter_names) ||
+        throw(ArgumentError("calibration parameter_names contains duplicates"))
+    parameter_files = report["parameter_files"]
+    _bundle_parameter_files(parameter_files, parameter_names)
+    for name in parameter_names
+        _bundle_name(name)
+        filename = _bundle_name(parameter_files[name]; artifact = true)
+        haskey(artifacts, filename) ||
+            throw(ArgumentError("calibration parameter has no artifact: $name"))
+    end
+    return (;
+        report,
+        context,
+        graph,
+        artifacts,
+        parameter_names = String.(parameter_names),
+        parameter_files = Dict{String,String}(parameter_files),
+    )
+end
+
+"""
+    write_bundle(directory, report, context, concrete_graph, parameters;
+                 diagnostics=Dict(), artifact_units=Dict(), artifact_sources=Dict())
+
+Publish a fresh version-1 calibration bundle by renaming a complete sibling
+staging directory. Parameters and diagnostics map port/artifact stems to arrays;
+only parameters are listed in parameter_names. Generated integrity fields cannot
+be supplied in report. Use `artifact_sources` to retain the exact bytes of
+an existing FITS input keyed by artifact stem. Its primary image must match
+the supplied array in the bundle's axis order. Return the generated report.
+"""
+function write_bundle(
+    directory::AbstractString,
+    report,
+    context,
+    concrete_graph,
+    parameters;
+    diagnostics = Dict(),
+    artifact_units = Dict(),
+    artifact_sources = Dict{String,String}(),
+)
+    _bundle_report(report)
+    any(key -> haskey(report, key), _BUNDLE_INTEGRITY_FIELDS) && throw(
+        ArgumentError("calibration report must not supply generated integrity fields")
+    )
+    _bundle_mapping(context, "context")
+    _bundle_artifact_mappings(parameters, diagnostics)
+    arrays = Dict{String,Any}()
+    parameter_names = String[]
+    for (values, runtime) in ((parameters, true), (diagnostics, false))
+        for (key, array) in values
+            name = _bundle_artifact_name(key)
+            haskey(arrays, name) &&
+                throw(ArgumentError("duplicate calibration artifact name: $name"))
+            _bundle_array(array, name)
+            arrays[name] = array
+            runtime && push!(parameter_names, name)
+        end
+    end
+    all(name -> haskey(arrays, name) && !haskey(artifact_units, name), keys(artifact_sources)) ||
+        throw(ArgumentError("retained FITS sources require a matching array and original units"))
+    target = abspath(directory)
+    !ispath(target) && !islink(target) ||
+        throw(ArgumentError("calibration output must be fresh: $target"))
+    mkpath(dirname(target))
+    temporary = mktempdir(dirname(target); prefix = ".calibration-")
+    try
+        mkdir(joinpath(temporary, "artifacts"))
+        Common.write_yaml(joinpath(temporary, "context.yaml"), context)
+        ScienceExport.write_spa_config(joinpath(temporary, "graph.conf"), concrete_graph)
+        hashes = Dict{String,String}()
+        for name in sort!(collect(keys(arrays)))
+            path = joinpath(temporary, "artifacts", name * ".fits")
+            array = arrays[name]
+            if haskey(artifact_sources, name)
+                axes = ntuple(index -> ndims(array) + 1 - index, ndims(array))
+                source = Artifacts.FITSArtifact(artifact_sources[name]; axes)
+                bytes = Artifacts.snapshot(source.path; check = () -> nothing)
+                retained = Artifacts.prepare_snapshot(source, eltype(array), size(array), bytes)
+                isequal(retained.data, array) ||
+                    throw(ArgumentError("retained FITS data differ from calibration array: $name"))
+                write(path, bytes)
+            else
+                write_fits(path, array; units = get(artifact_units, name, nothing))
+            end
+            hashes[name*".fits"] = Common.sha256_file(path)
+        end
+        result = Dict{String,Any}(report)
+        result["version"] = 1
+        result["parameter_names"] = sort!(parameter_names)
+        result["parameter_files"] = Dict(name => name * ".fits" for name in parameter_names)
+        result["context_sha256"] = Common.sha256_file(joinpath(temporary, "context.yaml"))
+        result["graph_sha256"] = Common.sha256_file(joinpath(temporary, "graph.conf"))
+        result["artifact_sha256"] = hashes
+        Common.write_yaml(joinpath(temporary, "result.yaml"), result)
+        read_bundle(temporary)
+        # force=false preserves an output created concurrently while staging.
+        mv(temporary, target; force = false)
+        return result
+    finally
+        isdir(temporary) && rm(temporary; recursive = true)
+    end
+end

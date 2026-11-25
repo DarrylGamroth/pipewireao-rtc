@@ -1,0 +1,18 @@
+{
+  "julia_load_path": "@:@stdlib",
+  "depot_initialized_empty": true,
+  "first_depot": "/var/tmp/rtc-flow-trace.nIscIx4f/depot",
+  "home_user_depot_in_search_path": false,
+  "pkg_dependency_builds_in_verification_depot": false,
+  "pkg_dependency_builds_in_resolver_depot": true,
+  "hil_package_source": "/var/tmp/rtc-flow-trace.nIscIx4f/depot/packages/AdaptiveOpticsSimPipeWireHIL/rm24M",
+  "package_receiver_before_session_install": false,
+  "native_artifact": "77da251765f3124df77322c562e67a7c7742ab1d",
+  "initial_general_registry": "5d7c4ac30de713d7262ee2601a471fe0cd612261",
+  "source_build_regression_tests": {
+    "v0.5.11_failed": 2,
+    "candidate_passed": 2,
+    "startup_selector_passed": 42,
+    "receiver_selector_passed": 38
+  }
+}

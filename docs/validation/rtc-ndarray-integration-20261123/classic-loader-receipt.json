@@ -1,0 +1,122 @@
+{
+  "schema": "classic-loader-receipt/1",
+  "date": "2026-11-23",
+  "rtc_revision": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+  "rtc_tree": "604afe8a20dd09cb832c5b357458baad5c9b45bb",
+  "julia": {
+    "version": "1.13.4",
+    "revision": "c1ac32ab73354bbe9bb767f91e0a2b857141fe70",
+    "cache_flags": 163,
+    "cache_target": "znver3"
+  },
+  "inputs": {
+    "ExportedGraphWarmup.ji": {
+      "bytes": 10485,
+      "sha256": "2bf7a637aeeb95957007aff395f29bd97562a2abf3a90bef15df3726509a6c99"
+    },
+    "ExportedGraphWarmup.so": {
+      "bytes": 37945416,
+      "sha256": "9b9325f500218ced563ff85330e8d78ac4eb89317c5bae0ab59f8f57b7175c29"
+    },
+    "ExportedGraphWarmup.jl": {
+      "bytes": 1949,
+      "sha256": "aa408c8c687161acc721dd701aad0a46b504815a47d386eafbec7dc0c39932bf"
+    },
+    "deployment.conf": {
+      "bytes": 7030,
+      "sha256": "47c7f7b0ca1a21d7365400966b858236abc09d467627f7c8ebac39041bfe52f7"
+    },
+    "Project.toml": {
+      "bytes": 1048,
+      "sha256": "1825d4f5ec7d80af03368bdaf6625e92144a6751a7a2984a7bad72c62fbfeb61"
+    },
+    "Manifest.toml": {
+      "bytes": 56021,
+      "sha256": "a2e672fff0a3e1288a2f82e0a8093596c3933a0c37c25ccd845a31647b4fbf3a"
+    }
+  },
+  "diagnostic": {
+    "operation": "Base.require(Main, :ExportedGraphWarmup)",
+    "julia_options": [
+      "--startup-file=no",
+      "--threads=2,0",
+      "--compiled-modules=existing",
+      "--compile=min",
+      "--heap-size-hint=384M"
+    ],
+    "address_space_limit_bytes": 2147483648,
+    "wall_timeout_seconds": 60,
+    "cpu_limit_seconds": 20,
+    "exact_module_build_ids_before_require": 151,
+    "required_module_build_ids": 151,
+    "depot_selection": "Empty first depot, curated exact cache pairs, bundled Julia depots",
+    "mapped_image_regions": [
+      {
+        "permissions": "r--p",
+        "file_offset_bytes": 0,
+        "region_bytes": 364544,
+        "device": "103:02",
+        "inode": 20978620
+      },
+      {
+        "permissions": "r-xp",
+        "file_offset_bytes": 360448,
+        "region_bytes": 4456448,
+        "device": "103:02",
+        "inode": 20978620
+      },
+      {
+        "permissions": "r--p",
+        "file_offset_bytes": 4812800,
+        "region_bytes": 4096,
+        "device": "103:02",
+        "inode": 20978620
+      },
+      {
+        "permissions": "rw-p",
+        "file_offset_bytes": 4812800,
+        "region_bytes": 8192,
+        "device": "103:02",
+        "inode": 20978620
+      },
+      {
+        "permissions": "---p",
+        "file_offset_bytes": 4833280,
+        "region_bytes": 4096,
+        "device": "103:02",
+        "inode": 20978620
+      },
+      {
+        "permissions": "rw-p",
+        "file_offset_bytes": 4820992,
+        "region_bytes": 28479488,
+        "device": "103:02",
+        "inode": 20978620
+      }
+    ],
+    "memory_at_interruption_kib": {
+      "virtual": 1753864,
+      "resident": 1053968,
+      "swap": 0
+    },
+    "termination": "SIGTERM to sample the stack before hitting the address-space cap",
+    "process_exit_status": 143,
+    "require_returned": false,
+    "method_or_type_in_specialization": null,
+    "stack_file": "classic-loader-stack.txt",
+    "stack_sha256": "ea77a19d1c6512a14315a4479e06bc03af2eacccd4980e399b85055e7470f0f9"
+  },
+  "controls": {
+    "matched_uninterrupted_termination": "OutOfMemoryError under a 2 GiB address-space limit after 151 exact dependency builds were present",
+    "historical": {
+      "result": "Source fallback. No historical ExportedGraphWarmup.so map was observed.",
+      "required_PipeWireAORTCGraphExt_build_unavailable": "fafbfcfd-a62a-69f9-b3fe-56e99f28cdcc",
+      "ExportedGraphWarmup.ji_sha256": "934aa1c924e66a7e71aab4cdee0d72d906dec79c04bf877f08faed1ab440b9db",
+      "ExportedGraphWarmup.so_sha256": "f4a906990ea9ff487beeb6244d468cb19f933a2ff17cafc798ac5a2fb9d4c323"
+    }
+  },
+  "cached_module": {
+    "name": "ExportedGraphWarmup",
+    "build_id": "fafbfcfd-618b-954b-6c7b-705e63b8b513"
+  }
+}

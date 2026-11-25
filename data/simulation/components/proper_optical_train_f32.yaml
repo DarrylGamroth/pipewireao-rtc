@@ -19,3 +19,5 @@ optional_config:
     $ref: /schemas/output_schema
   output_sampling_m:
     $ref: /values/output_sampling_m
+  output_quantity:
+    $ref: /values/output_quantity

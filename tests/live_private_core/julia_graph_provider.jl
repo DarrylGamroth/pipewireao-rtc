@@ -1,33 +1,37 @@
 using FilterGraphAlgorithms
 using FilterGraphPipeWire
-using JuliaFilterGraph
+using FilterGraphs
 using PipeWireAO
+
+unloaded_pipewire_error(error) = false
+unloaded_pipewire_error(error::PipeWireAO.PipeWireError) =
+    error.operation === :pw_ndarray_filter_run && error.code == -Base.Libc.EPIPE
 
 length(ARGS) == 4 || error("expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE RATE")
 core_name, graph_configuration, stop_file, rate_text = ARGS
 rate = parse(Int, rate_text)
 rate > 0 || error("RATE must be positive")
 
-graph = JuliaFilterGraph.prepare_graph(
-    graph_configuration;
-    algorithms=FilterGraphAlgorithms.algorithms(),
+graph = FilterGraphs.prepare_graph(
+    graph_configuration; algorithms = FilterGraphAlgorithms.algorithms()
 )
 node = FilterGraphPipeWire.PipeWireNode(
     graph;
-    name="pipewireao-rtc-external-graph",
-    remote=core_name,
-    rate=(rate, 1),
-    boundary_layout=FilterGraphAlgorithms.RowMajorLayout(),
-    run_control=true,
+    name = "pipewireao-rtc-external-graph",
+    remote = core_name,
+    rate = (rate, 1),
+    boundary_layout = FilterGraphAlgorithms.RowMajorLayout(),
+    run_control = true,
 )
 
 finished = Threads.Atomic{Bool}(false)
 monitor = Threads.@spawn begin
     while !finished[] && !isfile(stop_file)
         state = FilterGraphPipeWire.node_state(node)
-        if PipeWireAO.isrunning(node) &&
-           (state == PipeWireAO.NDARRAY_FILTER_STATE_PAUSED ||
-            state == PipeWireAO.NDARRAY_FILTER_STATE_STREAMING)
+        if PipeWireAO.isrunning(node) && (
+            state == PipeWireAO.NDARRAY_FILTER_STATE_PAUSED ||
+            state == PipeWireAO.NDARRAY_FILTER_STATE_STREAMING
+        )
             Base.Libc.systemsleep(0.1)
             println("JULIA_GRAPH_READY state=$state")
             flush(stdout)
@@ -47,9 +51,7 @@ try
 catch error
     # The runner has already unloaded and removed its source link before this
     # marker is written. Preserve callback failures and every other run error.
-    if !(error isa PipeWireAO.PipeWireError &&
-         error.operation === :pw_ndarray_filter_run &&
-         error.code == -Base.Libc.EPIPE)
+    if !unloaded_pipewire_error(error)
         rethrow()
     end
     finished[] = true

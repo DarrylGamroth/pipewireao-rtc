@@ -1,0 +1,628 @@
+import ..DeploymentConfiguration
+
+const MAX_PARAMETER_PUBLISHERS = 1
+const SOURCE_CONTROL_PROFILE = "pipewireao.source-control/1"
+const PARAMETER_SOURCE_PROFILE = ControlClient.profile_name(ParameterSource.PROFILE)
+
+"""
+    perform!(runtime, job, effect::AbstractEffect)
+
+Execute one effect on the session's serialized owner task, outside Hsm dispatch.
+The host supplies a guarded job, asynchronous native I/O, exact object bindings,
+and the captured owner/source collections. Those adapters enforce each native
+deadline and mark scientific submissions before sending them. This layer orders
+their terminal acknowledgements; it never retries an operation or drives Hsm.
+
+Query and group results are native `SPA.Struct` details for the existing runner
+wire profile. Lifecycle effects return `nothing`; `QuerySourceEnd` returns the
+machine's typed evidence. Property/parameter payloads are the decoded runner
+command's argument tuple. Host-specific `RemoveControls`, `PublishQuit` and
+`Disconnect` methods belong to the application host, including the emergency
+Disconnect budget exception and the final Quit publication fence.
+"""
+function perform! end
+
+function _declared_instance(declaration, key)
+    instance = tryparse(Int64, string(declaration[key]))
+    instance !== nothing && instance > 0 ||
+        throw(ArgumentError("invalid declared control incarnation: $key"))
+    return instance
+end
+
+# A previous session's terminal bootstrap can still be visible after an unclean
+# exit. Inspect its bounded native capability before taking a required binding.
+function available_bootstrap!(runtime, job, name, pid, instance)
+    observation = ControlClient.Observation(OwnerBootstrapCodec.PROFILE, instance, UInt32(pid))
+    key = first(ControlClient.capability_names(observation.profile))
+    return await_condition!(runtime, job) do
+        object = find_object(runtime, name, pid)
+        object === nothing && return nothing
+        records = _enumerate_object!(runtime, job, object, SPA.PARAM_PROPS)
+        records === nothing && return nothing
+        capabilities = filter(pod -> haskey(named_values(pod), key), records)
+        isempty(capabilities) && return nothing
+        capability = ControlClient.capability(only(capabilities), observation)
+        if capability.lifecycle in (OwnerBootstrapCodec.Connected, OwnerBootstrapCodec.Stopped,
+                                    OwnerBootstrapCodec.Fault)
+            await_condition!(runtime, job) do
+                object.removed || registry_serial(runtime, object.id) != object.serial
+            end
+            return nothing
+        end
+        capability.lifecycle === OwnerBootstrapCodec.Prepared &&
+            runtime.controller in capability.controllers || return nothing
+        return UInt64(object.id)
+    end
+end
+
+function perform!(runtime, job, ::CaptureOwners)
+    isempty(runtime.owners) || throw(ArgumentError("bootstrap owners are already captured"))
+    await_condition!(runtime, job) do
+        runtime.core_info !== nothing &&
+        runtime.client_id > 0 &&
+        runtime.client_id != typemax(UInt32) &&
+        runtime.controller !== nothing ? true : nothing
+    end
+    core = require_core_pid(runtime.core_info, runtime.configuration["core.owner"]["pid"])
+    controller = node!(
+        runtime, job, runtime.configuration["controller.node.name"], getpid()
+    )
+    local_controller(runtime, UInt32(controller)) == runtime.controller ||
+        throw(ArgumentError("session controller no longer matches its admitted identity"))
+    capture!(runtime, controller; core)
+    declarations = runtime.configuration["owners"]
+    length(declarations) <= DeploymentConfiguration.MAX_EXTERNAL_OWNERS ||
+        throw(ArgumentError("too many declared external owners"))
+    names, handles = Set{String}(), Set{UInt64}()
+    for declaration in declarations
+        haskey(declaration, "bootstrap-node") || continue
+        name = String(declaration["bootstrap-node"])
+        name in names && throw(ArgumentError("duplicate bootstrap control node"))
+        push!(names, name)
+        instance = _declared_instance(declaration, "bootstrap-instance")
+        pid = declaration["pid"]
+        persistent = get(declaration, "persistent", false)::Bool
+        handle = persistent ? available_bootstrap!(runtime, job, name, pid, instance) :
+                 node!(runtime, job, name, pid)
+        handle in handles && throw(ArgumentError("duplicate bootstrap owner incarnation"))
+        push!(handles, handle)
+        capture!(runtime, handle; core)
+        owner = capture_owner(
+            runtime,
+            handle,
+            OwnerBootstrapCodec.PROFILE,
+            instance,
+            pid,
+        )
+        # Session-scoped owners also accept Quit during preparation. A reusable
+        # owner grants retirement only to the controller whose Connect succeeded.
+        owner.quit_authorized = !persistent
+        push!(runtime.owners, owner)
+    end
+    return nothing
+end
+
+function perform!(runtime, job, ::ConnectOwners)
+    failures = Exception[]
+    # Stay on the session thread; each owner has its own observation and
+    # correlated native reply. Join all tasks before completing the effect.
+    @sync for owner in runtime.owners
+        @async try
+            connect_owner!(runtime, job, owner)
+            owner.quit_authorized = true
+        catch error
+            if !job.cancelled
+                push!(failures, error)
+                job.cancelled = true
+            end
+        end
+    end
+    isempty(failures) || throw(first(failures))
+    check_job(runtime, job)
+    return nothing
+end
+
+function perform!(runtime, job, ::CaptureParameters)
+    runtime.parameters === nothing ||
+        throw(ArgumentError("parameter publisher is already captured"))
+    declarations = filter(
+        declaration ->
+            get(declaration, "control-protocol", nothing) == PARAMETER_SOURCE_PROFILE,
+        runtime.configuration["owners"],
+    )
+    length(declarations) <= MAX_PARAMETER_PUBLISHERS ||
+        throw(ArgumentError("multiple parameter publishers are unsupported"))
+    isempty(declarations) && return nothing
+    declaration = only(declarations)
+    handle = node!(runtime, job, declaration["control-node"], declaration["pid"])
+    owner = capture_owner(
+        runtime,
+        handle,
+        ParameterSource.PROFILE,
+        _declared_instance(declaration, "control-instance"),
+        declaration["pid"],
+    )
+    node = something(find_object(runtime, handle))
+    publish_parameter_source!(runtime, job, handle, Dict(
+        "pipewireao.rtc-control.parameter-source.id" => string(node.id),
+        "pipewireao.rtc-control.parameter-source.serial" => string(node.serial),
+    ))
+    runtime.parameters = owner
+    return nothing
+end
+
+function external_stream(configuration)
+    source = get(configuration, "source", nothing)
+    return source isa AbstractDict && DeploymentConfiguration.uses_external_stream(source)
+end
+
+function validate_external_stream(configuration, links)
+    external_stream(configuration) || return nothing
+    source = configuration["source"]
+    role, pid = get(source, "role", nothing), get(source, "pid", nothing)
+    Set(keys(source)) == Set(("role", "pid", "control-protocol")) &&
+        role isa String && !isempty(role) && !occursin('\0', role) &&
+        pid isa Integer && !(pid isa Bool) && 0 < pid <= typemax(UInt32) ||
+        throw(ArgumentError("invalid external stream source declaration"))
+    auxiliary = get(configuration, "auxiliary-sources", [])
+    auxiliary isa AbstractVector && isempty(auxiliary) ||
+        throw(ArgumentError("an external stream cannot have auxiliary source controls"))
+    pid != configuration["core.owner"]["pid"] ||
+        throw(ArgumentError("external stream must have a separate client process"))
+    declared_owner = false
+    for owner in configuration["owners"]
+        if get(owner, "role", nothing) == role
+            !declared_owner && owner == source ||
+                throw(ArgumentError("external stream owner cannot declare controls"))
+            declared_owner = true
+        elseif get(owner, "pid", nothing) == pid
+            throw(ArgumentError("external stream process cannot own another declared role"))
+        end
+    end
+    spec, pids = configuration["session"], configuration["node.pids"]
+    for graph in get(spec, "graphs", [])
+        if get(pids, graph["node.name"], nothing) == pid && _session_controlled(graph, "graphs")
+            throw(ArgumentError("external stream process cannot own a session-controlled graph"))
+        end
+    end
+    outputs = Set{DeploymentConfiguration.PortAddress}()
+    for node in get(spec, "sources", [])
+        name = node["node.name"]
+        node_pid = get(pids, name, nothing)
+        node_pid == pid || continue
+        node_pid isa Integer && get(node, "ownership", nothing) == "external" ||
+            throw(ArgumentError("external stream process requires an external source Node"))
+        for port in get(node, "ports", [])
+            port["direction"] == "output" || continue
+            push!(outputs, DeploymentConfiguration.PortAddress(name, port["name"]))
+        end
+    end
+    any(link -> link.output in outputs, links) ||
+        throw(ArgumentError("external stream requires a declared output Link"))
+    return nothing
+end
+
+function perform!(runtime, job, ::CaptureSources)
+    isempty(runtime.sources) ||
+        throw(ArgumentError("acquisition sources are already captured"))
+    # ConnectLinks captures the required external Node, Port and client
+    # directly from the declared data Link. There is no control binding.
+    external_stream(runtime.configuration) && return nothing
+    primary = runtime.configuration["source"]
+    auxiliary = get(runtime.configuration, "auxiliary-sources", [])
+    length(auxiliary) < DeploymentConfiguration.MAX_EXTERNAL_OWNERS ||
+        throw(ArgumentError("too many auxiliary acquisition sources"))
+    declarations = (primary, auxiliary...)
+    names, roles = Set{String}(), Set{String}()
+    for declaration in declarations
+        name, role = String(declaration["control-node"]), String(declaration["role"])
+        if name in names || role in roles
+            throw(ArgumentError("duplicate acquisition source role or control node"))
+        end
+        push!(names, name)
+        push!(roles, role)
+    end
+    all(
+        declaration -> declaration["control-protocol"] == SOURCE_CONTROL_PROFILE, auxiliary
+    ) || throw(ArgumentError("auxiliary acquisition requires native SourceControl"))
+    handles = Set{UInt64}()
+    for declaration in declarations
+        handle = node!(runtime, job, declaration["control-node"], declaration["pid"])
+        handle in handles && throw(ArgumentError("duplicate acquisition owner incarnation"))
+        push!(handles, handle)
+        push!(runtime.sources, source(runtime, handle, declaration))
+    end
+    return nothing
+end
+
+function perform!(runtime, job, ::PrepareSources)
+    for binding in runtime.sources
+        prepare_source!(runtime, job, binding)
+    end
+    return nothing
+end
+
+perform!(runtime, job, ::DiscoverGraphs) = discover_graphs!(runtime, job)
+perform!(runtime, job, ::ConnectLinks) = create_links!(runtime, job)
+perform!(runtime, job, ::WithdrawLinks) = remove_links!(runtime, job)
+
+# Source adapters expose terminal retirement and the last acknowledged cursor
+# generation through dispatch. Retirement is established only by the adapter's
+# validated Shutdown receipt; a cached cursor never predicts a future reset.
+_source_retired(binding::AcquisitionBinding) = binding.owner.retired
+_source_retired(::SourceControlBinding) = false
+_source_generation(binding::AcquisitionBinding) =
+    binding.previous === nothing ? nothing : binding.previous.generation
+_source_generation(binding::SourceControlBinding) =
+    binding.previous === nothing ? nothing : binding.previous.generation
+
+function _validate_hold(origin::AbstractOrigin, snapshot::SourceSnapshot)
+    snapshot.running && throw(ArgumentError("acquisition remained running after Hold"))
+    return nothing
+end
+_validate_hold(::AbstractOrigin, ::InitialSourceHold) = nothing
+function _validate_hold(::ConfiguringOrigin, snapshot::SourceSnapshot)
+    !snapshot.running &&
+    !snapshot.completed &&
+    snapshot.sequence == 0 &&
+    snapshot.generation != 0 ||
+        throw(ArgumentError("initial acquisition was not held before its first exposure"))
+    return nothing
+end
+
+function _quit_source_target!(runtime, job, binding::AcquisitionBinding)
+    owner = binding.owner
+    quit_target!(
+        runtime, job, :source, ControlClient.profile_name(owner.profile), owner.handle;
+        pid = owner.pid, instance = owner.instance,
+    )
+    return nothing
+end
+function _quit_source_target!(runtime, job, binding::SourceControlBinding)
+    quit_target!(
+        runtime, job, :source, SOURCE_CONTROL_PROFILE, binding.handle;
+        pid = binding.pid, instance = binding.instance,
+    )
+    return nothing
+end
+
+function perform!(runtime, job, effect::HoldSources)
+    for binding in runtime.sources
+        # Retired acquisition bindings carry the validated terminal Shutdown
+        # proof. They must not receive another scientific command.
+        _source_retired(binding) && continue
+        _quit_source_target!(runtime, job, binding)
+        operation = effect.revoke && supports_revocation(runtime, binding) ? :revoke : :run
+        snapshot = source_operation!(runtime, job, binding, operation; running = false)
+        _validate_hold(job.ticket.origin, snapshot)
+        quit_acknowledge!(runtime, job)
+    end
+    return nothing
+end
+
+function perform!(runtime, job, ::RunSources)
+    for binding in Iterators.reverse(runtime.sources)
+        _source_retired(binding) &&
+            throw(ArgumentError("cannot run a retired acquisition owner"))
+        snapshot = source_operation!(runtime, job, binding, :run; running = true)
+        snapshot.running && !snapshot.completed ||
+            throw(ArgumentError("acquisition release was not observed"))
+    end
+    return nothing
+end
+
+function perform!(runtime, job, ::QuerySourceEnd)
+    isempty(runtime.sources) &&
+        throw(ArgumentError("primary acquisition source is not captured"))
+    binding = first(runtime.sources)
+    _source_retired(binding) &&
+        throw(ArgumentError("cannot query a retired acquisition owner"))
+    snapshot = source_operation!(runtime, job, binding, :query)
+    return SourceEnd(snapshot.completed, snapshot.running)
+end
+
+function perform!(runtime, job, ::ResetSources)
+    for binding in runtime.sources
+        _source_retired(binding) &&
+            throw(ArgumentError("cannot reset a retired acquisition owner"))
+        before = _source_generation(binding)
+        before !== nothing && before != 0 ||
+            throw(ArgumentError("acquisition reset has no acknowledged baseline"))
+        after = source_operation!(runtime, job, binding, :reset)
+        !after.running &&
+        !after.completed &&
+        after.sequence == 0 &&
+        after.generation != 0 &&
+        after.generation != before ||
+            throw(ArgumentError("acquisition reset did not adopt a new held generation"))
+    end
+    return nothing
+end
+
+function perform!(runtime, job, ::ShutdownSources)
+    for binding in runtime.sources
+        _source_retired(binding) && continue
+        binding isa SourceControlBinding && continue # Its bootstrap owns process retirement.
+        _quit_source_target!(runtime, job, binding)
+        shutdown_source!(runtime, job, binding)
+        quit_acknowledge!(runtime, job)
+    end
+    return nothing
+end
+
+function _bootstrap_order(runtime, index::Int, owner::Owner{OwnerBootstrapCodec.Profile})
+    # CaptureOwners appends the declared bootstraps in declaration order. A
+    # partial capture is a prefix; terminal owners can lose their control node
+    # before a later Quit, so ordering must retain this admission evidence.
+    declarations = filter(
+        declaration -> haskey(declaration, "bootstrap-node"),
+        runtime.configuration["owners"],
+    )
+    index <= length(declarations) ||
+        throw(ArgumentError("captured bootstrap has no owner declaration"))
+    declaration = declarations[index]
+    declaration["pid"] == owner.pid &&
+    _declared_instance(declaration, "bootstrap-instance") == owner.instance ||
+        throw(ArgumentError("captured bootstrap declaration differs"))
+    return (declaration["role"] != runtime.configuration["source"]["role"], index)
+end
+function perform!(runtime, job, ::ShutdownGraphOwners)
+    # A held ndarray graph can still own input buffers. Closing its filter
+    # releases them before explicit Link withdrawal can revoke them.
+    source_pids = Set(binding.pid for binding in runtime.sources if binding isa SourceControlBinding)
+    for binding in runtime.sources
+        binding isa AcquisitionBinding && push!(source_pids, binding.owner.pid)
+    end
+    pids = get(runtime.configuration, "node.pids", Dict{String,Int}())
+    for name in graph_order(runtime, true)
+        pid = get(pids, name, nothing)
+        (pid === nothing || pid in source_pids) && continue
+        for owner in runtime.owners
+            owner.pid == pid && _shutdown_bootstrap!(runtime, job, owner)
+        end
+    end
+    return nothing
+end
+
+function perform!(runtime, job, ::ShutdownOwners)
+    order = sort!(
+        collect(eachindex(runtime.owners));
+        by = index -> _bootstrap_order(runtime, index, runtime.owners[index]),
+    )
+    for index in order
+        _shutdown_bootstrap!(runtime, job, runtime.owners[index])
+    end
+    return nothing
+end
+function _shutdown_bootstrap!(runtime, job, owner::Owner{OwnerBootstrapCodec.Profile})
+    owner.quit_authorized && !owner.retired || return nothing
+    name = property(runtime, owner.handle, "node.name")
+    quit_target!(
+        runtime, job, :bootstrap, something(name, ControlClient.profile_name(owner.profile)),
+        owner.handle; pid = owner.pid, instance = owner.instance,
+    )
+    retire_owner!(runtime, owner) do
+        shutdown_owner!(runtime, job, owner)
+        quit_acknowledge!(runtime, job)
+    end
+    return nothing
+end
+
+_graph_names(runtime, ::Nothing) = sort!(collect(keys(runtime.graphs)))
+function _graph_names(runtime, group::AbstractString)
+    declaration = get(runtime.groups, group, nothing)
+    declaration === nothing && throw(ArgumentError("undeclared execution group"))
+    return sort!(copy(declaration.nodes))
+end
+
+"""Order controlled graphs by declared dependencies, with alphabetical ties.
+
+Consumers run before producers. Producers hold before consumers. Only members
+of the selected execution group participate in a selective control operation.
+"""
+function graph_order(runtime, running::Bool, group = nothing)
+    names = _graph_names(runtime, group)
+    members = Set(names)
+    successors = Dict(name => Set{String}() for name in names)
+    for link in runtime.declared_links
+        output, input = link.output.node, link.input.node
+        output in members && input in members && push!(successors[output], input)
+    end
+    depths, visiting = Dict{String,Int}(), Set{String}()
+    function depth(name)
+        haskey(depths, name) && return depths[name]
+        name in visiting && throw(ArgumentError("processing graph has a scheduling cycle"))
+        push!(visiting, name)
+        result = 0
+        for successor in successors[name]
+            result = max(result, depth(successor) + 1)
+        end
+        delete!(visiting, name)
+        return depths[name] = result
+    end
+    return sort!(names; by = name -> (running ? depth(name) : -depth(name), name))
+end
+
+function _graph_states!(runtime, ::Nothing, running::Bool)
+    for group in values(runtime.groups)
+        group.running = running
+    end
+    return nothing
+end
+_graph_states!(runtime, group::AbstractString, running::Bool) =
+    (runtime.groups[group].running = running; nothing)
+
+function _set_graph_running!(runtime, job, name, running)
+    handle = runtime.graphs[name]
+    pids = get(runtime.configuration, "node.pids", nothing)
+    pid = pids === nothing ? nothing : get(pids, name, nothing)
+    quit_target!(runtime, job, :graph, name, handle; pid)
+    node_operation!(runtime, job, handle, :run, running)
+    quit_acknowledge!(runtime, job)
+    return nothing
+end
+
+function _run_graphs!(runtime, job, running::Bool, group)
+    for name in graph_order(runtime, running, group)
+        _set_graph_running!(runtime, job, name, running)
+    end
+    _graph_states!(runtime, group, running)
+    return nothing
+end
+function perform!(runtime, job, effect::RunGraphs{Nothing})
+    _run_graphs!(runtime, job, effect.running, nothing)
+    return nothing
+end
+function perform!(runtime, job, effect::RunGraphs{<:AbstractString})
+    _run_graphs!(runtime, job, effect.running, effect.group)
+    state = effect.running ? RunnerCodec.GroupRunning : RunnerCodec.Stopped
+    return policy_struct(
+        PolicyPod(String(effect.group)),
+        PolicyPod(PolicySPA.Id(UInt32(state))),
+        PolicyPod(PolicySPA.Id(UInt32(state))),
+    )
+end
+function _hold_graphs!(runtime, job, ::AbstractOrigin)
+    return _run_graphs!(runtime, job, false, nothing)
+end
+function _hold_graphs!(runtime, job, ::FaultOrigin)
+    failure = nothing
+    for name in graph_order(runtime, false)
+        try
+            _set_graph_running!(runtime, job, name, false)
+        catch error
+            failure === nothing && (failure = error)
+        end
+    end
+    failure === nothing || throw(failure)
+    _graph_states!(runtime, nothing, false)
+    return nothing
+end
+perform!(runtime, job, ::HoldGraphs) = _hold_graphs!(runtime, job, job.ticket.origin)
+function perform!(runtime, job, ::ResetGraphs)
+    for name in sort!(collect(keys(runtime.graphs)))
+        node_operation!(runtime, job, runtime.graphs[name], :reset)
+    end
+    return nothing
+end
+
+function groups_details(runtime)::PolicySPA.Struct
+    rows = PolicyPod[
+        PolicyPod(
+            policy_struct(
+                PolicyPod(name),
+                PolicyPod(
+                    PolicySPA.Id(
+                        UInt32(
+                            runtime.groups[name].running ? RunnerCodec.GroupRunning :
+                            RunnerCodec.Stopped,
+                        ),
+                    ),
+                ),
+            ),
+        ) for name in sort!(collect(keys(runtime.groups)))
+    ]
+    return policy_struct(PolicyPod(PolicySPA.Struct(rows)))
+end
+perform!(runtime, job, ::QueryGroups) = groups_details(runtime)
+
+"""Authority-local status in the existing wire shape.
+
+The authority owns no scientific nodes and processes/discards no frame buffers.
+The link count describes its retained native Link proxies. Empty per-sink data
+does not assert that independent scientific owners discarded no buffers.
+"""
+function status_details(runtime; running::Bool)::PolicySPA.Struct
+    return policy_struct(
+        PolicyPod(running),
+        PolicyPod(Int64(0)),
+        PolicyPod(Int64(length(runtime.links))),
+        PolicyPod(Int64(0)),
+        PolicyPod(PolicySPA.Struct(PolicyPod[])),
+    )
+end
+function perform!(runtime, job, effect::Union{QueryStatus,CheckHeldStatus})
+    if external_stream(runtime.configuration)
+        isempty(runtime.links) && throw(ArgumentError("external stream Links are absent"))
+        for link in runtime.links
+            link.failure === nothing || throw(ArgumentError(link.failure))
+            for endpoint in (link.output, link.input), id in (endpoint.node, endpoint.port, endpoint.parent)
+                assert_identity!(runtime, UInt64(id))
+            end
+        end
+        return status_details(runtime; running = _status_running(job.ticket.origin))
+    end
+    isempty(runtime.sources) &&
+        throw(ArgumentError("primary acquisition source is not captured"))
+    primary_running = false
+    for (index, binding) in enumerate(runtime.sources)
+        _source_retired(binding) &&
+            throw(ArgumentError("cannot observe a retired acquisition owner"))
+        snapshot = source_operation!(runtime, job, binding, :query)
+        snapshot.generation != 0 && !(snapshot.running && snapshot.completed) ||
+            throw(ArgumentError("source status has no coherent acquisition proof"))
+        if effect isa CheckHeldStatus && snapshot.running
+            throw(ArgumentError("acquisition source is running during held admission"))
+        end
+        index == 1 && (primary_running = snapshot.running)
+    end
+    return status_details(
+        runtime; running = _status_running(job.ticket.origin) && primary_running
+    )
+end
+_status_running(::RunningOrigin) = true
+_status_running(::AbstractOrigin) = false
+
+function _graph_handle(runtime, name::AbstractString)
+    handle = get(runtime.graphs, name, nothing)
+    handle === nothing && throw(ArgumentError("undeclared scientific graph"))
+    return handle
+end
+function perform!(runtime, job, effect::QueryProperties{<:Tuple})
+    length(effect.payload) == 1 ||
+        throw(ArgumentError("property query requires one declared graph"))
+    name, = effect.payload
+    values = named_properties!(runtime, job, _graph_handle(runtime, name))
+    rows = PolicyPod[]
+    for key in sort!(collect(keys(values)))
+        value = values[key]
+        kind = PipeWireAO.pod_type(value)
+        if kind in (
+            PolicySPA.POD_BOOL,
+            PolicySPA.POD_INT,
+            PolicySPA.POD_LONG,
+            PolicySPA.POD_FLOAT,
+            PolicySPA.POD_DOUBLE,
+            PolicySPA.POD_ID,
+            PolicySPA.POD_STRING,
+        )
+            RunnerCodec._scalar_value(value; finite = false)
+            push!(rows, PolicyPod(policy_struct(PolicyPod(key), value)))
+        end
+    end
+    return policy_struct(PolicyPod(name), PolicyPod(PolicySPA.Struct(rows)))
+end
+function _generation_details(
+    runtime, job, payload::Tuple, suffix::String; optional_active::Bool
+)
+    length(payload) == 2 ||
+        throw(ArgumentError("generation query requires a graph and algorithm"))
+    name, algorithm = payload
+    values = named_properties!(runtime, job, _graph_handle(runtime, name))
+    requested = values[algorithm*":requested-"*suffix]
+    active = values[algorithm*":active-"*suffix]
+    policy_long(requested)
+    if !optional_active || PipeWireAO.pod_type(active) != PolicySPA.POD_NONE
+        policy_long(active)
+    end
+    return policy_struct(PolicyPod(name), PolicyPod(algorithm), requested, active)
+end
+perform!(runtime, job, effect::QueryPropertyGeneration{<:Tuple}) =
+    _generation_details(runtime, job, effect.payload, "generation"; optional_active = true)
+perform!(runtime, job, effect::QueryParameterGeneration{<:Tuple}) = _generation_details(
+    runtime, job, effect.payload, "parameter-sequence"; optional_active = false
+)
+perform!(runtime, job, effect::UpdateProperties{<:Tuple}) =
+    update_properties!(runtime, job, job.ticket.origin, effect.payload)
+perform!(runtime, job, effect::SubmitParameter) =
+    submit_parameter!(runtime, job, effect.payload)

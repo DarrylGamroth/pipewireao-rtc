@@ -1,0 +1,264 @@
+{
+  "public_client_failure_before_fix": {
+    "rtc": "5e7c087",
+    "error": "unhandled native runner result parameter_ndarray",
+    "baseline_sequence": 2,
+    "edited_sequence": 5,
+    "channels": 97,
+    "edited_sha256": "806fb0c3c1ae2d66d38d93ae8b4588a1c4511356fce3cc55bd4500d5e1815fa3"
+  },
+  "successful_runs": [
+    {
+      "service_commit": "5e7c0872663164280ccccb0509271d48cfd9ddbc",
+      "service_tree": "604afe8a20dd09cb832c5b357458baad5c9b45bb",
+      "client_commit": "6ddc12a393de781d21429d5da05c59565b09b375",
+      "client_tree": "2d873affb7bb265c0a8fef8bf7354a9bddb4f8ea",
+      "sealed_export": "1eda581a90023935ba2e63495e793db355183334",
+      "julia": "1.13.4",
+      "packages": {
+        "AdaptiveOpticsSim": "0.3.30",
+        "AdaptiveOpticsSimPipeWireHIL": "0.5.12",
+        "PipeWireAORTC": "0.7.29",
+        "PipeWireAO": "0.9.6",
+        "PipeWireAO_jll": "4.0.8+0",
+        "FilterGraphPipeWire": "0.5.11"
+      },
+      "baseline_sha256": "8de76ee7eb6b32c307d4a46a43ac55bc15b917e2a24d36c3d001878a97fd39d6",
+      "first_edit_and_restore": [
+        {
+          "command": "edit",
+          "reply_ms": 922.536166,
+          "channels": 97,
+          "readback_header_sequence": 6,
+          "readback_little_endian_f32_sha256": "806fb0c3c1ae2d66d38d93ae8b4588a1c4511356fce3cc55bd4500d5e1815fa3",
+          "native_outcome": "submitted",
+          "id": "132"
+        },
+        {
+          "command": "restore",
+          "reply_ms": 528.328172,
+          "channels": 97,
+          "readback_header_sequence": 9,
+          "readback_little_endian_f32_sha256": "8de76ee7eb6b32c307d4a46a43ac55bc15b917e2a24d36c3d001878a97fd39d6",
+          "native_outcome": "submitted",
+          "id": "134"
+        }
+      ],
+      "service_to_ready_s": 60.552,
+      "stop_quiet_s": 2.0034177280031145,
+      "quit_and_cleanup_s": 9.202,
+      "original_processes_alive": 0,
+      "matching_detector_and_three_command_sequences": [
+        {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 3
+        },
+        {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 4
+        },
+        {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        }
+      ],
+      "journal_sha256": "6c4235ef64498526dbcc04b29c67a6ca8ae5eb8af28da0dd1d63ca5284fd2aaf",
+      "raw_outcome_sha256": "eacd497b65a6a63da75bd4907cb698289032e549f228296b4548c003730a1757",
+      "startup_phases": {
+        "julia": [
+          {
+            "status": "completed",
+            "phase": "load FilterGraphPipeWire",
+            "wall_seconds": 9.2073e-05,
+            "compile_seconds": 0.0
+          },
+          {
+            "status": "completed",
+            "phase": "prepare graph",
+            "wall_seconds": 14.131977846,
+            "compile_seconds": 5.891907532,
+            "process_cpu_seconds": 6.730046019,
+            "thread_runqueue_seconds": 7.59656033
+          },
+          {
+            "status": "completed",
+            "phase": "enter prepared graph",
+            "wall_seconds": 11.020133105,
+            "compile_seconds": 11.020056601,
+            "process_cpu_seconds": 8.296872408,
+            "thread_runqueue_seconds": 2.783356829
+          },
+          {
+            "status": "completed",
+            "phase": "configure graph node",
+            "wall_seconds": 0.000570248,
+            "compile_seconds": 0.0,
+            "process_cpu_seconds": 0.00057049,
+            "thread_runqueue_seconds": 0.0
+          },
+          {
+            "status": "completed",
+            "phase": "construct graph node",
+            "wall_seconds": 0.021930758,
+            "compile_seconds": 0.014521551,
+            "process_cpu_seconds": 0.020105688,
+            "thread_runqueue_seconds": 0.001957559
+          },
+          {
+            "status": "completed",
+            "phase": "attach graph observers",
+            "wall_seconds": 0.110579454,
+            "compile_seconds": 0.110452785,
+            "process_cpu_seconds": 0.101991675,
+            "thread_runqueue_seconds": 0.009101027
+          },
+          {
+            "status": "completed",
+            "phase": "warm up graph",
+            "wall_seconds": 0.007029868,
+            "compile_seconds": 0.0,
+            "process_cpu_seconds": 0.006520044,
+            "thread_runqueue_seconds": 0.000530826
+          }
+        ],
+        "rtc": [
+          {
+            "status": "completed",
+            "phase": "prepare control dispatch",
+            "wall_seconds": 0.084690061,
+            "compile_seconds": 0.063560263
+          }
+        ]
+      }
+    },
+    {
+      "service_commit": "6ddc12a393de781d21429d5da05c59565b09b375",
+      "service_tree": "2d873affb7bb265c0a8fef8bf7354a9bddb4f8ea",
+      "client_commit": "6ddc12a393de781d21429d5da05c59565b09b375",
+      "client_tree": "2d873affb7bb265c0a8fef8bf7354a9bddb4f8ea",
+      "sealed_export": "b3b7b8fd634bd782c3bc6c001231c2911ea24138",
+      "julia": "1.13.4",
+      "packages": {
+        "AdaptiveOpticsSim": "0.3.30",
+        "AdaptiveOpticsSimPipeWireHIL": "0.5.12",
+        "PipeWireAORTC": "0.7.29",
+        "PipeWireAO": "0.9.6",
+        "PipeWireAO_jll": "4.0.8+0",
+        "FilterGraphPipeWire": "0.5.11"
+      },
+      "baseline_sha256": "8de76ee7eb6b32c307d4a46a43ac55bc15b917e2a24d36c3d001878a97fd39d6",
+      "first_edit_and_restore": [
+        {
+          "command": "edit",
+          "reply_ms": 740.999649,
+          "channels": 97,
+          "readback_header_sequence": 6,
+          "readback_little_endian_f32_sha256": "806fb0c3c1ae2d66d38d93ae8b4588a1c4511356fce3cc55bd4500d5e1815fa3",
+          "native_outcome": "submitted",
+          "id": "104"
+        },
+        {
+          "command": "restore",
+          "reply_ms": 450.866718,
+          "channels": 97,
+          "readback_header_sequence": 9,
+          "readback_little_endian_f32_sha256": "8de76ee7eb6b32c307d4a46a43ac55bc15b917e2a24d36c3d001878a97fd39d6",
+          "native_outcome": "submitted",
+          "id": "106"
+        }
+      ],
+      "service_to_ready_s": 50.519,
+      "stop_quiet_s": 2.0028342200093903,
+      "quit_and_cleanup_s": 8.218,
+      "original_processes_alive": 0,
+      "matching_detector_and_three_command_sequences": [
+        {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 3
+        },
+        {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 4
+        },
+        {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 5
+        }
+      ],
+      "journal_sha256": "81d56ba570b438567654f5eb54896f66cd6b85337a0e548a2852e6dd165b4f68",
+      "raw_outcome_sha256": "cc04eca580632b1ae11a26cea2ec5996dfa9cfc5218dc5fc8ba89aa51d98796b",
+      "startup_phases": {
+        "julia": [
+          {
+            "status": "completed",
+            "phase": "load FilterGraphPipeWire",
+            "wall_seconds": 8.1693e-05,
+            "compile_seconds": 0.0
+          },
+          {
+            "status": "completed",
+            "phase": "prepare graph",
+            "wall_seconds": 11.205253226,
+            "compile_seconds": 4.865361916,
+            "process_cpu_seconds": 5.494660478,
+            "thread_runqueue_seconds": 5.967422847
+          },
+          {
+            "status": "completed",
+            "phase": "enter prepared graph",
+            "wall_seconds": 8.877965559,
+            "compile_seconds": 8.87790249,
+            "process_cpu_seconds": 6.694284615,
+            "thread_runqueue_seconds": 2.209060297
+          },
+          {
+            "status": "completed",
+            "phase": "configure graph node",
+            "wall_seconds": 0.001018798,
+            "compile_seconds": 0.0,
+            "process_cpu_seconds": 0.000583355,
+            "thread_runqueue_seconds": 0.000445174
+          },
+          {
+            "status": "completed",
+            "phase": "construct graph node",
+            "wall_seconds": 0.019198431,
+            "compile_seconds": 0.012397992,
+            "process_cpu_seconds": 0.017742506,
+            "thread_runqueue_seconds": 0.001513107
+          },
+          {
+            "status": "completed",
+            "phase": "attach graph observers",
+            "wall_seconds": 0.091401658,
+            "compile_seconds": 0.09130109,
+            "process_cpu_seconds": 0.086203846,
+            "thread_runqueue_seconds": 0.005472688
+          },
+          {
+            "status": "completed",
+            "phase": "warm up graph",
+            "wall_seconds": 0.006339556,
+            "compile_seconds": 0.0,
+            "process_cpu_seconds": 0.005820595,
+            "thread_runqueue_seconds": 0.000555812
+          }
+        ],
+        "rtc": [
+          {
+            "status": "completed",
+            "phase": "prepare control dispatch",
+            "wall_seconds": 0.070740556,
+            "compile_seconds": 0.045558717
+          }
+        ]
+      }
+    }
+  ]
+}

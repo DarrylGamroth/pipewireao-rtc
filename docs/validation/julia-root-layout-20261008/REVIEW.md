@@ -19,5 +19,5 @@ The phase-4 seam review additionally identifies PKG-001 through PKG-006: separat
 owned inventories, instrument wrappers/projects, isolation of staging test
 substitution, native-profile versus instrument validation, resource resolution,
 and composed provenance. Those requirements are recorded in
-[package boundaries](../../RTC_PACKAGE_BOUNDARIES.md#extraction-contracts).
+[package boundaries](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/RTC_PACKAGE_BOUNDARIES.md#extraction-contracts).
 They remain migration risks for the independent instrument split.

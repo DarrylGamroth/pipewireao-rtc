@@ -156,6 +156,6 @@ The capture reader now reports truncated WFS headers as unavailable pacing
 rather than aborting the complete analysis. Its discriminating regression fails
 before and passes after; the final 155-test Classic suite passes. Three harness
 findings and their evidence are recorded in
-[the integration review](../docs/CLASSIC_FINAL_REVIEW.md). An independent final
+[the integration review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CLASSIC_FINAL_REVIEW.md). An independent final
 four-gate review is recorded in
 [the verification report](../docs/CLASSIC_FOUR_GATE_VERIFICATION.md).

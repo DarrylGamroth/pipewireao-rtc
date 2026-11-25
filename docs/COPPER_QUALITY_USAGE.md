@@ -4,7 +4,7 @@ The maintained `REVOLTRTC.jl/bin/copper_quality.jl` collects a bounded one-direc
 pilot through the ordinary deployed Copper CPU calibration endpoint. It requires
 a complete-frame FGN/JFG science base and its completed measured-reference
 candidate from `copper_reference.jl`. It does not adopt a reference or reconstructor.
-The [predeclared plan](COPPER_QUALITY_PLAN.md) explains the scientific limits.
+The [predeclared plan](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/COPPER_QUALITY_PLAN.md) explains the scientific limits.
 
 ## Explicit recipe
 

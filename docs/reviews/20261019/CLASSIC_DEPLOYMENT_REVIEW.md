@@ -4,7 +4,7 @@
 
 Independent review of the in-progress Classic CPU JFG / CUDA AOS migration,
 against [REGISTERED_RTC_MIGRATION.md](../../REGISTERED_RTC_MIGRATION.md),
-[CLASSIC_REGISTERED_DEPLOYMENT.md](../../CLASSIC_REGISTERED_DEPLOYMENT.md),
+[CLASSIC_REGISTERED_DEPLOYMENT.md](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CLASSIC_REGISTERED_DEPLOYMENT.md),
 RTC-ARCH-024/025 and RTC-DEV-003/004/006/009/013/021/022/030. This review examines
 source behavior and focused software checks. It does not establish physical
 authority, optical accuracy, cadence, latency, or hardware qualification.

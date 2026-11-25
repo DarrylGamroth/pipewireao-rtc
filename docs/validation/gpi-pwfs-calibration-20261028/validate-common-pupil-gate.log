@@ -1,0 +1,30 @@
+mode_count=1509
+retained_rank=1445
+measurement_count=11104
+relative_inverse_residual=0.054787233
+tiptilt_fit_relative_residual=0.021530246
+execution=AdaptiveOpticsSim.AlgorithmGraphs.CapturedGraphExecution
+CALIBRATION_COLUMN woofer[40] photon_rate_relative_error=1.4428085e-5
+CALIBRATION_COLUMN tweeter[900] photon_rate_relative_error=3.1014144e-5
+CALIBRATION_COLUMN tiptilt[1] photon_rate_relative_error=1.1172566e-5
+CALIBRATION_COLUMN tiptilt[2] photon_rate_relative_error=1.0537621e-5
+Test Summary:                            | Pass  Total     Time
+Captured separate-DM calibration columns |   19     19  1m21.2s
+validating deterministic field loop
+ERROR: LoadError: ArgumentError: tiptilt did not improve wavefront RMS: 1.2524866148431044
+Stacktrace:
+ [1] _validate_system(::Val{:pyramid}, source::String, recipe::Dict{String, Any}, calibration::String, report_path::String; target::AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.CUDABackend, Int64}, steps::Int64, execution::CapturedGraphExecution, pupil_field_output::Symbol)
+   @ PipeWireAORTCCalibrationExt ~/workspaces/codex/worktrees/rtc-gpi-pwfs-calibration-20261028/ext/modal_validation.jl:96
+ [2] invokelatest
+   @ ./Base_compiler.jl:253 [inlined]
+ [3] validate_system(application::String, calibration::String, output::String; kwargs::@Kwargs{target::AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.CUDABackend, Int64}, execution::CapturedGraphExecution, pupil_field_output::Symbol})
+   @ PipeWireAORTC.InstrumentCalibration ~/workspaces/codex/worktrees/rtc-gpi-pwfs-calibration-20261028/src/calibration_recipe.jl:113
+ [4] top-level scope
+   @ ~/.cache/pipewireao/gpi-pwfs-calibration-20261028/validate-candidate.jl:14
+ [5] include(mod::Module, _path::String)
+   @ Base ./Base.jl:309
+ [6] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:344
+ [7] _start()
+   @ Base ./client.jl:577
+in expression starting at /home/dgamroth/.cache/pipewireao/gpi-pwfs-calibration-20261028/validate-candidate.jl:14

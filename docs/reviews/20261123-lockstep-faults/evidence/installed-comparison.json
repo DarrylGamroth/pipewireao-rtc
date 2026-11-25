@@ -1,0 +1,245 @@
+[
+  {
+    "case": "running-systemd-stop",
+    "unit": "pipewireao-session@b6b2604e4a69.service",
+    "invocation": "04cb1608bcef40dd9f5706e5533613f7",
+    "manifest_sha256": "e9ac36515113acfcc7cd42173ccbe9654430e8ce286148d39e39484046d5eafb",
+    "simulator_image_hashes": {
+      "g5MIx_IWZVY.so": "421ab4f9b88100f617e19d1f339a10215d896fc675bead347d7a7e83e9f9b04e",
+      "Lq8QY_IWZVY.so": "ccefca3c8e462a84696d82badc3d2dd7a4ae6e2132c93a70602857122991f96c",
+      "nIlMI_IWZVY.so": "aaed10ba377fc8cc7d17523688bbb318fa0afdd0dc5380c75d68d5e83416561d"
+    },
+    "source_image_directories": [
+      "AdaptiveOpticsSim",
+      "AdaptiveOpticsSimPipeWireHIL",
+      "PipeWireAORTCExt"
+    ],
+    "phase": "stopped",
+    "cleanup_complete": true,
+    "service_result": "success",
+    "systemd_quit": {
+      "accepted": true,
+      "attempted": true
+    },
+    "control_exit_status": 0,
+    "comparison_complete": true,
+    "owned_paths_removed": true,
+    "private_socket_removed": true,
+    "discovery_removed": true,
+    "remaining_original_processes": [],
+    "rtc_exit_status": "0",
+    "stop_timing": [
+      {
+        "unit": "pipewireao-session@b6b2604e4a69.service",
+        "invocation": "04cb1608bcef40dd9f5706e5533613f7",
+        "outcome": "completed",
+        "deadline_ns": 348896087125221,
+        "capability_remaining_ns": 27633328510,
+        "completion_remaining_ns": 27633270692,
+        "rejection_remaining_ns": 27633220969,
+        "controller_admission_remaining_ns": 27633328510,
+        "connection_ready_remaining_ns": 27632892543,
+        "quit_submission_remaining_ns": 27029419436,
+        "offline_remaining_ns": 23194674801,
+        "process_exit_remaining_ns": 22787214052
+      }
+    ],
+    "running": {
+      "lifecycle": "Running",
+      "links": 31,
+      "run_ack": {
+        "actual-state": "running",
+        "completed-token": 11,
+        "result": 0,
+        "version": 1
+      },
+      "snapshot": {
+        "completed": false,
+        "completed-token": 14,
+        "generation": 1,
+        "instance": 5312563357642969804,
+        "kind": 3,
+        "report-generation": 1,
+        "report-sequence": 0,
+        "result": 0,
+        "running": true,
+        "sequence": 2,
+        "version": 1
+      }
+    }
+  },
+  {
+    "case": "fault-direct-quit",
+    "unit": "pipewireao-session@a3c076331352.service",
+    "invocation": "c668319859244c67a494466a012f24f9",
+    "manifest_sha256": "e9ac36515113acfcc7cd42173ccbe9654430e8ce286148d39e39484046d5eafb",
+    "simulator_image_hashes": {
+      "g5MIx_IWZVY.so": "421ab4f9b88100f617e19d1f339a10215d896fc675bead347d7a7e83e9f9b04e",
+      "Lq8QY_IWZVY.so": "ccefca3c8e462a84696d82badc3d2dd7a4ae6e2132c93a70602857122991f96c",
+      "nIlMI_IWZVY.so": "aaed10ba377fc8cc7d17523688bbb318fa0afdd0dc5380c75d68d5e83416561d"
+    },
+    "source_image_directories": [
+      "AdaptiveOpticsSim",
+      "AdaptiveOpticsSimPipeWireHIL",
+      "PipeWireAORTCExt"
+    ],
+    "phase": "stopped",
+    "cleanup_complete": true,
+    "service_result": "success",
+    "systemd_quit": null,
+    "control_exit_status": 0,
+    "comparison_complete": true,
+    "owned_paths_removed": true,
+    "private_socket_removed": true,
+    "discovery_removed": true,
+    "remaining_original_processes": [],
+    "rtc_exit_status": "0",
+    "stop_timing": [
+      {
+        "unit": "pipewireao-session@a3c076331352.service",
+        "invocation": "c668319859244c67a494466a012f24f9",
+        "outcome": "main_already_gone",
+        "deadline_ns": 349002362050823,
+        "capability_remaining_ns": null,
+        "completion_remaining_ns": null,
+        "rejection_remaining_ns": null,
+        "controller_admission_remaining_ns": null,
+        "connection_ready_remaining_ns": null,
+        "quit_submission_remaining_ns": null,
+        "offline_remaining_ns": null,
+        "process_exit_remaining_ns": 29912778100
+      }
+    ],
+    "fault_hold": {
+      "passed": true,
+      "required_link": {
+        "id": 253,
+        "serial": 254
+      },
+      "before_links": 31,
+      "after_links": 0,
+      "lifecycle": "Fault",
+      "groups": {
+        "controller": "stopped"
+      },
+      "running_token": 11,
+      "held_token": 18,
+      "held_snapshot": {
+        "completed": false,
+        "completed-token": 18,
+        "generation": 1,
+        "instance": 1517873210473859177,
+        "kind": 1,
+        "report-generation": 1,
+        "report-sequence": 0,
+        "result": 0,
+        "running": false,
+        "sequence": 16,
+        "version": 1
+      },
+      "recheck_ns": 2551439688
+    },
+    "direct_quit": {
+      "before_systemd": {
+        "ActiveState": "active",
+        "ControlPID": "0",
+        "InvocationID": "c668319859244c67a494466a012f24f9",
+        "MainPID": "775746"
+      },
+      "reply": {
+        "authority": "rtc_session",
+        "error": null,
+        "id": "77",
+        "ok": true,
+        "owner_pid": 775746,
+        "result": {
+          "message": "shutdown requested",
+          "outcome": "accepted",
+          "shutdown": true
+        },
+        "session_id": "7cc26f3c-1599-437c-b842-ac7318d3c22b",
+        "state": "Offline",
+        "version": 1
+      },
+      "return_ns": 348971169361059,
+      "session_uuid": "7cc26f3c-1599-437c-b842-ac7318d3c22b",
+      "start_ns": 348966728841863
+    },
+    "rtc_exit_before_external_stop": true
+  },
+  {
+    "case": "fault-systemd-stop",
+    "unit": "pipewireao-session@679a7832d12b.service",
+    "invocation": "8e289c5bb855413eab5be9d18506d014",
+    "manifest_sha256": "e9ac36515113acfcc7cd42173ccbe9654430e8ce286148d39e39484046d5eafb",
+    "simulator_image_hashes": {
+      "g5MIx_IWZVY.so": "421ab4f9b88100f617e19d1f339a10215d896fc675bead347d7a7e83e9f9b04e",
+      "Lq8QY_IWZVY.so": "ccefca3c8e462a84696d82badc3d2dd7a4ae6e2132c93a70602857122991f96c",
+      "nIlMI_IWZVY.so": "aaed10ba377fc8cc7d17523688bbb318fa0afdd0dc5380c75d68d5e83416561d"
+    },
+    "source_image_directories": [
+      "AdaptiveOpticsSim",
+      "AdaptiveOpticsSimPipeWireHIL",
+      "PipeWireAORTCExt"
+    ],
+    "phase": "stopped",
+    "cleanup_complete": true,
+    "service_result": "success",
+    "systemd_quit": {
+      "accepted": true,
+      "attempted": true
+    },
+    "control_exit_status": 0,
+    "comparison_complete": true,
+    "owned_paths_removed": true,
+    "private_socket_removed": true,
+    "discovery_removed": true,
+    "remaining_original_processes": [],
+    "rtc_exit_status": "0",
+    "stop_timing": [
+      {
+        "unit": "pipewireao-session@679a7832d12b.service",
+        "invocation": "8e289c5bb855413eab5be9d18506d014",
+        "outcome": "completed",
+        "deadline_ns": 349128852091445,
+        "capability_remaining_ns": 28710312101,
+        "completion_remaining_ns": 28710261106,
+        "rejection_remaining_ns": 28710219398,
+        "controller_admission_remaining_ns": 28710312101,
+        "connection_ready_remaining_ns": 28709990639,
+        "quit_submission_remaining_ns": 28366829742,
+        "offline_remaining_ns": 24884007379,
+        "process_exit_remaining_ns": 24570403844
+      }
+    ],
+    "fault_hold": {
+      "passed": true,
+      "required_link": {
+        "id": 253,
+        "serial": 254
+      },
+      "before_links": 31,
+      "after_links": 0,
+      "lifecycle": "Fault",
+      "groups": {
+        "controller": "stopped"
+      },
+      "running_token": 11,
+      "held_token": 18,
+      "held_snapshot": {
+        "completed": false,
+        "completed-token": 18,
+        "generation": 1,
+        "instance": 5339957627576423209,
+        "kind": 1,
+        "report-generation": 1,
+        "report-sequence": 0,
+        "result": 0,
+        "running": false,
+        "sequence": 13,
+        "version": 1
+      },
+      "recheck_ns": 2420438702
+    }
+  }
+]

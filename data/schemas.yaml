@@ -77,6 +77,10 @@ demanded_pdm_command:
   id: "pipewireao/dm-command-opd-um-f32/1"
   element_type: "Float32"
   wire_type: "F32_LE"
+native_pdm_command:
+  id: "pipewireao/demanded-pdm-command-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
 pdm_constraint_feedback:
   id: "pipewireao/pdm-constraint-feedback-f32/1"
   element_type: "Float32"
@@ -655,6 +659,10 @@ residual_pupil_opd_nm:
   wire_type: "F32_LE"
 pupil_opd_rms_nm:
   id: "pipewireao/pupil-opd-rms-nm-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+applied_pdm_command:
+  id: "pipewireao/applied-pdm-command-f32/1"
   element_type: "Float32"
   wire_type: "F32_LE"
 applied_dm_command_opd_um:

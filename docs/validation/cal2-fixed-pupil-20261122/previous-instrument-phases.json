@@ -1,0 +1,352 @@
+{
+  "initial/gpi2": {
+    "markers": {
+      "Waiting for RTC control endpoint": 159.0689,
+      "Waiting for owner preparation and RTC warmup": 170.5296,
+      "RTC warmup completed": 196.5269,
+      "service_ready_s": 219.9003
+    },
+    "phases": [
+      {
+        "event": "Simulation packages loaded",
+        "at_s": 72.5372,
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "wall_seconds": 8.6472e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 84.4601,
+        "owner": "pipewireao.rtc.bootstrap.julia",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 8.6492e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 112.1381,
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "wall_seconds": 0.000775594,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 120.1454,
+        "owner": "gpi2-jfg-frame-graph",
+        "phase": "prepare graph",
+        "wall_seconds": 29.433368059,
+        "compile_seconds": 12.291579782
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 164.9297,
+        "owner": "gpi2-jfg-frame-graph",
+        "phase": "warm up graph",
+        "wall_seconds": 0.032257207,
+        "compile_seconds": 0.0
+      }
+    ]
+  },
+  "cli-generated": {
+    "markers": {
+      "Waiting for RTC control endpoint": 33.0884,
+      "Waiting for owner preparation and RTC warmup": 35.5632,
+      "RTC warmup completed": 50.9313,
+      "service_ready_s": 54.0345
+    },
+    "phases": [
+      {
+        "event": "Simulation packages loaded",
+        "at_s": 10.9121,
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "wall_seconds": 7.8898e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 19.2388,
+        "owner": "pipewireao.rtc.bootstrap.julia",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 7.0863e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 27.2286,
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "wall_seconds": 0.007062103,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 39.9995,
+        "owner": "gpi2-jfg-frame-graph",
+        "phase": "prepare graph",
+        "wall_seconds": 16.480573317,
+        "compile_seconds": 10.31847478
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 45.7221,
+        "owner": "gpi2-jfg-frame-graph",
+        "phase": "warm up graph",
+        "wall_seconds": 0.007424893,
+        "compile_seconds": 0.0
+      }
+    ]
+  },
+  "initial/cal2": {
+    "markers": {
+      "Preparing optical model": 37.5292,
+      "Warming up optical execution": 38.6476,
+      "Waiting for RTC control endpoint": 68.5193,
+      "Waiting for owner preparation and RTC warmup": 73.5767,
+      "Optical execution warmed up": 341.4398,
+      "Optical transport prepared": 347.4191,
+      "RTC warmup completed": 351.7027,
+      "service_ready_s": 354.2842
+    },
+    "phases": [
+      {
+        "event": "Startup phase completed",
+        "at_s": 32.1907,
+        "owner": "pipewireao.rtc.bootstrap.cal2-scc",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 7.9719e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Simulation packages loaded",
+        "at_s": 33.8479,
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "wall_seconds": 5.4782e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 33.9412,
+        "owner": "cal2-scc-controller",
+        "phase": "prepare graph",
+        "wall_seconds": 0.64267845,
+        "compile_seconds": 0.547097605
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 35.0624,
+        "owner": "cal2-scc-controller",
+        "phase": "warm up graph",
+        "wall_seconds": 0.002061643,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Optical model prepared",
+        "at_s": 38.6468,
+        "owner": "cal2-source",
+        "wall_seconds": 1.117445733,
+        "compile_seconds": 0.047803632
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 40.112,
+        "owner": "pipewireao.rtc.bootstrap.cal2-llowfs",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 8.9518e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 45.2633,
+        "owner": "cal2-llowfs-controller",
+        "phase": "prepare graph",
+        "wall_seconds": 1.994376593,
+        "compile_seconds": 1.828835186
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 47.6161,
+        "owner": "cal2-llowfs-controller",
+        "phase": "warm up graph",
+        "wall_seconds": 0.004585672,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 55.6219,
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "wall_seconds": 0.000710852,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Optical execution warmed up",
+        "at_s": 341.4398,
+        "owner": "cal2-source",
+        "wall_seconds": 302.792304233,
+        "compile_seconds": 1.853150655
+      },
+      {
+        "event": "Optical transport prepared",
+        "at_s": 347.4191,
+        "owner": "cal2-source",
+        "wall_seconds": 0.224682297,
+        "compile_seconds": 0.370886555
+      }
+    ]
+  },
+  "initial/spiders": {
+    "markers": {
+      "Preparing optical model": 28.2173,
+      "Optical transport prepared": 42.5874,
+      "Waiting for RTC control endpoint": 99.8935,
+      "Waiting for owner preparation and RTC warmup": 104.5774,
+      "RTC warmup completed": 111.8408,
+      "service_ready_s": 118.5931
+    },
+    "phases": [
+      {
+        "event": "Startup phase completed",
+        "at_s": 22.2289,
+        "owner": "pipewireao.rtc.bootstrap.scc-differential",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 6.4762e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 22.2593,
+        "owner": "pipewireao.rtc.bootstrap.spiders-scc",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 6.1055e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 23.2724,
+        "owner": "scc-differential",
+        "phase": "prepare graph",
+        "wall_seconds": 0.050627611,
+        "compile_seconds": 0.048643063
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 23.8354,
+        "owner": "scc-differential",
+        "phase": "warm up graph",
+        "wall_seconds": 0.000812201,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 23.9086,
+        "owner": "spiders-controller",
+        "phase": "prepare graph",
+        "wall_seconds": 0.74221437,
+        "compile_seconds": 0.568094293
+      },
+      {
+        "event": "Simulation packages loaded",
+        "at_s": 23.9363,
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "wall_seconds": 3.0678e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 24.6852,
+        "owner": "spiders-controller",
+        "phase": "warm up graph",
+        "wall_seconds": 0.004789542,
+        "compile_seconds": 0.003062497
+      },
+      {
+        "event": "Optical model prepared",
+        "at_s": 34.5318,
+        "owner": "spiders-source",
+        "wall_seconds": 6.314435222,
+        "compile_seconds": 0.327751777
+      },
+      {
+        "event": "Optical transport prepared",
+        "at_s": 42.5874,
+        "owner": "spiders-source",
+        "wall_seconds": 0.487747567,
+        "compile_seconds": 0.50990351
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 75.4537,
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "wall_seconds": 0.000846997,
+        "compile_seconds": 0.0
+      }
+    ]
+  },
+  "cli-single": {
+    "markers": {
+      "Waiting for RTC control endpoint": 11.3037,
+      "Waiting for owner preparation and RTC warmup": 12.5033,
+      "Preparing optical model": 14.9547,
+      "Optical transport prepared": 28.1669,
+      "RTC warmup completed": 32.6738,
+      "service_ready_s": 34.7191
+    },
+    "phases": [
+      {
+        "event": "Startup phase completed",
+        "at_s": 7.8541,
+        "owner": "pipewireao.rtc.bootstrap.spiders-scc",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 9.0359e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Simulation packages loaded",
+        "at_s": 9.0417,
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "wall_seconds": 3.3463e-05,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 9.3346,
+        "owner": "spiders-scc-controller",
+        "phase": "prepare graph",
+        "wall_seconds": 0.54355385,
+        "compile_seconds": 0.490580419
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 9.4272,
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "wall_seconds": 0.00455516,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Startup phase completed",
+        "at_s": 10.5551,
+        "owner": "spiders-scc-controller",
+        "phase": "warm up graph",
+        "wall_seconds": 0.000736761,
+        "compile_seconds": 0.0
+      },
+      {
+        "event": "Optical model prepared",
+        "at_s": 21.1346,
+        "owner": "spiders-source",
+        "wall_seconds": 6.179797968,
+        "compile_seconds": 0.313904387
+      },
+      {
+        "event": "Optical transport prepared",
+        "at_s": 28.1669,
+        "owner": "spiders-source",
+        "wall_seconds": 0.273617096,
+        "compile_seconds": 0.296465884
+      }
+    ]
+  }
+}

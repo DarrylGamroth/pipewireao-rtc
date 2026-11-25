@@ -1,0 +1,659 @@
+{
+  "packages": {
+    "PipeWireAORTC": "0.7.28",
+    "PipeWireAO": "0.9.6",
+    "PipeWireAO_jll": "4.0.8+0"
+  },
+  "native_jll_artifact": "77da251765f3124df77322c562e67a7c7742ab1d",
+  "instruments": {
+    "gpi2": {
+      "profile": "gpi2/profiles/simulator/profile.yaml",
+      "host_profile": "gpi2/profiles/simulator/host.cpu.example.yaml",
+      "julia": "1.13.4",
+      "manifest_sha256": "9a630720bcd6043409da03f9d376ffb0e9e4904756b099a1fda158d8132dac5a",
+      "deployment_sha256": "f3e6dd9e70a3af07a48fdb77d532e9d2bb2989b2b7302c71ccebdfd90939b6c0",
+      "source_export_commit": "472ab3c8917642e3822ad2870ae8c879ab05b1f2",
+      "runs": [
+        {
+          "unit": "pipewireao-session@2dd27fd425e3.service",
+          "invocation": "d19e48e985b64516b73692e347b65ecb",
+          "started_utc": "2026-11-22T23:40:51.514677+00:00",
+          "installed_export": "472ab3c8917642e3822ad2870ae8c879ab05b1f2",
+          "session_uuid": "f3d9af16-6f61-4c86-8f70-3fe2838657ab",
+          "private_remote": "/run/user/1000/pipewireao-session-2dd27fd425e3/d19e48e985b64516b73692e347b65ecb/rtc-d19e48e985b6",
+          "source_backend": "cpu",
+          "startup_to_ready_s": null,
+          "shutdown_phase": "failed",
+          "native_quit": null,
+          "shutdown_error": "RTC service exited with result exit-code",
+          "remaining_processes": null,
+          "observed_quit": false,
+          "flow_pass": false,
+          "first_journal_error": "LoadError: Function `gpu_report_exception` uses a boxed constant but could not be inlined into an entry"
+        },
+        {
+          "unit": "pipewireao-session@7ecfc5f7c16e.service",
+          "invocation": "db7d24ef075f405d96564feb5bea1fee",
+          "started_utc": "2026-11-23T00:13:08.254907+00:00",
+          "installed_export": "472ab3c8917642e3822ad2870ae8c879ab05b1f2",
+          "session_uuid": "fac42508-ec37-4c51-8fb6-690bf57dd52d",
+          "private_remote": "/run/user/1000/pipewireao-session-7ecfc5f7c16e/db7d24ef075f405d96564feb5bea1fee/rtc-db7d24ef075f",
+          "source_backend": "cpu",
+          "startup_to_ready_s": 287.656,
+          "shutdown_phase": "stopped",
+          "native_quit": {
+            "accepted": true,
+            "attempted": true
+          },
+          "shutdown_error": null,
+          "remaining_processes": [],
+          "observed_quit": true,
+          "flow_pass": true,
+          "ready_status": "ready",
+          "required_owners": [
+            "core",
+            "julia",
+            "parameters",
+            "simulator"
+          ],
+          "running_status": "running",
+          "held_status": "ready",
+          "start_completion": {
+            "id": "2194",
+            "ok": true,
+            "state": "Running",
+            "error": null
+          },
+          "stop_completion": {
+            "id": "2198",
+            "ok": true,
+            "state": "Ready",
+            "error": null
+          },
+          "julia_cache_selection": "Exact native dependency builds required by installed optical startup image",
+          "correction_settings": {
+            "gpi2-jfg-frame-graph": {
+              "closed-loop-correction:closed": true,
+              "pipewireao.correction-control.closed-loop-correction:closed.state": "Closed"
+            }
+          },
+          "observation": {
+            "first_running_observation_counts": {
+              "detector": 2,
+              "tiptilt": 2,
+              "tweeter": 2,
+              "woofer": 2
+            },
+            "matching_detector_and_three_command_acquisitions": [
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 3
+              },
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 4
+              },
+              {
+                "domain": "a0000000000000000000000000000000",
+                "generation": 1,
+                "sequence": 5
+              }
+            ]
+          },
+          "quiet_window_s": 2.0060700199683197,
+          "streams": {
+            "detector": {
+              "node": "simulator-detector-queue-output",
+              "shape": [
+                242,
+                240
+              ],
+              "storage_type": "UInt16",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/raw-detector-pixels-u16/1",
+              "first_sequence": 1,
+              "last_sequence": 9,
+              "distinct_sequences": 9,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 4245
+              }
+            },
+            "tiptilt": {
+              "node": "rtc-tiptilt-command-queue-output",
+              "shape": [
+                2
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/tip-tilt-opd-coefficients-m-f32/1",
+              "first_sequence": 1,
+              "last_sequence": 9,
+              "distinct_sequences": 9,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 8.2487475e-09
+              }
+            },
+            "tweeter": {
+              "node": "rtc-tweeter-command-queue-output",
+              "shape": [
+                2304
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/actuator-command-opd-m-f32/1",
+              "first_sequence": 1,
+              "last_sequence": 9,
+              "distinct_sequences": 9,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 4.4686251e-07
+              }
+            },
+            "woofer": {
+              "node": "rtc-woofer-command-queue-output",
+              "shape": [
+                97
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/actuator-command-opd-m-f32/1",
+              "first_sequence": 1,
+              "last_sequence": 9,
+              "distinct_sequences": 9,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "a0000000000000000000000000000000",
+                  "generation": 1,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 3.1625376e-07
+              }
+            }
+          }
+        }
+      ]
+    },
+    "cal2": {
+      "profile": "cal2/profiles/simulator/cpu.yaml",
+      "host_profile": "cal2/profiles/simulator/host.cpu.example.yaml",
+      "julia": "1.13.3",
+      "manifest_sha256": "92b77db4d54fde4e4558816c707b463aa916f7754de4e2aca978c014f235c101",
+      "deployment_sha256": "fe874739e02df5da95bedb7c7eea42adcb0988df46bc71e7578c1fb5ade2753d",
+      "source_export_commit": "e38a94f44206fd7c69ebd8aefd8193f559ddefbc",
+      "runs": [
+        {
+          "unit": "pipewireao-session@de12a366872d.service",
+          "invocation": "db580f21b5a44158a173b1e214624823",
+          "started_utc": "2026-11-22T23:54:59.652849+00:00",
+          "installed_export": "e38a94f44206fd7c69ebd8aefd8193f559ddefbc",
+          "session_uuid": "cd68b5e2-7b91-4def-827b-4cb8ac3e9a44",
+          "private_remote": "/run/user/1000/pipewireao-session-de12a366872d/db580f21b5a44158a173b1e214624823/rtc-db580f21b5a4",
+          "source_backend": "cpu",
+          "startup_to_ready_s": 313.654,
+          "shutdown_phase": "stopped",
+          "native_quit": {
+            "accepted": true,
+            "attempted": true
+          },
+          "shutdown_error": null,
+          "remaining_processes": [],
+          "observed_quit": true,
+          "flow_pass": true,
+          "ready_status": "ready",
+          "required_owners": [
+            "cal2-llowfs",
+            "cal2-scc",
+            "core",
+            "simulator"
+          ],
+          "running_status": "running",
+          "held_status": "ready",
+          "start_completion": {
+            "id": "2634",
+            "ok": true,
+            "state": "Running",
+            "error": null
+          },
+          "stop_completion": {
+            "id": "2638",
+            "ok": true,
+            "state": "Ready",
+            "error": null
+          },
+          "correction_settings": {
+            "cal2-llowfs-controller": {
+              "correction:closed": false,
+              "pipewireao.correction-control.correction:closed.state": "Open"
+            },
+            "cal2-scc-controller": {
+              "correction:closed": false,
+              "pipewireao.correction-control.correction:closed.state": "Open"
+            }
+          },
+          "observation": {
+            "first_running_observation_counts": {
+              "llowfs-image": 0,
+              "llowfs-physical-offset": 0,
+              "scc-image": 0,
+              "scc-physical-offset": 0
+            },
+            "scc_chopper_exposures": {
+              "OPTICAL_FRINGED": {
+                "duration_ns": 10000000,
+                "identity": {
+                  "domain": "214e519d076bb194aa40e29e77414ff4",
+                  "generation": 1,
+                  "sequence": 1
+                },
+                "start_ns": 0,
+                "trigger": "ACQUISITION_TRIGGER_HIGH"
+              },
+              "OPTICAL_UNFRINGED": {
+                "duration_ns": 10000000,
+                "identity": {
+                  "domain": "214e519d076bb194aa40e29e77414ff4",
+                  "generation": 1,
+                  "sequence": 2
+                },
+                "start_ns": 10000000,
+                "trigger": "ACQUISITION_TRIGGER_LOW"
+              }
+            },
+            "synthetic_pupil": {
+              "duration_per_packet_ns": 2000000,
+              "input_domain": "5c2d8cec83a148a0204924da66c7f6fe",
+              "last_paced_llowfs_sequence": 30,
+              "local_source_status": {
+                "pending": false,
+                "dropped": 0,
+                "gaps": 0,
+                "rejected": 0,
+                "failed": false
+              },
+              "maximum_astigmatic_opd_m": 3e-08,
+              "model_coverage_ns": 60000000,
+              "packet_count": 30
+            }
+          },
+          "quiet_window_s": 2.0055375560186803,
+          "streams": {
+            "llowfs-image": {
+              "node": "cal2-llowfs-image-queue-output",
+              "shape": [
+                224,
+                224
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "org.adaptiveopticssim.optical-intensity/sha256-5091b8097aed1139f022afdb864c325202c7f08d4b7f4e9caeea12a2c723638c/1",
+              "first_sequence": 1,
+              "last_sequence": 30,
+              "distinct_sequences": 30,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 30,
+                "distinct_header_sequences": 30,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "930cbf66eafd188d474eac7b85376209",
+                  "generation": 1,
+                  "sequence": 30
+                },
+                "last_header_sequence": 30,
+                "max_abs_payload": 0.5754013
+              }
+            },
+            "llowfs-physical-offset": {
+              "node": "cal2-llowfs-physical-offset-queue-output",
+              "shape": [
+                2304
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/requested-pdm-command-f32/1",
+              "first_sequence": 1,
+              "last_sequence": 30,
+              "distinct_sequences": 30,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 30,
+                "distinct_header_sequences": 30,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "930cbf66eafd188d474eac7b85376209",
+                  "generation": 1,
+                  "sequence": 30
+                },
+                "last_header_sequence": 30,
+                "max_abs_payload": 0.0
+              }
+            },
+            "scc-image": {
+              "node": "cal2-scc-image-queue-output",
+              "shape": [
+                256,
+                256
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "org.adaptiveopticssim.optical-intensity/sha256-1e69d2d3f45546413d86ae4353f611d0367ba07514cab6fee4f55a93ee400890/1",
+              "first_sequence": 1,
+              "last_sequence": 6,
+              "distinct_sequences": 6,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 6,
+                "distinct_header_sequences": 6,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "214e519d076bb194aa40e29e77414ff4",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.11033104
+              }
+            },
+            "scc-physical-offset": {
+              "node": "cal2-scc-physical-offset-queue-output",
+              "shape": [
+                2304
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/requested-pdm-command-f32/1",
+              "first_sequence": 2,
+              "last_sequence": 6,
+              "distinct_sequences": 5,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 2,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "214e519d076bb194aa40e29e77414ff4",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "spiders": {
+      "profile": "spiders/profiles/fitted-dual-controller/cpu.yaml",
+      "host_profile": "spiders/profiles/fitted-dual-controller/host.cpu.example.yaml",
+      "julia": "1.13.3",
+      "manifest_sha256": "92b77db4d54fde4e4558816c707b463aa916f7754de4e2aca978c014f235c101",
+      "deployment_sha256": "8a14a64a3d1d1449681c98b647d41811148391e82d7f8fe5f6e9c50bfeb8c0e1",
+      "source_export_commit": "af7adaea0385f1d1f4f07c828d5e6f7094556995",
+      "runs": [
+        {
+          "unit": "pipewireao-session@f2937d74dc1e.service",
+          "invocation": "8b7ceabf2ffa4d18bcaa7d85bb20c52c",
+          "started_utc": "2026-11-23T00:12:34.139395+00:00",
+          "installed_export": "af7adaea0385f1d1f4f07c828d5e6f7094556995",
+          "session_uuid": "f434152a-e421-4777-99f6-133c77158f91",
+          "private_remote": "/run/user/1000/pipewireao-session-f2937d74dc1e/8b7ceabf2ffa4d18bcaa7d85bb20c52c/rtc-8b7ceabf2ffa",
+          "source_backend": "cpu",
+          "startup_to_ready_s": null,
+          "shutdown_phase": "failed",
+          "native_quit": null,
+          "shutdown_error": "RTC service exited with result exit-code",
+          "remaining_processes": null,
+          "observed_quit": false,
+          "flow_pass": false,
+          "first_journal_error": "LoadError: synchronous HIL command receiver is missing. Run Pkg.build(\"AdaptiveOpticsSimPipeWireHIL\")."
+        },
+        {
+          "unit": "pipewireao-session@b28f230d5fd3.service",
+          "invocation": "864e4a0f10514b91867b684b30328518",
+          "started_utc": "2026-11-23T00:18:21.545364+00:00",
+          "installed_export": "af7adaea0385f1d1f4f07c828d5e6f7094556995",
+          "session_uuid": "0263d5c3-2c8d-4627-a25e-dc31c3477858",
+          "private_remote": "/run/user/1000/pipewireao-session-b28f230d5fd3/864e4a0f10514b91867b684b30328518/rtc-864e4a0f1051",
+          "source_backend": "cpu",
+          "startup_to_ready_s": 35.47,
+          "shutdown_phase": "stopped",
+          "native_quit": {
+            "accepted": true,
+            "attempted": true
+          },
+          "shutdown_error": null,
+          "remaining_processes": [],
+          "observed_quit": true,
+          "flow_pass": true,
+          "ready_status": "ready",
+          "required_owners": [
+            "core",
+            "parameters",
+            "scc-differential",
+            "simulator",
+            "spiders-scc"
+          ],
+          "running_status": "running",
+          "held_status": "ready",
+          "start_completion": {
+            "id": "52",
+            "ok": true,
+            "state": "Running",
+            "error": null
+          },
+          "stop_completion": {
+            "id": "56",
+            "ok": true,
+            "state": "Ready",
+            "error": null
+          },
+          "hil_receiver_sha256": "7f32f061de760391d5f042b97bddb60aece88d038f5356a18525a80034bce189",
+          "correction_settings": {
+            "spiders-controller": {
+              "correction:closed": false,
+              "llowfs-correction:closed": false,
+              "pipewireao.correction-control.correction:closed.state": "Open",
+              "pipewireao.correction-control.llowfs-correction:closed.state": "Open"
+            }
+          },
+          "observation": {
+            "first_running_observation_counts": {
+              "applied": 2,
+              "demand": 2
+            },
+            "last_applied_reference_timestamp": {
+              "clock": "METADATA_CLOCK_REALTIME",
+              "timestamp_ns": 1795393181785817756
+            }
+          },
+          "quiet_window_s": 2.0025929789990187,
+          "streams": {
+            "applied": {
+              "node": "spiders-dm-applied-queue-output",
+              "shape": [
+                468
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/applied-pdm-command-f32/1",
+              "first_sequence": 1,
+              "last_sequence": 5,
+              "distinct_sequences": 5,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": null,
+                "last_header_sequence": 5,
+                "max_abs_payload": 0.0
+              }
+            },
+            "demand": {
+              "node": "spiders-scc-dm-command-queue-output",
+              "shape": [
+                468
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/demanded-pdm-command-f32/1",
+              "first_sequence": 1,
+              "last_sequence": 5,
+              "distinct_sequences": 5,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 1,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "338c9b3b0d44288bae4afec2447e321d",
+                  "generation": 3,
+                  "sequence": 5
+                },
+                "last_header_sequence": 5,
+                "max_abs_payload": 0.0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "spiders-single": {
+      "profile": "spiders/profiles/fitted-controller/cpu.yaml",
+      "host_profile": "spiders/profiles/fitted-controller/host.cpu.example.yaml",
+      "julia": "1.13.3",
+      "manifest_sha256": "92b77db4d54fde4e4558816c707b463aa916f7754de4e2aca978c014f235c101",
+      "deployment_sha256": "af7f8369b00cdfafbc5a31e339cd765784534e2493e2e97cfae7f3caf02bcca2",
+      "source_export_commit": "38d93a7786e830537f9488172488a6845b7e2ef2",
+      "runs": [
+        {
+          "unit": "pipewireao-session@2e53ae4a9b7b.service",
+          "invocation": "194661d858aa42cdaf334be912615fc8",
+          "started_utc": "2026-11-23T00:19:54.584344+00:00",
+          "installed_export": "38d93a7786e830537f9488172488a6845b7e2ef2",
+          "session_uuid": "3686cccc-ee15-44a1-9656-8fa36c7d72ed",
+          "private_remote": "/run/user/1000/pipewireao-session-2e53ae4a9b7b/194661d858aa42cdaf334be912615fc8/rtc-194661d858aa",
+          "source_backend": "cpu",
+          "startup_to_ready_s": 32.583,
+          "shutdown_phase": "stopped",
+          "native_quit": {
+            "accepted": true,
+            "attempted": true
+          },
+          "shutdown_error": null,
+          "remaining_processes": [],
+          "observed_quit": true,
+          "flow_pass": true,
+          "ready_status": "ready",
+          "required_owners": [
+            "core",
+            "simulator",
+            "spiders-scc"
+          ],
+          "running_status": "running",
+          "held_status": "ready",
+          "start_completion": {
+            "id": "104",
+            "ok": true,
+            "state": "Running",
+            "error": null
+          },
+          "stop_completion": {
+            "id": "108",
+            "ok": true,
+            "state": "Ready",
+            "error": null
+          },
+          "hil_receiver_sha256": "7f32f061de760391d5f042b97bddb60aece88d038f5356a18525a80034bce189",
+          "correction_settings": {
+            "spiders-scc-controller": {
+              "correction:closed": false,
+              "pipewireao.correction-control.correction:closed.state": "Open"
+            }
+          },
+          "observation": {
+            "first_running_observation_counts": {
+              "demand": 2
+            }
+          },
+          "quiet_window_s": 2.0012374029611237,
+          "streams": {
+            "demand": {
+              "node": "spiders-scc-dm-command-queue-output",
+              "shape": [
+                468
+              ],
+              "storage_type": "Float32",
+              "layout": "ROW_MAJOR",
+              "schema": "pipewireao/demanded-pdm-command-f32/1",
+              "first_sequence": 2,
+              "last_sequence": 6,
+              "distinct_sequences": 5,
+              "finite": true,
+              "during_running": {
+                "buffers_seen": 5,
+                "distinct_header_sequences": 5,
+                "first_header_sequence": 2,
+                "header_sequence_gaps": 0,
+                "last_acquisition_identity": {
+                  "domain": "5b203558af22d1aca44a6097cb25d14e",
+                  "generation": 1,
+                  "sequence": 6
+                },
+                "last_header_sequence": 6,
+                "max_abs_payload": 0.0
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

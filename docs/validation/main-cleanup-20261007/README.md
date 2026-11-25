@@ -53,7 +53,7 @@ Merge ancestry/patch equivalence, worktree cleanliness, calibration hashes,
 private repository visibility, remote main/master heads and active service
 identity were checked. No scientific implementation changed and no new runtime
 suite or performance experiment was run for this cleanup. Earlier
-[session qualification](../wireplumber-session-20261007/SESSION_CHECKS.md)
+[session qualification](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/wireplumber-session-20261007/SESSION_CHECKS.md)
 retains its recorded scope and remaining gates. [Receipt](receipt.json) records
 exact source heads, removed paths, retained paths and preservation evidence.
 

@@ -1,0 +1,206 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Supersede stale PR runs. Each pushed main revision can finish independently.
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: RTC tests and coverage
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    env:
+      JULIA_NUM_THREADS: '3,0'
+      OPENBLAS_NUM_THREADS: '1'
+      TMPDIR: /tmp
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13'
+      - uses: julia-actions/cache@v3
+      - name: Install native build and test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends meson ninja-build gcovr libglib2.0-dev libjson-c-dev util-linux-extra
+      - name: Instantiate the test workspace
+        run: |
+          julia --startup-file=no --project=. -e '
+            using Pkg
+            Pkg.Registry.add("General")
+            Pkg.Registry.add(RegistrySpec(url="https://github.com/DarrylGamroth/PackageRegistry.git"))
+            Pkg.instantiate(; workspace=true)'
+      - name: Test the RTC and run Aqua
+        run: julia --startup-file=no --code-coverage=@ --project=test test/runtests.jl
+      - name: Verify the RTC package precompilation workloads offline
+        run: julia --startup-file=no --compiled-modules=no --threads=1,0 --code-coverage=@ --project=. test/precompile_workloads.jl
+      - name: Test native RTC controls on disposable PipeWire cores
+        run: |
+          for selector in control_endpoint control_endpoint_faults media_session_private_core \
+              parameter_ndarray_private_core owner_bootstrap_sealed owner_terminal \
+              calibration_action_endpoint test_calibration_capture_private_core media_session_process; do
+            julia --startup-file=no --code-coverage=@ --project=. "test/$selector.jl"
+          done
+      - name: Test owner bootstrap and acquisition lifecycle
+        run: |
+          for selector in owner_bootstrap acquisition_lifecycle_client test_owner_entrypoints; do
+            julia --startup-file=no --code-coverage=@ --threads=2,0 --project=. "test/$selector.jl"
+          done
+      - name: Test calibration responses and native session disconnect
+        run: |
+          julia --startup-file=no --code-coverage=@ --project=test test/test_simulation_responses.jl
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/source_control_private_core.jl
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/parameter_owner_private_core.jl
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/media_session_host.jl
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/integration/independent_core_identity.jl
+      - name: Start the systemd user manager
+        run: bash .github/ci_user_manager.sh
+      - name: Test service admission and native Quit against the user manager
+        run: |
+          julia --startup-file=no --code-coverage=@ --project=test test/systemd_bus.jl
+          RTC_STOP_EVIDENCE_ROOT="$RUNNER_TEMP" julia --startup-file=no --code-coverage=@ --project=test test/systemd_stop.jl
+      - name: Test managed graph preparation and owner cleanup
+        run: |
+          plugin="$RUNNER_TEMP/ndarray-example"
+          mkdir "$plugin"
+          # Public example from the source revision used to build PipeWireAO_jll 4.0.10.
+          curl -fsSL --retry 3 -o "$plugin/plugin.c" \
+            https://raw.githubusercontent.com/DarrylGamroth/PipeWireAO/14a64e1db579b2d4e3d257ff7aa10b6a35de3f5f/spa/plugins/filter-graph/plugin_ndarray_example.c
+          echo "a4f86813214582bdd324e7cd269a852e030b7794d96c0a354550f92e40053445  $plugin/plugin.c" | sha256sum -c
+          sdk=$(julia --startup-file=no --project=test -e 'using PipeWireAO; print(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)')
+          touch "$plugin/config.h"
+          cc -shared -fPIC -O2 -I"$plugin" -I"$sdk/include/spa-ao-0.2" "$plugin/plugin.c" -o "$plugin/ndarray-example.so" -pthread -lm
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/integration/portable_managed_prepare.jl "$plugin/ndarray-example.so"
+      - name: Install the checked-out RTC and operator CLI from a disposable registry
+        run: julia --startup-file=no --code-coverage=@ --project=. test/runtime_install_registry.jl --direct-session runtime-install.info
+      - name: Build and test the native management service
+        run: |
+          meson setup runtime/build runtime -Db_coverage=true -Dbuildtype=debug
+          meson compile -C runtime/build
+          meson test -C runtime/build --print-errorlogs
+          PIPEWIREAO_MANAGEMENT_BINARY="$PWD/runtime/build/pipewireao-management" \
+            julia --startup-file=no --code-coverage=@ --project=. test/management_endpoint.jl
+          PIPEWIREAO_MANAGEMENT_BINARY="$PWD/runtime/build/pipewireao-management" \
+            julia --startup-file=no --code-coverage=@ --project=. test/management_systemd.jl
+          gcovr --root . --filter '^runtime/management\.c$' --lcov management.info runtime/build
+          sed -i 's|^SF:.*/runtime/management\.c$|SF:runtime/management.c|' management.info
+          grep -Fx 'SF:runtime/management.c' management.info
+      - name: Process Julia line coverage
+        uses: julia-actions/julia-processcoverage@v1
+        env:
+          DISABLE_AMEND_COVERAGE_FROM_SRC: 'yes'
+        with:
+          directories: src,ext
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: core-coverage
+          path: |
+            lcov.info
+            management.info
+            runtime-install.info
+          if-no-files-found: error
+          retention-days: 1
+
+  science:
+    name: CPU science integration
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: rtc-science
+    runs-on: ubuntu-26.04
+    timeout-minutes: 120
+    env:
+      JULIA_LOAD_PATH: "@:@stdlib"
+      JULIA_NUM_PRECOMPILE_TASKS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      TMPDIR: /tmp
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13'
+      - name: Select an uncached depot
+        run: echo "JULIA_DEPOT_PATH=$RUNNER_TEMP/rtc-science-depot:" >> "$GITHUB_ENV"
+      - name: Instantiate science dependencies in the disposable runner
+        env:
+          RTC_CALIBRATION_DEPLOY_KEY: ${{ secrets.RTC_CALIBRATION_DEPLOY_KEY }}
+          RTC_HIL_DEPLOY_KEY: ${{ secrets.RTC_HIL_DEPLOY_KEY }}
+          RTC_GRAPH_DEPLOY_KEY: ${{ secrets.RTC_GRAPH_DEPLOY_KEY }}
+        run: bash .github/instantiate_science.sh
+      - name: Test optical export and calibration on CPU
+        run: julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl cold
+      - name: Test live calibration, metadata and analysis on private cores
+        run: julia --startup-file=no --code-coverage=@ --threads=4,1 --project=test/science test/science/runtests.jl private_core
+      - name: Provision the systemd user manager for the retained graph service
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends util-linux-extra
+          bash .github/ci_user_manager.sh
+      - name: Test retained graph installation, restart and withdrawal
+        run: julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/integration/retained_graph_service.jl
+      - name: Test retained graph owners
+        run: julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl retained_owner
+      - name: Test physical offset inputs
+        run: julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl physical_offset_inputs
+      - name: Test physical offset observations
+        run: timeout --signal=INT --kill-after=10s 3m julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl physical_offsets
+      - uses: julia-actions/julia-processcoverage@v1
+        env:
+          DISABLE_AMEND_COVERAGE_FROM_SRC: 'yes'
+        with:
+          directories: src,ext
+      - uses: actions/upload-artifact@v4
+        with:
+          name: science-coverage
+          path: lcov.info
+          if-no-files-found: error
+          retention-days: 1
+
+  coverage:
+    name: Combined line coverage
+    needs: [test, science]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-coverage'
+          path: reports
+      - name: Install the Julia coverage reader
+        run: julia --startup-file=no --project=.github -e 'using Pkg; Pkg.instantiate()'
+      - name: Check coverage aggregation against a single Julia run
+        run: julia --startup-file=no --project=.github .github/test_coverage.jl
+      - name: Merge reports and require project coverage above 90%
+        run: |
+          julia --startup-file=no --project=.github .github/check_coverage.jl combined.info \
+            reports/core-coverage/lcov.info reports/core-coverage/management.info \
+            reports/core-coverage/runtime-install.info reports/science-coverage/lcov.info
+      - name: Upload combined line coverage using GitHub OIDC
+        if: "!cancelled() && hashFiles('combined.info') != ''"
+        uses: codecov/codecov-action@v7
+        with:
+          files: combined.info
+          disable_search: true
+          use_oidc: true
+          fail_ci_if_error: true

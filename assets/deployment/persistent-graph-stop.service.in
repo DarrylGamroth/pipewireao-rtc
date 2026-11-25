@@ -1,0 +1,8 @@
+[Service]
+# A terminal Quit can retain its exact reply for the 30 s bootstrap budget.
+TimeoutStopSec=40s
+RuntimeDirectory=%N
+RuntimeDirectoryMode=0700
+Environment=PIPEWIREAORTC_GRAPH_STOP_DIR=%t/%N
+ExecStop=/usr/bin/touch -- %t/%N/${INVOCATION_ID}.stop
+ExecStop=:/bin/sh -c 'if [ -n "$MAINPID" ]; then exec /usr/bin/waitpid --exited "$MAINPID"; fi'
