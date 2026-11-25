@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Direct RTC admission through libsystemd and PipeWireAO — 2026-11-24
+
+Nine cache-present CAL2 restarts cover held Ready, live open-loop frames and
+shutdown. The comparison also records a package-image rebuild, wrong-core
+rejection before endpoint publication and detection of watched services
+that restart or disappear. [Results and selectors](validation/native-admission-queries-20261124/README.md)
+
 ## Installed direct attachment on CAL2 — 2026-11-24
 
 Six CAL2 restarts compare the installed configuration against per-invocation

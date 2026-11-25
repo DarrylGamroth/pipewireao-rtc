@@ -30,9 +30,14 @@ shipped with their pinned RTC.
 A direct attachment uses the fixed `systemd/rtc.conf` in the installed
 application. The installer writes the topology and private core address
 and adds the declared RTC environment to the generated service.
-MediaSession resolves the live process and endpoint identities in memory
-on each activation. It publishes the launch receipt in the unit's stable
-runtime directory.
+The installer also records the topology verified by the native SPA parser in
+the activation document. Direct activation requires a reachable user D-Bus
+broker at the address selected by libsystemd. MediaSession subscribes to the
+user systemd manager before reading the declared services' properties. It
+checks the CoreInfo process ID on the PipeWire connection that will publish
+its control endpoints. Before announcing held Ready it checks placement,
+native Links and any service changes observed during admission. It then closes the manager
+connection. The launch receipt goes in the unit's stable runtime directory.
 
 For a managed source, MediaSession starts the private core, confirms its
 socket and retains its identity. It starts the remaining held owners through

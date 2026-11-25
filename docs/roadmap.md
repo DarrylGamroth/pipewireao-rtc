@@ -12,6 +12,15 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Native queries during direct RTC admission — 2026-11-24
+
+MediaSession verifies CoreInfo on its own PipeWire connection and subscribes
+to systemd service changes over D-Bus before reading live identities. CAL2
+reached held Ready in a median 6.387 s, compared with 5.430 s and 5.897 s
+in baseline blocks on either side. A separate 167.875 s baseline start
+rebuilt a Julia package image in the service.
+[Admission checks and restart measurements](validation/native-admission-queries-20261124/README.md)
+
 ### Attach with the installed instrument configuration — 2026-11-24
 
 For a continuously publishing source with independently supervised graphs,
