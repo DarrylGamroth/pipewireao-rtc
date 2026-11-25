@@ -42,6 +42,20 @@ application_hashes(application) = Dict(
     (dir, _, files) in walkdir(application) for filename in files
 )
 
+function calibration_capture_projections(application)
+    frontend = C.calibration_graph(
+        application;
+        inputs = (raw = "pixels:raw",),
+        outputs = (calibrated = "pixels:calibrated",),
+    )
+    command = C.calibration_graph(
+        application;
+        inputs = (requested = "conditioner:requested",),
+        outputs = (:demanded, Symbol("constraint-feedback")),
+    )
+    return frontend, command
+end
+
 @testset "consumer-only native Collect keeps full ADC samples and exact bounded receipts" begin
     Threads.nthreads(:default) >= 4 || error("run with at least four Julia default threads")
     mktempdir() do application
@@ -68,16 +82,7 @@ application_hashes(application) = Dict(
                 nothing
             end
             try
-                frontend = C.calibration_graph(
-                    application;
-                    inputs = (raw = "pixels:raw",),
-                    outputs = (calibrated = "pixels:calibrated",),
-                )
-                command = C.calibration_graph(
-                    application;
-                    inputs = (requested = "conditioner:requested",),
-                    outputs = (:demanded, Symbol("constraint-feedback")),
-                )
+                frontend, command = calibration_capture_projections(application)
                 count = only(FilterGraphs.input_formats(command.graph).requested.shape)
                 shape = FilterGraphs.input_formats(frontend.graph).raw.shape
                 reference = zeros(Float32, count)
@@ -201,4 +206,73 @@ application_hashes(application) = Dict(
     end
     @test !any(id.name in ("CUDA", "AMDGPU") for id in keys(Base.loaded_modules))
 end
+
+# Advance the preparation deadline only once both live graph owners are visible.
+# Keep real monotonic time advancing after the fault for the cleanup deadline.
+mutable struct WorkerDeadlineClock <: Control.Clocks.AbstractNanoClock
+    registry::Registry
+    deadline::Int64
+    offset::Int64
+    workers::Vector{String}
+end
+
+function Control.Clocks.time_nanos(clock::WorkerDeadlineClock)
+    now = Control.Clocks.time_nanos(Control.Clocks.SystemNanoClock())
+    if isempty(clock.workers)
+        names = [get(node.properties, "node.name", "") for node in
+                 find_globals(clock.registry; interface = "PipeWire:Interface:Node")]
+        workers = filter(name -> startswith(name, "calibration."), names)
+        if any(endswith(".wfs"), workers) && any(endswith(".pdm"), workers)
+            append!(clock.workers, workers)
+            clock.offset = max(0, clock.deadline - now)
+        end
+    end
+    return now + clock.offset
+end
+
+@testset "Calibration startup deadline withdraws partially prepared native graphs" begin
+    mktempdir() do application
+        write_calibration_controller(application, zeros(Float32, 2, 2))
+        write_calibration_plant(application)
+        hashes = application_hashes(application)
+        with_control_private_core() do remote, _, daemon
+            chmod(dirname(remote), 0o700)
+            loop = ThreadLoop("calibration.deadline.observer")
+            context, core, registry = with_thread_loop_lock(loop) do _
+                context = Context(loop)
+                core = CoreConnection(context; properties = Dict("remote.name" => remote))
+                context, core, Registry(core)
+            end
+            start!(loop)
+            try
+                roundtrip(registry)
+                nodes() = Set((node.id, node.properties["object.serial"])
+                    for node in find_globals(registry; interface = "PipeWire:Interface:Node"))
+                original = nodes()
+                frontend, command = calibration_capture_projections(application)
+                count = only(FilterGraphs.input_formats(command.graph).requested.shape)
+                deadline = Control.Clocks.time_nanos(Control.Clocks.SystemNanoClock()) + 60_000_000_000
+                clock = WorkerDeadlineClock(registry, deadline, 0, String[])
+                @test_throws Control.UnknownOutcome C.prepare_initial_calibration(
+                    application, remote, frontend, command; reference = zeros(Float32, count),
+                    name = "test.deadline", instance = Int64(502), deadline, clock,
+                    measurements = nothing, consume = (sample, exposure) -> nothing,
+                )
+                @test any(endswith(".wfs"), clock.workers) && any(endswith(".pdm"), clock.workers)
+                wait_proof(() -> nodes() == original, 10, "all temporary calibration Nodes withdrawn")
+                @test nodes() == original
+                @test !Base.process_exited(daemon)
+            finally
+                with_thread_loop_lock(loop) do _
+                    close(registry)
+                    close(core)
+                    close(context)
+                end
+                close(loop)
+            end
+        end
+        @test application_hashes(application) == hashes
+    end
+end
+
 end
