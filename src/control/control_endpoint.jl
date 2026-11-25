@@ -29,6 +29,7 @@ mutable struct Controller
     name::String
     pid::UInt32
     node::Union{Nothing,Node}
+    proxy_id::UInt32
     verified::Bool
     retired::Bool
     removed::Bool
@@ -58,6 +59,7 @@ properties project the admission state. `closed` is the resource lifetime flag.
     lifecycle::L
     publisher::F
     controllers::Vector{Controller}
+    const pending_controller_binds::Dict{UInt32,Controller}
     pending::Union{Nothing,Ticket{C}}
     last_token::Int64
     terminal_request::Union{Nothing,Ticket{C}}
@@ -356,6 +358,13 @@ end
 
 function refresh_controllers!(endpoint::Endpoint)
     healthy(endpoint)
+    filter!(endpoint.pending_controller_binds) do (_, controller)
+        if controller.retired && bound_id(something(controller.node)) != typemax(UInt32)
+            close_controller_proxy!(controller)
+            return false
+        end
+        return true
+    end
     endpoint.retained_controller === nothing || return nothing
     registry = something(endpoint.registry)
     globals = find_globals(registry; interface = "PipeWire:Interface:Node")
@@ -376,10 +385,7 @@ function refresh_controllers!(endpoint::Endpoint)
         end
     end
     for controller in endpoint.controllers
-        if controller.retired && controller.node !== nothing
-            close(controller.node)
-            controller.node = nothing
-        end
+        controller.retired && retire_controller_proxy!(endpoint, controller)
     end
     # A changed proof on a still-live registry incarnation is permanently
     # revoked. Retain its bounded tombstone until that incarnation disappears.
@@ -394,10 +400,15 @@ function refresh_controllers!(endpoint::Endpoint)
             ),
         endpoint.controllers,
     )
+    abandoned = count(values(endpoint.pending_controller_binds)) do pending
+        !any(controller -> controller === pending, endpoint.controllers)
+    end
     for global_object in globals
-        length(endpoint.controllers) < MAX_CONTROLLERS || break
+        length(endpoint.controllers) + abandoned < MAX_CONTROLLERS || break
         any(controller -> controller.global_id == global_object.id, endpoint.controllers) &&
             continue
+        any(controller -> controller.global_id == global_object.id,
+            values(endpoint.pending_controller_binds)) && continue
         name = get(global_object.properties, "node.name", "")
         startswith(name, Client.CONTROLLER_NODE_PREFIX) || continue
         serial = tryparse(UInt64, get(global_object.properties, "object.serial", ""))
@@ -411,7 +422,8 @@ function refresh_controllers!(endpoint::Endpoint)
         # Registry announcements are sparse. Bind a bounded set of candidate
         # names, then admit only the exact full NodeInfo proof, never the name.
         controller = Controller(
-            global_object.id, serial, nothing, name, UInt32(0), nothing, false, false, false
+            global_object.id, serial, nothing, name, UInt32(0), nothing, UInt32(0),
+            false, false, false,
         )
         controller.node = bind(
             registry,
@@ -422,12 +434,25 @@ function refresh_controllers!(endpoint::Endpoint)
                 publish!(endpoint)
                 nothing
             end,
+            on_bound = (proxy, global_id) -> begin
+                if controller.retired
+                    # Let a queued RemoveID arrive before destroying this node.
+                    publish!(endpoint)
+                else
+                    delete!(endpoint.pending_controller_binds, controller.proxy_id)
+                end
+                nothing
+            end,
             on_removed = node -> begin
                 # Preserve an earlier proof/error revocation; its later removal
                 # must never reclassify that incarnation as a clean release.
                 controller.removed |= !controller.retired
                 controller.retired = true
                 controller.verified = false
+                # The native proxy has already been marked removed.
+                if pop!(endpoint.pending_controller_binds, controller.proxy_id, nothing) !== nothing
+                    close_controller_proxy!(controller)
+                end
                 publish!(endpoint)
                 nothing
             end,
@@ -438,12 +463,42 @@ function refresh_controllers!(endpoint::Endpoint)
                 nothing
             end,
         )
+        # Record the proxy ID under the loop lock before its native reply arrives.
+        controller.proxy_id = proxy_id(controller.node)
+        endpoint.pending_controller_binds[controller.proxy_id] = controller
         push!(endpoint.controllers, controller)
         changed = true
     end
     changed && publish!(endpoint)
     return nothing
 end
+
+function close_controller_proxy!(controller::Controller)
+    node = controller.node
+    node === nothing && return nothing
+    close(node)
+    controller.node = nothing
+    return nothing
+end
+
+function retire_controller_proxy!(endpoint::Endpoint, controller::Controller)
+    controller.retired = true
+    controller.verified = false
+    # Destroying a still-unbound proxy can ask the core to destroy a resource
+    # the server has not created. Keep it until a bound or RemoveID event.
+    haskey(endpoint.pending_controller_binds, controller.proxy_id) ||
+        close_controller_proxy!(controller)
+    return nothing
+end
+
+# The registry reports a failed bind on the new proxy's local ID. A local ID
+# stays reserved until the proxy is destroyed and native removal is acknowledged.
+function controller_bind_failed(endpoint::Endpoint, id::UInt32, error::PipeWireError)
+    id != 0 && error.code in (-Base.Libc.ENOENT, -Base.Libc.ESTALE) || return false
+    controller = get(endpoint.pending_controller_binds, id, nothing)
+    return controller !== nothing && bound_id(something(controller.node)) == typemax(UInt32)
+end
+controller_bind_failed(::Nothing, id::UInt32, error::PipeWireError) = false
 
 "Retain the accepted controller and stop discovery before ordinary-owner science."
 function retain_controller!(endpoint::Endpoint, ticket::Ticket)
@@ -457,7 +512,7 @@ function retain_controller!(endpoint::Endpoint, ticket::Ticket)
         end
         for controller in endpoint.controllers
             controller.identity == identity && continue
-            controller.node === nothing || close(controller.node)
+            retire_controller_proxy!(endpoint, controller)
         end
         filter!(controller -> controller.identity == identity, endpoint.controllers)
         length(endpoint.controllers) == 1 ||
@@ -641,6 +696,7 @@ function Endpoint(
         lifecycle,
         publisher,
         Controller[],
+        Dict{UInt32,Controller}(),
         nothing,
         0,
         nothing,
@@ -766,14 +822,16 @@ function Base.close(endpoint::Endpoint)
     failures = Exception[]
     with_thread_loop_lock(endpoint.loop) do _
         endpoint.closed = true
-        for controller in endpoint.controllers
-            controller.node === nothing && continue
+        for controller in Iterators.flatten(
+            (endpoint.controllers, values(endpoint.pending_controller_binds)),
+        )
             try
-                close(controller.node)
+                close_controller_proxy!(controller)
             catch error
                 push!(failures, error)
             end
         end
+        empty!(endpoint.pending_controller_binds)
         for resource in (endpoint.filter, endpoint.registry)
             resource === nothing && continue
             try
@@ -847,8 +905,9 @@ function Transport(
                     nothing
                 end,
                 on_error = (core, id, sequence, error) -> begin
-                    connection_failure[] = sprint(showerror, error)
                     current = endpoint_ref[]
+                    controller_bind_failed(current, id, error) && return nothing
+                    connection_failure[] = sprint(showerror, error)
                     current === nothing || (current.failure = connection_failure[])
                     wake[] = true
                     nothing

@@ -97,6 +97,87 @@ function stub_effect!(profile, state::StubAcquisition, ticket, report_path)
     return result, message
 end
 
+function check_disappearing_controller(runtime, client, daemon, check)
+    native = client.client
+    name = Generic.CONTROLLER_NODE_PREFIX * "test-disappearing"
+    marker = with_thread_loop_lock(native.loop) do _
+        filter = Filter(native.core, name; properties = Dict("node.name" => name))
+        connect!(filter; flags = FILTER_ASYNC | FILTER_INACTIVE)
+        filter
+    end
+    lookup() = find_globals(something(runtime.endpoint.registry); properties = ("node.name" => name,))
+    daemon_stopped = false
+    try
+        wait_proof(() -> !isempty(lookup()), 3, "disappearing controller published"; check)
+        local_id = with_thread_loop_lock(runtime.loop) do _
+            global_id = only(lookup()).id
+            with_thread_loop_lock(native.loop) do _
+                close(marker)
+            end
+            # Confirm deletion on the publishing connection while the owner
+            # still holds the earlier registry view, then submit its stale bind.
+            roundtrip(native.core)
+            run(`kill -STOP $(getpid(daemon))`)
+            daemon_stopped = true
+            wait_proof(3, "private core suspended"; check) do
+                occursin(r"(?m)^State:\s+T", read("/proc/$(getpid(daemon))/status", String))
+            end
+            @test only(lookup()).id == global_id
+            Endpoint.poll!(runtime)
+
+            endpoint = runtime.endpoint
+            candidate = only(filter(c -> c.global_id == global_id, endpoint.controllers))
+            admitted = only(filter(c -> c.identity == native.identity, endpoint.controllers))
+            missing = PipeWireError(:pw_core, -Base.Libc.ENOENT)
+            @test Endpoint.controller_bind_failed(endpoint, candidate.proxy_id, missing)
+            @test Endpoint.controller_bind_failed(
+                endpoint, candidate.proxy_id, PipeWireError(:pw_core, -Base.Libc.ESTALE)
+            )
+            @test !Endpoint.controller_bind_failed(endpoint, admitted.proxy_id, missing)
+            @test !Endpoint.controller_bind_failed(endpoint, UInt32(0), missing)
+            @test !Endpoint.controller_bind_failed(endpoint, typemax(UInt32), missing)
+            @test !Endpoint.controller_bind_failed(
+                endpoint, candidate.proxy_id, PipeWireError(:pw_core, -Base.Libc.EPIPE)
+            )
+            candidate.proxy_id
+        end
+        # The server has sent the withdrawal but cannot reply to the stale bind.
+        # The next owner poll must release the candidate's admission state while
+        # keeping its proxy alive through the pending bind reply.
+        wait_proof(() -> isempty(lookup()), 3, "controller global withdrawn"; check)
+        Endpoint.poll!(runtime)
+        with_thread_loop_lock(runtime.loop) do _
+            endpoint = runtime.endpoint
+            @test all(c -> c.proxy_id != local_id, endpoint.controllers)
+            @test endpoint.pending_controller_binds[local_id].node !== nothing
+        end
+        run(`kill -CONT $(getpid(daemon))`)
+        daemon_stopped = false
+        sequence = with_thread_loop_lock(runtime.loop) do _
+            PipeWireAO.sync!(runtime.core)
+        end
+        wait_proof(3, "failed bind and RemoveID delivered"; check) do
+            with_thread_loop_lock(runtime.loop) do _
+                runtime.acknowledged_sequence[] == sequence &&
+                    !haskey(runtime.endpoint.pending_controller_binds, local_id)
+            end
+        end
+        Endpoint.poll!(runtime)
+        with_thread_loop_lock(runtime.loop) do _
+            @test !Endpoint.controller_bind_failed(
+                runtime.endpoint, local_id, PipeWireError(:pw_core, -Base.Libc.ENOENT)
+            )
+            @test Endpoint.controller_present(runtime.endpoint, something(native.identity))
+        end
+    finally
+        daemon_stopped && run(`kill -CONT $(getpid(daemon))`)
+        with_thread_loop_lock(native.loop) do _
+            close(marker)
+        end
+    end
+    return nothing
+end
+
 function run_stub_profile(socket, directory, daemon, profile, instrument, suffix)
     instance = Int64(time_ns() % UInt64(typemax(Int64) - 2)) + 1
     node = "test.native.acquisition.$suffix"
@@ -186,6 +267,15 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
         @test state.effects == 1 # Fresh Status after Prepared, not retained enum data.
         @test Caller.status(client; deadline = deadline(), check = check_worker).snapshot.cursor ===
             nothing
+
+        if profile isa Codec.CorrectionLifecycleProfile
+            allow_take[] = false
+            try
+                check_disappearing_controller(runtime, client, daemon, check_worker)
+            finally
+                allow_take[] = true
+            end
+        end
 
         wrong_profile =
             profile isa Codec.CalibrationLifecycleProfile ? Codec.CORRECTION_PROFILE :

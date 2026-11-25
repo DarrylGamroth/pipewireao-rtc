@@ -944,7 +944,7 @@ function prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, source
     controller = Envelope.ControllerIdentity(UInt32(3), UInt64(4), Int64(5))
     controller_proof = Endpoint.Controller(
         controller.global_id, controller.serial, controller, "unpublished-parameter-preparation",
-        UInt32(getpid()), nothing, true, false, false,
+        UInt32(getpid()), nothing, UInt32(0), true, false, false,
     )
     instance = Int64(1)
     completion = Envelope.encode_completion(
@@ -961,7 +961,8 @@ function prepare_parameter_ndarrays!(runtime, endpoint_type, ticket_type, source
     # concrete type as the live endpoint's publisher.
     scratch = endpoint_type(
         PROFILE, transport.loop, nothing, bootstrap.filter, instance, Connected,
-        ParameterPublisher(wake, false), [controller_proof], nothing, Int64(0), nothing,
+        ParameterPublisher(wake, false), [controller_proof], Dict{UInt32,Endpoint.Controller}(),
+        nothing, Int64(0), nothing,
         completion, rejection, nothing, false, controller, clock, nothing,
     )
     token = Int64(0)

@@ -216,8 +216,10 @@ function Endpoint(
                 context;
                 properties = Dict("remote.name" => remote),
                 on_error = (core, id, sequence, error) -> begin
+                    current = ingress_ref[]
+                    Ingress.controller_bind_failed(current, id, error) && return nothing
                     failure[] = sprint(showerror, error)
-                    ingress_ref[] === nothing || (ingress_ref[].failure = failure[])
+                    current === nothing || (current.failure = failure[])
                     notify_owner()
                     nothing
                 end,
