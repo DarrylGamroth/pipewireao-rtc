@@ -65,13 +65,31 @@ jobs:
       - name: Test service admission and native Quit against the user manager
         run: |
           uid=$(id -u)
-          sudo systemctl start "user@$uid.service"
+          # The managed owner unit requests these hard limits from its user manager.
+          dropin="/run/systemd/system/user@$uid.service.d"
+          sudo mkdir -p "$dropin"
+          printf '[Service]\nLimitRTPRIO=95\nLimitMEMLOCK=4G\n' |
+            sudo tee "$dropin/rtc-test.conf" > /dev/null
+          sudo systemctl daemon-reload
+          sudo systemctl restart "user@$uid.service"
           export XDG_RUNTIME_DIR="/run/user/$uid"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
           echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
           julia --startup-file=no --code-coverage=@ --project=test test/systemd_bus.jl
           RTC_STOP_EVIDENCE_ROOT="$RUNNER_TEMP" julia --startup-file=no --code-coverage=@ --project=test test/systemd_stop.jl
+      - name: Test managed graph preparation and owner cleanup
+        run: |
+          plugin="$RUNNER_TEMP/ndarray-example"
+          mkdir "$plugin"
+          # Public example from the source revision used to build PipeWireAO_jll 4.0.8.
+          curl -fsSL --retry 3 -o "$plugin/plugin.c" \
+            https://raw.githubusercontent.com/DarrylGamroth/PipeWireAO/2080cba77c33f069fa436b0ce96cbace934296fb/spa/plugins/filter-graph/plugin_ndarray_example.c
+          echo "a4f86813214582bdd324e7cd269a852e030b7794d96c0a354550f92e40053445  $plugin/plugin.c" | sha256sum -c
+          sdk=$(julia --startup-file=no --project=test -e 'using PipeWireAO; print(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)')
+          touch "$plugin/config.h"
+          cc -shared -fPIC -O2 -I"$plugin" -I"$sdk/include/spa-ao-0.2" "$plugin/plugin.c" -o "$plugin/ndarray-example.so" -pthread -lm
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/integration/portable_managed_prepare.jl "$plugin/ndarray-example.so"
       - name: Install the checked-out RTC and operator CLI from a disposable registry
         run: julia --startup-file=no --code-coverage=@ --project=. test/runtime_install_registry.jl --direct-session runtime-install.info
       - name: Build and test the native management service
