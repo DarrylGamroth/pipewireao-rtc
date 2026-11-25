@@ -1,6 +1,7 @@
 using PipeWireAO, Test
 
 const COLD = (
+    "test_graph_owner_integration",
     "calibrated_graph_exports",
     "analysis_links",
     "instrument_influences_science",
@@ -22,6 +23,7 @@ const COLD = (
     "analysis_statistics",
     "analysis_synchronized_inputs",
     "calibration_type_dispatch",
+    "calibration_projection",
     "test_modal_completion",
     "physical_offsets_observer",
     "test_session_configuration_integration",
@@ -37,11 +39,12 @@ const PRIVATE_CORE = (
 const SELECTIONS = (
     cold = COLD,
     private_core = PRIVATE_CORE,
+    retained_owner = ("persistent_graph_owner", "persistent_graph_owner_faults"),
     physical_offset_inputs = ("physical_offset_inputs_private_core",),
     physical_offsets = ("physical_offsets_private_core",),
 )
 
-const USAGE = "Select one of cold, private_core, physical_offset_inputs or physical_offsets"
+const USAGE = "Select one of " * join(keys(SELECTIONS), ", ")
 length(ARGS) == 1 || error(USAGE)
 const SELECTION = Symbol(only(ARGS))
 hasproperty(SELECTIONS, SELECTION) || error(USAGE)

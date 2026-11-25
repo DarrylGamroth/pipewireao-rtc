@@ -2,7 +2,8 @@
 
 This project runs RTC's optional science extensions with registered CPU-only
 dependencies. Use Julia 1.13.4 and a Linux host supported by the PipeWireAO
-artifact. The manifest locks the dependency trees and uses the current RTC
+artifact. The HIL package uses a system C compiler to build its command
+receiver. The manifest locks the dependency trees and uses the current RTC
 checkout as its package source.
 It requires authenticated Git access to `AdaptiveOpticsCalibration.jl`,
 `AdaptiveOpticsSimPipeWireHIL.jl`, and `JuliaFilterGraph.jl`. These repositories
@@ -32,14 +33,15 @@ export JULIA_LOAD_PATH='@:@stdlib'
 export OPENBLAS_NUM_THREADS=1
 julia --startup-file=no --project=test/science --threads=4,0 test/science/runtests.jl cold
 julia --startup-file=no --project=test/science --threads=4,1 test/science/runtests.jl private_core
+julia --startup-file=no --project=test/science --threads=3,0 test/science/runtests.jl retained_owner
 julia --startup-file=no --project=test/science --threads=3,0 test/science/runtests.jl physical_offset_inputs
 julia --startup-file=no --project=test/science --threads=4,0 test/science/runtests.jl physical_offsets
 ```
 
-For extension coverage, add
-`--code-coverage=@"$PWD/ext" --code-coverage=/absolute/path/to/selection.info`
-before the script in each command. Use a different trace file for each
-selection. The private cores exercise software transport and lifecycle on
+For RTC coverage, add
+`--code-coverage=@ --code-coverage=/absolute/path/to/selection-%p.info`
+before the script in each command. Use a separate trace name per selection.
+The process ID separates results from the test process and its Julia children. The private cores exercise software transport and lifecycle on
 disposable sockets. Installed-session, instrument-data, timing, and hardware
 qualification use the [integration checks](../integration/README.md) and
 instrument-specific procedures.
