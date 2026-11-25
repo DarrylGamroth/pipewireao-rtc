@@ -139,16 +139,21 @@ function stop_service(process)
     wait_until(() -> !process_running(process))
     wait(process)
 end
-function start_service(directory; idle = 2, deadline = 3, activation = false)
+function start_service(
+    directory; idle = 2, deadline = 3, activation = false, worker_argv = nothing
+)
     socket = joinpath(directory, "management.sock")
     worker = joinpath(directory, "worker.jl")
-    arguments = JSON.json([
-        joinpath(Sys.BINDIR, Base.julia_exename()),
-        "--startup-file=no",
-        "--project=" * dirname(Base.active_project()),
-        worker,
-        directory,
-    ])
+    if worker_argv === nothing
+        worker_argv = [
+            joinpath(Sys.BINDIR, Base.julia_exename()),
+            "--startup-file=no",
+            "--project=" * dirname(Base.active_project()),
+            worker,
+            directory,
+        ]
+    end
+    arguments = JSON.json(worker_argv)
     command = `$ENDPOINT --socket $socket --state-root $(joinpath(directory,"receipts")) --configuration-root $(joinpath(directory,"configuration")) --worker-argv $arguments --idle-timeout $idle --operation-timeout $deadline --describe-timeout $deadline`
     if activation
         launcher = joinpath(dirname(ENDPOINT), "tests", "management-activate")
@@ -162,6 +167,69 @@ function start_service(directory; idle = 2, deadline = 3, activation = false)
     wait_until(() -> ispath(socket) || !process_running(process))
     process_running(process) || error(read(joinpath(directory, "service.log"), String))
     return process, socket
+end
+
+@testset "Invalid management startup preserves endpoint and receipts" begin
+    mktempdir() do directory
+        socket = joinpath(directory, "management.sock")
+        state = joinpath(directory, "state")
+        receipts = joinpath(state, "pipewireao", "management")
+        valid_worker = ["--worker-argv", JSON.json(["false"])]
+        function reject_startup(arguments, exit_code; diagnostic = nothing)
+            log = joinpath(directory, "startup.log")
+            command = addenv(
+                `$ENDPOINT $arguments`,
+                "PIPEWIREAO_MANAGEMENT_SOCKET" => socket,
+                "XDG_STATE_HOME" => state,
+                "LISTEN_PID" => nothing,
+                "LISTEN_FDS" => nothing,
+                "LC_ALL" => "C",
+            )
+            process = run(pipeline(command; stdout = devnull, stderr = log); wait = false)
+            try
+                wait_until(() -> !process_running(process))
+                wait(process)
+                @test process.exitcode == exit_code
+                if diagnostic !== nothing
+                    @test occursin(diagnostic, read(log, String))
+                end
+            finally
+                process_running(process) && stop_service(process)
+            end
+        end
+
+        reject_startup(["--idle-timeout", "invalid"], 2; diagnostic = "--idle-timeout")
+        reject_startup(
+            [valid_worker; "--operation-timeout"; "0"], 2; diagnostic = "positive timeouts"
+        )
+        for invalid in ("{}", "[17]", "[]")
+            reject_startup(["--worker-argv", invalid], 2)
+        end
+        @test !ispath(socket)
+
+        corrupt_receipt = joinpath(receipts, request_id() * ".json")
+        write(corrupt_receipt, "{}")
+        reject_startup(valid_worker, 1; diagnostic = "management receipt root invalid")
+        @test !ispath(socket)
+        @test read(corrupt_receipt, String) == "{}"
+        rm(corrupt_receipt)
+
+        public = joinpath(directory, "public")
+        mkdir(public)
+        chmod(public, 0o755)
+        reject_startup(
+            [valid_worker; "--state-root"; public], 2; diagnostic = "private state root"
+        )
+        public_socket = joinpath(public, "endpoint.sock")
+        reject_startup(
+            [valid_worker; "--socket"; public_socket], 1; diagnostic = "socket directory"
+        )
+        @test !ispath(public_socket)
+
+        write(socket, "pre-existing file")
+        reject_startup(valid_worker, 1; diagnostic = "refusing to replace it")
+        @test read(socket, String) == "pre-existing file"
+    end
 end
 
 @testset "original FITS descriptor from the catalog owner" begin
@@ -251,7 +319,7 @@ for line in eachline(stdin)
         println(JSON.json(Dict("ok"=>false,"error"=>"explicit owner rejection")));flush(stdout);continue
     end
     result=Dict("worker"=>getpid(),"domain"=>request["protocol"],"root"=>get(request,"root",nothing),"request_id"=>get(request,"id",nothing))
-    if haskey(args,"path")
+    if request["op"]=="register" && haskey(args,"path")
         write(joinpath(root,"entered"),"fd")
         sleep(0.3)
         result["bytes"]=read(args["path"],String)
@@ -292,7 +360,25 @@ end
                     input,
                 )["ok"]
             end
+            unreadable = envelope("register")
+            open(joinpath(directory, "write-only"), "w") do input
+                reply = submit(path, unreadable; input)
+                @test reply["error"] ==
+                    "input must be a readable regular FITS descriptor at most 512 MiB"
+            end
+            @test !ispath(joinpath(directory, "receipts", unreadable["id"] * ".json"))
             @test !submit(path, envelope("list"; id = "BAD"))["ok"]
+            @test submit(path, envelope("receipt"; domain = MANAGEMENT))["error"] ==
+                "invalid receipt identity"
+            @test submit(path, envelope("read-artifact"))["error"] ==
+                "read-artifact requires an artifact identity"
+            # The worker acknowledges the fetch without writing the snapshot.
+            empty_artifact = submit(
+                path, envelope("read-artifact"; arguments = Dict("id" => "empty"))
+            )
+            @test !empty_artifact["ok"]
+            @test empty_artifact["unavailable"]
+            @test empty_artifact["error"] == "invalid or unsealable artifact result"
             rejected = submit(
                 path, envelope("list"; arguments = Dict("test_action" => "reject"))
             )
@@ -469,6 +555,32 @@ end
             stop_service(process)
         end
         @test !ispath(path)
+    end
+end
+
+@testset "Unavailable management worker preserves the receipt contract" begin
+    mktempdir() do directory
+        process, path = start_service(
+            directory; worker_argv = [joinpath(directory, "missing-worker")]
+        )
+        try
+            request = envelope("get")
+            reply = submit(path, request)
+            @test !reply["ok"]
+            @test reply["unavailable"]
+            @test reply["error"] == "management worker unavailable"
+            receipt = submit(
+                path,
+                envelope(
+                    "receipt"; domain = MANAGEMENT, arguments = Dict("id" => request["id"])
+                ),
+            )
+            @test receipt["ok"]
+            @test receipt["result"]["state"] == "unknown"
+            @test !haskey(receipt["result"], "response")
+        finally
+            stop_service(process)
+        end
     end
 end
 
