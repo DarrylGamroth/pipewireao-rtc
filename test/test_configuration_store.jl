@@ -237,3 +237,58 @@ end
         )["ok"]
     end
 end
+
+@testset "Catalog worker transfers the retained FITS after the input is unlinked" begin
+    mktempdir() do root
+        path = joinpath(root, "offsets.fits")
+        FITS(path, "w") do image
+            write(image, Float32[-1, 2, 3])
+        end
+        original = read(path)
+        catalog = joinpath(root, "catalog")
+        request(op, arguments) = JSON.json(Dict(
+            "protocol" => CS.PROTOCOL, "root" => catalog, "op" => op, "arguments" => arguments,
+        ))
+        descriptor(io) = "/proc/$(getpid())/fd/$(reinterpret(Cint, Base.fd(io)))"
+        source = open(path)
+        try
+            rm(path)
+            open(joinpath(root, "copy.fits"), "w+") do copy
+                cmd = `$(Base.julia_cmd()) --startup-file=no --project=$(dirname(Base.active_project())) -e 'using PipeWireAORTC; PipeWireAORTC.ManagementCLI.serve()'`
+                open(cmd, "r+") do worker
+                    exchange(op, args) = begin
+                        println(worker, request(op, args))
+                        flush(worker)
+                        JSON.parse(readline(worker))
+                    end
+                    args = Dict("type" => "Float32", "shape" => [3], "path" => descriptor(source),
+                                "label" => "Mirror offsets", "scope" => "science")
+                    registered = exchange("register", args)
+                    registered["ok"] || error(registered["error"])
+                    artifact = registered["result"]
+                    read_args = Dict("id" => artifact["id"], "path" => descriptor(copy))
+                    @test !exchange("read-artifact", merge(read_args, Dict("path" => path)))["ok"]
+                    @test !ispath(path)
+                    fetched = exchange("read-artifact", read_args)
+                    @test fetched["ok"] && fetched["result"] == artifact
+                    seekstart(copy)
+                    @test read(copy) == original
+                end
+            end
+        finally
+            close(source)
+        end
+        # A malformed request must not consume the next complete JSON line.
+        list = request("list", Dict("limit" => 1))
+        input = IOBuffer(repeat("a", CLI.MAX_LINE_BYTES + 1) * "\n" * list * "\n")
+        output = IOBuffer()
+        @test CLI.main(["serve"]; input, output) == 0
+        invalid, page = JSON.parse.(split(chomp(String(take!(output))), '\n'))
+        @test !invalid["ok"] && occursin("byte limit", invalid["error"])
+        @test page["ok"] && only(page["result"]["items"])["manifest"]["label"] == "Mirror offsets"
+        @test CLI.main([request("get", Dict())]; output) == 1
+        @test !JSON.parse(String(take!(output)))["ok"]
+        @test CLI.main([list]; output) == 0
+        @test JSON.parse(String(take!(output))) == page
+    end
+end

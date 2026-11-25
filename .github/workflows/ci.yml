@@ -92,6 +92,8 @@ jobs:
           meson test -C runtime/build --print-errorlogs
           PIPEWIREAO_MANAGEMENT_BINARY="$PWD/runtime/build/pipewireao-management" \
             julia --startup-file=no --code-coverage=@ --project=. test/management_endpoint.jl
+          PIPEWIREAO_MANAGEMENT_BINARY="$PWD/runtime/build/pipewireao-management" \
+            julia --startup-file=no --code-coverage=@ --project=. test/management_systemd.jl
           gcovr --root . --filter '^runtime/management\.c$' --lcov management.info runtime/build
           sed -i 's|^SF:.*/runtime/management\.c$|SF:runtime/management.c|' management.info
           grep -Fx 'SF:runtime/management.c' management.info
