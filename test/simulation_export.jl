@@ -3,7 +3,7 @@
 using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: copyto_graph_input!
-using PipeWireAO: SPA
+using PipeWireAO: LibPipeWire, SPA
 include(joinpath(@__DIR__, "aos_graph_documents.jl"))
 const ExportConfiguration = PipeWireAORTC.InstrumentConfiguration
 const ExportCommon = PipeWireAORTC.Common
@@ -84,5 +84,93 @@ const ExportCommon = PipeWireAORTC.Common
         @test success(
             `$(Base.julia_cmd()) --startup-file=no --project=$(dirname(Base.active_project())) -e $code $(joinpath(relocated, "simulation.yaml"))`,
         )
+    end
+end
+
+@testset "managed HIL preparation reloads the sealed application" begin
+    simulation = AdaptiveOpticsSimPipeWireHIL.Simulation
+    owner = PipeWireAORTC.AOSOwner
+    prefix = String(LibPipeWire.PipeWireAO_jll.artifact_dir)
+    withenv("PIPEWIREAO_PREFIX" => prefix) do
+        mktempdir() do application
+            wire_contract = Dict(
+                "frame_encoding" => "uint16",
+                "frame_schema" => "test.export.opd/1",
+                "command_schema" => "test.export.coefficients/1",
+                "command_scale" => 1,
+            )
+            (; document) = modal_simulation_source(application; wire_contract)
+            physical_path = joinpath(application, "instrument.yaml")
+            physical = ExportCommon.read_yaml(physical_path)
+            merge!(
+                physical["wavefront_sensors"]["sensor"],
+                Dict(
+                    "detector_shape" => [2, 2],
+                    "pupil_shape" => [1, 1],
+                    "expected_schema" => wire_contract["frame_schema"],
+                ),
+            )
+            ExportCommon.write_yaml(physical_path, physical)
+            ExportConfiguration.prepare_publication(application)
+            merge!(
+                document,
+                wire_contract,
+                Dict(
+                    "command_input" => "command",
+                    "frame_output" => "frame",
+                    "frame_shape" => [2, 2],
+                ),
+            )
+            config_path = joinpath(application, "simulation.conf")
+            PipeWireAORTC.ScienceExport.write_spa_config(config_path, document)
+            ExportConfiguration.prepare_simulation_configuration!(application)
+
+            receipt_path = joinpath(application, ExportConfiguration.SIMULATOR_PREPARATION)
+            ExportConfiguration.stage_simulator_preparation!(application, prefix)
+            @test !isfile(receipt_path)
+            load_receipt() = ExportConfiguration.read_simulator_preparation(
+                owner.configuration(config_path),
+            )
+            @test load_receipt() === nothing
+            environment = dirname(Base.active_project())
+            for file in ("Project.toml", "Manifest.toml")
+                cp(joinpath(environment, file), joinpath(application, file))
+            end
+            ExportConfiguration.stage_simulator_preparation!(application, prefix)
+            deployment_path = joinpath(application, "deployment.conf")
+            ExportCommon.write_json(deployment_path, Dict("artifacts" => Dict()))
+            PipeWireAORTC.InstrumentExport.seal!(application)
+
+            loaded = load_receipt()
+            @test loaded.document == ExportConfiguration.json_value(
+                ExportConfiguration.graph_document(loaded.declaration, loaded.configured)
+            )
+            @test simulation.prepare_lockstep_startup(config_path) === nothing
+
+            deployment = ExportCommon.read_json(deployment_path)
+            delete!(deployment["artifacts"], relpath(receipt_path, application))
+            ExportCommon.write_json(deployment_path, deployment)
+            @test_throws "simulator preparation input is not sealed" load_receipt()
+            PipeWireAORTC.InstrumentExport.seal!(application)
+
+            for path in (joinpath(application, "Manifest.toml"), config_path)
+                original = read(path)
+                open(io -> write(io, "\n"), path, "a")
+                @test_throws "startup preparation differs from the sealed application" load_receipt()
+                write(path, original)
+            end
+
+            receipt_bytes = read(receipt_path)
+            receipt = ExportCommon.read_json(receipt_path)
+            for identity in ("calibration_identity", "prescription_identity")
+                original = receipt[identity]
+                receipt[identity] = "sha256:" * repeat("0", 64)
+                ExportCommon.write_json(receipt_path, receipt)
+                @test_throws "startup preparation differs from the sealed application" load_receipt()
+                receipt[identity] = original
+            end
+            write(receipt_path, receipt_bytes)
+            @test load_receipt().document == loaded.document
+        end
     end
 end
