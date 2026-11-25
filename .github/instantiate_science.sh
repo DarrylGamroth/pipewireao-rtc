@@ -7,8 +7,10 @@ trap 'rm -r -- "$keydir"' EXIT
 export GIT_CONFIG_GLOBAL="$keydir/gitconfig"
 export GIT_SSH_COMMAND="ssh -F $keydir/config"
 export JULIA_PKG_USE_CLI_GIT=true
-curl --fail --silent --show-error https://api.github.com/meta |
-  jq -er '.ssh_keys[] | "github.com " + .' > "$keydir/known_hosts"
+# https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints
+cat > "$keydir/known_hosts" <<'HOSTS'
+github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+HOSTS
 
 add_identity() {
   local repository=$1 variable=$2 alias=${1%.jl}
