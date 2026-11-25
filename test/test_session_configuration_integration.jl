@@ -5,6 +5,7 @@ using PipeWireAO: METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI
 using FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
+using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract
 
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
@@ -12,6 +13,8 @@ const D = PipeWireAORTC.DeploymentConfiguration
 const AOS = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOpticsExt)
 const Observation = AOS.OpticalObservation
 const PREFIX = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+
+include("pupil_source_documents.jl")
 reference(pointer) = Dict("\$ref" => pointer)
 
 @testset "session contracts come from the typed rectangular FilterGraphs boundary" begin
@@ -438,5 +441,71 @@ end
         @test isempty(D.decode(joinpath(directory, "session.conf"), PREFIX)["links"])
         @test prepare(; display=false) == (["--unpublished-output", "demanded"], [])
         @test_throws "matching source view" prepare(; expected="different/1")
+    end
+end
+
+@testset "scientific pupil source and adopted command are declared in the session" begin
+    mktempdir() do application
+        (; document, config) = pupil_source_documents(application)
+        document["applied_command_observation"] = true
+        C.write_json(config, document)
+        session_path = joinpath(application, "session.conf")
+        core_path = joinpath(application, "core.conf")
+        write_configuration = PipeWireAORTC.ScienceExport.write_spa_config
+        write_configuration(core_path, Dict("context.properties" => Dict(
+            "default.clock.rate" => reference("/simulation/rate"),
+        )))
+        pupil = "simulator-pupil-output"
+        applied = "simulator-primary-applied"
+        session = Dict("queues" => [Dict(
+            "name" => "pupil-view",
+            "shape" => reference("/simulator/pupil/shape"),
+            "schema" => reference("/simulator/pupil/schema"),
+        )])
+        spec(owners = Dict{String,String}()) = Dict(
+            "session" => "session.conf", "core" => "core.conf",
+            "source-owner" => "pupil-plant", "node-owners" => owners,
+        )
+        prepare(specification) = E.prepare_session_configuration!(
+            application, specification, [], "instrument.json", PREFIX,
+        )
+
+        write_configuration(session_path, session)
+        specification = spec()
+        prepare(specification)
+        resolved = D.decode(session_path, PREFIX)
+        @test specification["node-owners"] == Dict(pupil => "pupil-plant", applied => "pupil-plant")
+        @test all(source -> source["ownership"] == "external", resolved["sources"])
+        @test length(resolved["sources"]) == 2
+        ports = Dict(source["node.name"] => only(source["ports"]) for source in resolved["sources"])
+        contract = external_pupil_contract(;
+            pupil_resolution = 4, diameter_m = 0.012, plane = "upstream_of_apodizer",
+            curvature = "collimated",
+        )
+        @test ports[pupil] == Dict(
+            "name" => "output_1", "direction" => "output",
+            "shape" => [2, 4, 4], "schema" => contract.schema,
+            "element-type" => "F32_LE", "layout" => "ROW_MAJOR",
+        )
+        @test only(resolved["queues"]) ==
+            Dict("name" => "pupil-view", "shape" => [2, 4, 4], "schema" => contract.schema)
+        @test ports[applied] == Dict(
+            "name" => "output_1", "direction" => "output", "shape" => [2],
+            "schema" => PipeWireAORTC.Schemas.identifier("applied_dm_command_opd_um"),
+            "element-type" => "F32_LE", "layout" => "ROW_MAJOR", "rate" => "500/1",
+        )
+        @test D.decode(core_path, PREFIX)["context.properties"]["default.clock.rate"] == 500
+
+        write_configuration(session_path, session)
+        @test_throws "duplicate scientific pupil node ownership" prepare(spec(Dict(pupil => "other")))
+        @test_throws "duplicate adopted physical-command ownership" prepare(spec(Dict(applied => "other")))
+        session["sources"] = [Dict("node.name" => applied)]
+        write_configuration(session_path, session)
+        @test_throws "duplicate adopted physical-command source" prepare(spec())
+        session["sources"] = [Dict("node.name" => pupil)]
+        write_configuration(session_path, session)
+        original = read(session_path)
+        @test_throws "scientific pupil source is generated" prepare(spec())
+        @test read(session_path) == original
     end
 end
