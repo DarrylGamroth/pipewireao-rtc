@@ -68,12 +68,8 @@ jobs:
           export XDG_RUNTIME_DIR="/run/user/$uid"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           julia --startup-file=no --code-coverage=@ --project=test test/systemd_bus.jl
-      - name: Exercise cold application export
-        run: |
-          julia --startup-file=no --code-coverage=@ --project=. -e '
-            using PipeWireAO
-            ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
-            include("test/runtime_install.jl")' -- --prepare-only
+      - name: Install the checked-out RTC and operator CLI from a disposable registry
+        run: julia --startup-file=no --code-coverage=@ --project=. test/runtime_install_registry.jl runtime-install.info
       - name: Build and test the native management service
         run: |
           meson setup runtime/build runtime -Db_coverage=true -Dbuildtype=debug
@@ -95,6 +91,7 @@ jobs:
           path: |
             lcov.info
             management.info
+            runtime-install.info
           if-no-files-found: error
           retention-days: 1
 
