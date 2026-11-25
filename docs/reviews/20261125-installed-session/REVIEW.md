@@ -159,11 +159,34 @@ survive. The terminal receipt, scoped unit list and independent source
 cursors establish the actual lifetimes. On managed Quit the private socket
 and owned processes were retired.
 
-**Open graph-owner defect.** The retained graph was idle waiting for a new
+**Original graph-owner failure at `66df07e`.** The retained graph was idle waiting for a new
 attachment after successful direct RTC shutdown. Two seconds later, stopping
 that separate graph service sent SIGTERM. PipeWire reported wrong-context
 filter destruction and the process aborted during proxy cleanup with heap
-corruption. The trace establishes the disposal failure. Its cause and the
-affected dependency versions require a graph-owner reproduction. All
+corruption. The trace establishes the disposal failure. The service-stop reproduction and repair follow below. All
 disposable services were retired.
 [Run configurations, lifecycle receipts and graph backtrace](classic-cpu-installed-admission-66df07e.tar.gz)
+
+## Retained graph service shutdown
+
+At `66df07e` the separate graph received SIGTERM after the RTC had quit.
+Julia entered process termination with native PipeWire objects still live.
+The retained unit now asks the bootstrap monitor to cancel. The graph owner
+then leaves the native graph loop, closes the graph on its owning thread and
+exits. A native RTC Quit alone still releases only that attachment.
+
+| Installed Classic CPU graph | Stop request to process exit | What was verified |
+| --- | ---: | --- |
+| After RTC Quit, `f2217e8` | 0.327 s | The RTC admitted all 20 expected Links, primed on live detector frames with correction open and completed native Quit. The retained graph then exited normally with status 0. The same simulator advanced from sequence 5133 to 5142 in generation 1. |
+| Prepared before any Connect, `6986033` | 0.279 s | A fresh correlated native Status reported Prepared. The installed graph exited normally with status 0 and the same private core stayed available. |
+
+The graph journals were clean in both runs. A separate private-core test on
+`6986033` kept the connected controller alive while requesting service
+shutdown, exercised repeated attachments and passed all 11 checks. The
+monitor regression also covers a fresh Connect and a pending Connect during
+shutdown. The full RTC core suite passed 12,004 checks in 564 testsets. The
+offline export selector passed 13 checks. The installed tests used Julia 1.13.4, PipeWireAO_jll 4.0.8+0 and
+CPU graphs. The earlier fixture's source-control client bound its own observation
+proxy and closed the client while the proxy was still open. Its teardown
+logged an error after graph exit and verified continued publication. All disposable units, processes and sockets were retired.
+[Stop requests, terminal process status and graph journals](graph-stop-receipts.tar.gz)
