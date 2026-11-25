@@ -192,6 +192,97 @@ end
             @test parameter_port["element-type"] == "F32_LE"
         end
         @test only(C.read_yaml(views_path)["views"])["binding"]["shape"] == [3, 1]
+
+        @testset "selected mode adopts campaign calibration and narrows operator views" begin
+            campaign = mkpath(joinpath(application, "calibration", "campaign"))
+            selected = reshape(Float32[1, 0.25, -0.125], 3, 1)
+            calibration.write_fits(joinpath(campaign, "$completion_port.fits"), selected)
+            cp(joinpath(rtc, "$projection_port.fits"), joinpath(campaign, "$projection_port.fits"))
+            parameter_path = joinpath(campaign, "bindings.json")
+            saved = decode(joinpath(rtc, "parameters.conf"), prefix)
+            C.write_json(parameter_path, saved)
+            identity = "sha256:" * "a"^64
+            profile = Dict(
+                "mode" => "calibrated",
+                "calibration" => Dict("identity" => identity, "parameters" => relpath(parameter_path, application)),
+                "omit-views" => ["alignment"],
+            )
+            C.write_yaml(joinpath(rtc, "modes.yaml"), Dict(
+                "default" => "base",
+                "modes" => Dict(
+                    "base" => Dict("core" => Dict("context.properties" => Dict("default.clock.rate" => 500))),
+                    "calibrated" => Dict(
+                        "extends" => "base", "requires" => ["calibration"], "omit-views" => ["dark"],
+                        "session" => Dict("sources" => [Dict("node.name" => "@CAMERA_NODE@")]),
+                    ),
+                ),
+            ))
+            C.write_yaml(views_path, Dict("view" => [Dict("id" => id) for id in ("dark", "alignment", "science")]))
+            core_path = joinpath(rtc, "core.conf")
+            write_config(core_path, Dict("context.properties" => Dict("default.clock.quantum" => 256)))
+            spec = Dict("session" => relpath(session_path, application), "core" => relpath(core_path, application))
+            E.prepare_mode!(application, spec, E.selected_mode(application, profile), profile,
+                Dict("CAMERA_NODE" => "instrument-camera"), prefix)
+            @test last(decode(session_path, prefix)["sources"])["node.name"] == "instrument-camera"
+            @test decode(core_path, prefix)["context.properties"] ==
+                Dict("default.clock.rate" => 500, "default.clock.quantum" => 256)
+            @test only(C.read_yaml(views_path)["view"])["id"] == "science"
+            @test C.read_json(parameter_path) == saved
+            rebased = C.read_json(joinpath(rtc, "parameters.conf"))
+            @test [row["path"] for row in rebased["parameters"]] ==
+                [relpath(joinpath(campaign, row["path"]), rtc) for row in saved["parameters"]]
+            @test Dict(calibration.read_parameters(application))[completion_port] == selected
+            instrument.prepare_publication(application)
+            @test C.read_json(publication_path)["calibration_identity"] == identity
+
+            prepared = calibration.controller_graph(application)
+            try
+                output = (demanded = zeros(Float32, 4),)
+                @test FilterGraphs.process!(output, prepared, (input = Float32[1],)) == (demanded = true,)
+                @test output.demanded == Float32[0.75, 0.25, -0.125, 0]
+            finally
+                FilterGraphPipeWire.close_execution(prepared)
+            end
+        end
+
+        @testset "publication derives controlled actuators from bound calibration" begin
+            selection = Dict(
+                "graph" => "rtc/shape.conf", "bindings" => "rtc/shape.yaml",
+                "active_to_full" => "active-to-full", "pdm_to_vdm" => "pdm-to-vdm",
+            )
+            shape = Dict(
+                "type" => "ndarray", "name" => "shape", "label" => "vdm-shape-offset-f32",
+                "config" => Dict(
+                    "active_vdm_count" => reference("/rtc/dimensions/active_vdm_count"),
+                    "full_vdm_count" => 3,
+                    "physical_actuator_count" => 4,
+                ),
+            )
+            shape_inputs = [
+                Dict("name" => port, "endpoint" => "shape:$port")
+                for port in ("active-to-full", "pdm-to-vdm")
+            ]
+            write_config(joinpath(application, selection["graph"]), Dict(
+                "filter.graph" => Dict("nodes" => [shape], "inputs" => shape_inputs),
+            ))
+            binding_path = joinpath(application, selection["bindings"])
+            bindings = [Dict("port" => port, "path" => "$port.fits", "axes" => [2, 1])
+                        for port in ("active-to-full", "pdm-to-vdm")]
+            C.write_yaml(binding_path, Dict("parameters" => bindings))
+            calibration.write_fits(joinpath(rtc, "pdm-to-vdm.fits"),
+                Float32[1 0 0.5 0; 0 1 0 0; 0 0 0 1])
+            controls = C.read_yaml(controls_path)
+            controls["deformable_mirrors"]["primary"]["shape_control"]["controlled_actuators"] = selection
+            C.write_yaml(controls_path, controls)
+            instrument.prepare_publication(application)
+            mirror = C.read_json(publication_path)["deformable_mirrors"]["primary"]
+            @test mirror["shape_control"]["controlled_actuators"] == [true, false, true, false]
+
+            before = read(publication_path)
+            C.write_yaml(binding_path, Dict("parameters" => bindings[1:1]))
+            @test_throws "absent FITS parameter pdm-to-vdm" instrument.prepare_publication(application)
+            @test read(publication_path) == before
+        end
     end
 end
 
