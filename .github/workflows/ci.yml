@@ -18,9 +18,6 @@ jobs:
     name: RTC tests and coverage
     runs-on: ubuntu-26.04
     timeout-minutes: 90
-    permissions:
-      contents: read
-      id-token: write
     env:
       JULIA_NUM_THREADS: '3,0'
       OPENBLAS_NUM_THREADS: '1'
@@ -46,6 +43,17 @@ jobs:
             Pkg.instantiate(; workspace=true)'
       - name: Test the RTC and run Aqua
         run: julia --startup-file=no --code-coverage=@ --project=test test/runtests.jl
+      - name: Test native RTC controls on disposable PipeWire cores
+        run: |
+          for selector in control_endpoint control_endpoint_faults media_session_private_core parameter_ndarray_private_core owner_bootstrap_sealed owner_terminal; do
+            julia --startup-file=no --code-coverage=@ --project=. "test/$selector.jl"
+          done
+      - name: Exercise cold application export
+        run: |
+          julia --startup-file=no --code-coverage=@ --project=. -e '
+            using PipeWireAO
+            ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
+            include("test/runtime_install.jl")' -- --prepare-only
       - name: Build and test the native management service
         run: |
           meson setup runtime/build runtime -Db_coverage=true -Dbuildtype=debug
@@ -60,12 +68,83 @@ jobs:
         uses: julia-actions/julia-processcoverage@v1
         with:
           directories: src,ext
-      - name: Upload line coverage using GitHub OIDC
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: core-coverage
+          path: |
+            lcov.info
+            management.info
+          if-no-files-found: error
+          retention-days: 1
+
+  science:
+    name: CPU science integration
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: rtc-science
+    runs-on: ubuntu-26.04
+    timeout-minutes: 120
+    env:
+      JULIA_LOAD_PATH: "@:@stdlib"
+      JULIA_NUM_PRECOMPILE_TASKS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      TMPDIR: /tmp
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13'
+      - name: Select an uncached depot
+        run: echo "JULIA_DEPOT_PATH=$RUNNER_TEMP/rtc-science-depot:" >> "$GITHUB_ENV"
+      - name: Instantiate science dependencies in the disposable runner
+        env:
+          RTC_CALIBRATION_DEPLOY_KEY: ${{ secrets.RTC_CALIBRATION_DEPLOY_KEY }}
+          RTC_HIL_DEPLOY_KEY: ${{ secrets.RTC_HIL_DEPLOY_KEY }}
+          RTC_GRAPH_DEPLOY_KEY: ${{ secrets.RTC_GRAPH_DEPLOY_KEY }}
+        run: bash .github/instantiate_science.sh
+      - name: Exercise the science extensions on CPU
+        run: |
+          julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl cold
+          julia --startup-file=no --code-coverage=@ --threads=4,1 --project=test/science test/science/runtests.jl private_core
+          julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl physical_offset_inputs
+          julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl physical_offsets
+      - uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: src,ext
+      - uses: actions/upload-artifact@v4
+        with:
+          name: science-coverage
+          path: lcov.info
+          if-no-files-found: error
+          retention-days: 1
+
+  coverage:
+    name: Combined line coverage
+    needs: [test, science]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-coverage'
+          path: reports
+      - name: Merge reports and require project coverage above 90%
+        run: julia --startup-file=no .github/check_coverage.jl combined.info reports/core-coverage/*.info reports/science-coverage/lcov.info
+      - name: Upload combined line coverage using GitHub OIDC
+        if: "!cancelled() && hashFiles('combined.info') != ''"
         uses: codecov/codecov-action@v7
         with:
-          files: lcov.info,management.info
+          files: combined.info
           disable_search: true
           use_oidc: true
           fail_ci_if_error: true
-      - name: Require project line coverage above 90%
-        run: julia --startup-file=no .github/check_coverage.jl lcov.info management.info
