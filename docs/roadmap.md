@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Attach with the installed instrument configuration — 2026-11-24
+
+For a continuously publishing source with independently supervised graphs,
+the installer now supplies a fixed PipeWire configuration and systemd units.
+MediaSession binds their live identities on every attachment and retains one
+receipt in the unit's runtime directory. On the retained CAL2 CUDA fixture,
+median time to held Ready was 6.21 s against 6.22 s previously. Median detach
+fell from 4.53 s to 3.22 s. Both integrators stayed open across all six runs.
+[Timing, admission and live-frame checks](validation/cal2-installed-attach-20261124/README.md)
+
 ### Direct startup of the installed RTC — 2026-11-24
 
 New installations start MediaSession as the systemd main process. Installation

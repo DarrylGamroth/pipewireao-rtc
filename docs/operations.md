@@ -737,22 +737,29 @@ Input may already be publishing when the RTC joins the stream.
 
 Failure or loss of any required endpoint, Link, manager or owner MUST revoke
 admission and fault the session. Restart MUST use a fresh session incarnation,
-revalidate the dependent set and MUST NOT replay operator mutations. Shutdown
-MUST revoke RTC-controlled processing before unloading consumers. Every
-invocation MUST use fresh managed owner unit names with `Restart=no`, bind owners to verified MainPIDs and process
-incarnations, and terminate only its owned processes. Before owner startup, it
-MUST verify the installed emergency cleanup hook. It MUST reconcile uncertain
-launches and pending starts before proceeding. User-manager operations MUST have
-finite bounds; name-based stop MUST NOT be treated as an atomic incarnation
-fence. Operation and cleanup deadlines MUST be finite; unknown revocation or
-cleanup MUST remain a fault.
+revalidate the dependent set and MUST NOT replay operator mutations. Graceful
+shutdown MUST revoke RTC-controlled processing before unloading consumers.
+User-manager operations and cleanup MUST have finite deadlines. Name-based
+stop MUST NOT be treated as an atomic incarnation fence. Unknown revocation
+or cleanup MUST remain a fault.
 
-If the headless RTC service dies abruptly while its policy is unavailable, its installed
-systemd emergency cleanup hook MUST revoke owned ingress or withdraw the
-session's connections to independent ingress when tearing down consumers. Service activation MUST NOT authorize ingress. Foreground and
-user-service modes MUST use the same session contract. User units MUST NOT
-elevate the whole control or Julia deployment tooling to FIFO or assume
-unavailable rights.
+An RTC activation that launches a managed cohort MUST use fresh owner unit
+names with `Restart=no`, bind owners to verified MainPIDs and process
+incarnations, and terminate only its owned processes. Before starting that
+cohort the RTC MUST verify the installed emergency cleanup hook. It MUST
+reconcile uncertain launches and pending starts before proceeding. If the RTC
+dies abruptly, that hook MUST revoke owned ingress or withdraw the session's
+connections to independent ingress when tearing down consumers.
+
+A direct attachment MUST bind the independently supervised service and
+native endpoint identities afresh at each activation. If the RTC process
+dies, closing its PipeWire connection MUST withdraw its Links. Retained graph
+services MUST retire the affected attachments on loss of the exact native
+claimant. Systemd MUST retire any RTC-scoped companion services on RTC exit.
+
+Service activation MUST NOT authorize ingress. Foreground and user-service
+modes MUST use the same session contract. User units MUST NOT elevate the whole
+control or Julia deployment tooling to FIFO or assume unavailable rights.
 
 The Julia DeploymentRunner and Rust Statig runner are retired target components
 under RTC-ARCH-025/026. Their existing results remain historical evidence and
@@ -762,7 +769,11 @@ Verification intent: delayed owner, wrong contract, bad placement/rights,
 stale manager/owner incarnation, partial launch failure, dependency loss and
 repeated fresh admission. Verify managed source silence before release. For an
 independent stream, observe advancing sequence and model timestamps during RTC
-absence and verify fresh admission on replacement.
+absence and verify fresh admission on replacement. For direct attachment,
+exercise both graceful and abrupt RTC exits. Check withdrawal of the old
+Links and retirement of the old graph attachments and RTC-scoped services.
+Confirm that the independent providers keep their service identities and that
+the replacement uses fresh native endpoint identities.
 
 ### RTC-DEV-022 — Bounded local control
 

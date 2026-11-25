@@ -24,22 +24,25 @@ graph owners and management commands use their regular Julia environments.
 
 Systemd starts the installed MediaSession as its main process. The process
 checks the document digest, installed file identities, its exact command
-line and systemd invocation. It uses the new invocation to bind the private
-socket, owner identities and control endpoints. Existing deployments continue
-to run the service template shipped with their pinned RTC. If a profile
-declares a session-only environment setting that differs from the manager
-environment, the RTC applies it after starting the owners and re-executes the
-pinned command under the same PID. This preserves settings that Julia reads
-at process entry and keeps them private to the session.
+line and systemd invocation. Existing deployments use the service template
+shipped with their pinned RTC.
+
+A direct attachment uses the fixed `systemd/rtc.conf` in the installed
+application. The installer writes the topology and private core address
+and adds the declared RTC environment to the generated service.
+MediaSession resolves the live process and endpoint identities in memory
+on each activation. It publishes the launch receipt in the unit's stable
+runtime directory.
 
 For a managed source, MediaSession starts the private core, confirms its
 socket and retains its identity. It starts the remaining held owners through
 one systemd target. HEART profiles require the actual HEART owner PID in the
 source command, so MediaSession starts and retains that owner first. The
-target has `Wants` and `After` with no stop propagation. For independent
-providers MediaSession attaches to the declared running services. It checks
-each unit, PID, invocation, start time and cgroup before generating the
-session configuration with those identities.
+target preserves independently supervised services. A mixed deployment may
+attach to an independent provider and still start an invocation-owned
+controller cohort. With a managed cohort, the RTC applies declared
+session-only environment settings after starting the owners and re-executes
+the pinned command under the same PID.
 
 The installed RTC service uses `Type=notify`. Its main process owns admission
 for every instrument. Once the required PipeWire Links have negotiated and the
@@ -78,6 +81,17 @@ loaded unit and process identity, installed inputs, actual placement and fresh
 native endpoints. A changed installation requires a matching graph service
 deployment and fresh admission.
 
+To attach a new installation to an existing set of graph services, use
+`--graph-installation /absolute/path/to/graph-application` in place of
+`--persistent-graph-owners`. Keep the same core, socket and source bindings.
+The installer checks the graph declarations, node contracts, placement and
+calibrated inputs against the existing installation and records its manifest
+digest. Start the referenced services before starting the new RTC. For a
+site-owned bootstrap service, repeat `--external-owner role=unit.service` for
+the deployment roles it supplies. The service must implement persistent
+bootstrap using the instance derived from its systemd invocation. See the
+[native owner contract](OWNER_BOOTSTRAP_DESIGN.md#graph-service-lifetime-across-rtc-sessions).
+
 Stopping the RTC or sending it native Quit withdraws that session's Links and
 releases its graph attachments. The graph services stay active and prepare
 fresh held attachments with correction open. To take the entire instrument
@@ -95,6 +109,53 @@ identifies the builds exercised. Row-block processing, accelerator capture
 and physical offset receivers use their existing deployment mode. The
 [bootstrap contract](OWNER_BOOTSTRAP_DESIGN.md#graph-service-lifetime-across-rtc-sessions)
 defines the observable behaviour for another implementation.
+
+## Start and stop an installed RTC
+
+Choose a unique instance name in the user service manager. Some profiles also
+generate runtime parameter publisher and analysis units. Link their exact
+instances with the same instance name as the RTC. The instance files let each
+instrument use its own installed template.
+
+```sh
+app=/absolute/path/to/installed-rtc
+instance=cal2-lab
+unit="pipewireao-session@$instance.service"
+(
+    set -e
+    link_instance() (
+        template=$1
+        target="${template%@.service}@$instance.service"
+        set -C
+        cat "$template" > "$target"
+        systemctl --user link "$target"
+    )
+    for template in "$app"/systemd/pipewireao-parameters-*@.service "$app"/systemd/pipewireao-analysis-*@.service; do
+        if [ -f "$template" ]; then
+            link_instance "$template"
+        fi
+    done
+    link_instance "$app/systemd/pipewireao-session@.service"
+    systemctl --user daemon-reload
+)
+```
+
+After linking the instance, start and stop it through systemd.
+
+```sh
+systemctl --user start "$unit"
+systemctl --user stop "$unit"
+```
+
+Use `SessionRuntime.attach` from the installed application project to open an
+existing active unit. `SessionRuntime.start!` creates a fresh installation and
+starts a unique staged unit.
+
+```julia
+using PipeWireAORTC
+
+handle = PipeWireAORTC.SessionRuntime.attach("pipewireao-session@cal2-lab.service")
+```
 
 ## First live correction
 
@@ -161,6 +222,13 @@ That budget begins after package load. systemd's 300-second watchdog also
 bounds compilation, I/O and client close.
 A failed, missing or unknown acknowledgement is not retried.
 
+For direct attachment, the kernel and PipeWire close the RTC connection on
+process exit. The retained graph owners retire their attachments when the
+native claimant disappears, and systemd retires the RTC's parameter and
+analysis units. A replacement needs fresh admission before it can start.
+
+When the RTC starts a managed owner cohort, systemd runs the installed
+emergency cleanup client after exit.
 Fresh invocation names are exclusive and services use `Restart=no`. On failure
 or exit, cancel all cohort/member start jobs, revoke and prove the private core
 and source empty, then stop consumers. Stop the target only after owner

@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Installed direct attachment on CAL2 — 2026-11-24
+
+Six CAL2 restarts compare the installed configuration against per-invocation
+preparation on the same publishing CUDA simulator. The measurements include
+time to held Ready, first live open-loop output and native shutdown.
+[CAL2 attach and detach measurements](validation/cal2-installed-attach-20261124/README.md)
+
 ## CAL2 LLOWFS frame latency and independent CUDA simulator — 2026-11-24
 
 The [frame and restart measurements](validation/cal2-open-frame-latency-20261124/README.md)
