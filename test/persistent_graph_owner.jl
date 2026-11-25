@@ -49,7 +49,11 @@ function smoke(remote, directory, daemon)
     command = `$(Base.julia_cmd()) --startup-file=no --compiled-modules=existing --threads=2,0 --project=$project -e $expression -- --persistent --bootstrap-node $bootstrap_name --bootstrap-instance 71 --remote $remote --graph $graph_path --name $graph_name --session-run-control --correction-property correction:closed --prime-on-output offset`
     log = joinpath(directory, "owner.log")
     open(log, "w") do stream
-        owner = run(pipeline(addenv(command, "PIPEWIREAORTC_GRAPH_STARTUP_TIMING" => "1"); stdout=stream, stderr=stream); wait=false)
+        invocation = "00000000000000000000000000000071"
+        touch(joinpath(directory, "previous-invocation.stop"))
+        environment = addenv(command, "PIPEWIREAORTC_GRAPH_STARTUP_TIMING" => "1",
+                             "PIPEWIREAORTC_GRAPH_STOP_DIR" => directory, "INVOCATION_ID" => invocation)
+        owner = run(pipeline(environment; stdout=stream, stderr=stream); wait=false)
         client = nothing
         try
             check() = process_exited(owner) ? error("graph owner exited: " * read(log, String)) : nothing
@@ -67,10 +71,18 @@ function smoke(remote, directory, daemon)
             @test client.client.serial != first_bootstrap
             @test B.connect_owner!(client; deadline=deadline(), check).lifecycle == C.Connected
             @test native_graph_serial(client, graph_name) != first_graph
+            second_bootstrap = client.client.serial
             @test B.quit!(client; deadline=deadline(), check).lifecycle == C.Stopped
             close(client)
             client = nothing
-            @test !process_exited(owner)
+            client = fresh_client(remote, bootstrap_name, pid, second_bootstrap; check)
+            @test B.connect_owner!(client; deadline=deadline(), check).lifecycle == C.Connected
+            # Stop the service while the owner is inside native run!, keeping its
+            # controller alive so release cannot explain the graph's exit.
+            touch(joinpath(directory, invocation * ".stop"))
+            @test timedwait(() -> process_exited(owner), 15) == :ok
+            @test success(owner)
+            @test !occursin("called from wrong context", read(log, String))
         catch
             @error "graph owner diagnostics" log = read(log, String)
             rethrow()

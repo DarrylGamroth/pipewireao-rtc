@@ -152,13 +152,14 @@ mutable struct Runtime{T}
     const transport::T
     const mailbox::Mailbox
     const persistent::Bool
+    const stop_file::Union{String,Nothing}
     @atomic status::Status
     # ThreadPinning does not promise a concrete, version-stable task handle type.
     # Only the owner uses this cold handle; it never enters science.
     monitor::Any
 end
-Runtime(transport; persistent::Bool = false) =
-    Runtime(transport, Mailbox(), persistent, Status(), nothing)
+Runtime(transport; persistent::Bool = false, stop_file = nothing) =
+    Runtime(transport, Mailbox(), persistent, stop_file, Status(), nothing)
 _status(runtime::Runtime) = @atomic :acquire runtime.status
 Base.getproperty(runtime::Runtime, name::Symbol) =
     name in (:failure, :main_error, :connect_ticket) ? getproperty(_status(runtime), name) :
@@ -192,6 +193,7 @@ function Runtime(
     application_name::AbstractString = name,
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     persistent::Bool = false,
+    stop_file = nothing,
 )
     validate_threads()
     transport = Endpoint.Transport(
@@ -204,7 +206,7 @@ function Runtime(
         clock,
         loop_name = "rtc-bootstrap",
     )
-    runtime = Runtime(transport; persistent)
+    runtime = Runtime(transport; persistent, stop_file)
     try
         _precompile_runtime!(typeof(runtime), typeof(clock))
         runtime.monitor = ThreadPinning.@spawnat 2 serve!(runtime; clock)
@@ -569,6 +571,8 @@ _fault_reply!(
     lifecycle::Codec.Lifecycle
     cleanup_deadline::Int64
     last_at::Union{Nothing,Int64}
+    next_stop_check::Int64
+    service_stopping::Bool
 end
 
 @statedef Monitor :Monitoring
@@ -614,6 +618,8 @@ Monitor(runtime; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()) = M
     Codec.Preparing,
     Int64(0),
     nothing,
+    typemin(Int64),
+    false,
 )
 
 _facts(sm::Monitor) = Facts(sm.prepare_done, sm.main_finished, sm.main_error)
@@ -1068,7 +1074,13 @@ end
 @on_event function (sm::Monitor{R}, ::Monitoring, ::CancellationObserved, arg) where {R}
     # An owner cancellation with no pending native Quit still needs repeated
     # public wake: its first wake may precede main entering native run!.
-    sm.cancel && sm.active === nothing && !sm.main_finished && _stop!(sm)
+    sm.main_finished && return Hsm.EventHandled
+    file = sm.runtime.stop_file
+    if file !== nothing && !sm.service_stopping && _now(sm) >= sm.next_stop_check
+        sm.service_stopping = isfile(file)
+        sm.next_stop_check = Base.Checked.checked_add(_now(sm), Int64(50_000_000))
+    end
+    (sm.service_stopping || (sm.cancel && sm.active === nothing)) && _stop!(sm)
     return Hsm.EventHandled
 end
 
@@ -1233,6 +1245,7 @@ function with_owner(f, options; application_name::AbstractString = options.boots
     runtime = Runtime(
         options.remote, options.bootstrap_node, options.bootstrap_instance;
         application_name, persistent = get(options, :persistent, false),
+        stop_file = get(options, :stop_file, nothing),
     )
     return _with_owner(f, options, runtime)
 end

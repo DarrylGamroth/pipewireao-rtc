@@ -439,8 +439,12 @@ function _main(
         return options, entries
     end
     if get(binding, :persistent, false)
+        directory = get(ENV, "PIPEWIREAORTC_GRAPH_STOP_DIR", nothing)
+        stop_file = directory === nothing ? nothing :
+                    joinpath(directory, ENV["INVOCATION_ID"] * ".stop")
+        binding = merge(binding, (; stop_file))
         retained = nothing
-        while true
+        while stop_file === nothing || !isfile(stop_file)
             with_owner(binding) do admitted
                 runtime = admitted.bootstrap_runtime
                 if retained === nothing

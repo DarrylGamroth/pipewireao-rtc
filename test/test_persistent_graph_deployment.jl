@@ -265,6 +265,9 @@ end
         graph_unit = only(installed.units)
         unit = read(joinpath(package, "systemd", graph_unit), String)
         @test occursin("After=core.service\nRequisite=core.service\n", unit)
+        @test occursin("RuntimeDirectory=%N\n", unit)
+        @test occursin(raw"ExecStop=/usr/bin/touch -- %t/%N/${INVOCATION_ID}.stop", unit)
+        @test occursin(raw"/usr/bin/waitpid --exited", unit)
         @test !occursin("BindsTo=", unit)
         @test !occursin("PartOf=", unit)
         withenv(Launch.GRAPH_MANIFEST_ENV => installed.digest) do

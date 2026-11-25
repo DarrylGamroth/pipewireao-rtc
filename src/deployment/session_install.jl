@@ -679,7 +679,8 @@ function finish_install(
         PipeWireAORTC.HILStartup.install!(environment, destination, owners, prefix)
     end
     persistent = persistent_graph_owners ? launch.install_persistent_graphs!(
-        destination, prefix, installed_spec, external
+        destination, prefix, installed_spec, external;
+        stop_unit = unit_template_path(environment, "persistent-graph-stop.service.in"),
     ) : nothing
     graphs = referenced === nothing ? persistent : referenced
     direct = if external !== nothing && isfile(direct_template)
