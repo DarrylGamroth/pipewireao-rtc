@@ -199,6 +199,7 @@ MonitorEndpoint() = MonitorEndpoint(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[
 mutable struct MonitorTransport
     endpoint::MonitorEndpoint
     flushes::Vector{Int64}
+    results::Vector{Int32}
     failure::Union{Nothing,Exception}
 end
 function PipeWireAORTC.ControlEndpoint.state!(endpoint::MonitorEndpoint, lifecycle)
@@ -220,8 +221,8 @@ mutable struct CountingNanoClock <: Clocks.AbstractNanoClock
     reads::Int
 end
 Clocks.time_nanos(clock::CountingNanoClock) = (clock.reads += 1; clock.at)
-function monitor_runtime(; clock = Clocks.CachedNanoClock(10_000_000_000))
-    runtime = Bootstrap.Runtime(MonitorTransport(MonitorEndpoint(), Int64[], nothing))
+function monitor_runtime(; clock = Clocks.CachedNanoClock(10_000_000_000), stop_file = nothing)
+    runtime = Bootstrap.Runtime(MonitorTransport(MonitorEndpoint(), Int64[], Int32[], nothing); stop_file)
     monitor = Bootstrap.Monitor(runtime; clock)
     invoker = Agent.AgentInvoker(monitor)
     Agent.start(invoker)
@@ -257,6 +258,53 @@ status_read_allocations(runtime) = (
     (@allocated Bootstrap.preparation_check!(runtime)),
     (@allocated Bootstrap.cancelled(runtime)),
 )
+
+PipeWireAORTC.ControlEndpoint.check_ticket(::MonitorEndpoint, ::PipeWireAORTC.ControlEndpoint.Ticket) = nothing
+function PipeWireAORTC.ControlEndpoint.complete!(
+    transport::MonitorTransport, ticket::PipeWireAORTC.ControlEndpoint.Ticket, lifecycle;
+    result = Int32(0), message = "",
+)
+    push!(transport.results, result)
+    return nothing
+end
+
+@testset "service stop excludes fresh and pending Connect" begin
+    mktempdir() do directory
+        for pending in (false, true)
+            path = joinpath(directory, string(pending))
+            runtime, monitor, invoker = monitor_runtime(; stop_file = path)
+            try
+                owner_message(() -> Bootstrap.prepared!(runtime), monitor)
+                Agent.invoke_unchecked(invoker)
+                ticket = bootstrap_ticket(:connect)
+                if pending
+                    Hsm.dispatch!(monitor, :ConnectRequested, ticket)
+                    monitor.hooks = Bootstrap.Hooks(() -> error("stopping owner probed readiness"), () -> nothing)
+                end
+                touch(path)
+                Clocks.advance!(monitor.source_clock, 50_000_000)
+                Agent.invoke_unchecked(invoker)
+                @test Bootstrap.cancelled(runtime)
+                if pending
+                    @test Hsm.current(monitor) === :ConnectPending
+                    @test monitor.active === ticket
+                    @test isempty(runtime.transport.results)
+                    Hsm.dispatch!(monitor, :TicketObserved, Bootstrap.Facts(true, true, nothing))
+                    @test only(runtime.transport.results) < 0
+                    @test monitor.active === nothing
+                else
+                    Hsm.dispatch!(monitor, :ConnectRequested, ticket)
+                    @test Hsm.current(monitor) === :Prepared
+                    @test runtime.connect_ticket === nothing
+                    @test only(runtime.transport.results) == -Base.Libc.ECANCELED
+                end
+                @test !(PipeWireAORTC.OwnerBootstrapCodec.Connected in runtime.transport.endpoint.publications)
+            finally
+                close(invoker)
+            end
+        end
+    end
+end
 
 @testset "bootstrap Active Object facts and hierarchy" begin
     codec = PipeWireAORTC.OwnerBootstrapCodec
@@ -515,7 +563,7 @@ end
     @test typeof(monitor.source_clock) === Clocks.CachedNanoClock
     @test monitor.source_clock !== monitor.clock
     close(invoker)
-    runtime = Bootstrap.Runtime(MonitorTransport(MonitorEndpoint(), Int64[], nothing))
+    runtime = Bootstrap.Runtime(MonitorTransport(MonitorEndpoint(), Int64[], Int32[], nothing))
     monitor = Bootstrap.Monitor(runtime)
     @test typeof(monitor.source_clock) === Clocks.SystemNanoClock
     @test typeof(monitor.clock) === Clocks.CachedNanoClock

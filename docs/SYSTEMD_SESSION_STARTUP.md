@@ -129,6 +129,15 @@ fresh held attachments with correction open. To take the entire instrument
 offline, stop the RTC first, then stop the graph units explicitly and stop the
 independent source and core under their respective service owners.
 
+On a newly installed graph service, systemd requests shutdown in its private
+runtime directory. The bootstrap monitor observes the request even while the
+graph is waiting for its first controller. The graph owner wakes, closes its
+PipeWire objects on the owning thread and exits. The stop hook waits for that
+process with `/usr/bin/waitpid --exited` from util-linux. Its 40 s fallback
+timeout allows an outstanding Quit reader its full 30 s protocol budget.
+Reinstall the graph
+unit with the updated RTC package to enable this shutdown path.
+
 Persistent graph services support complete-frame CPU execution with session
 run control. Each correction must declare the live output that primes it.
 Recovery state and composed branch graphs are reconstructed for each

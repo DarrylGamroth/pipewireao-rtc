@@ -1,4 +1,6 @@
 [Service]
+# A terminal Quit can retain its exact reply for the 30 s bootstrap budget.
+TimeoutStopSec=40s
 RuntimeDirectory=%N
 RuntimeDirectoryMode=0700
 Environment=PIPEWIREAORTC_GRAPH_STOP_DIR=%t/%N

@@ -265,6 +265,8 @@ end
         graph_unit = only(installed.units)
         unit = read(joinpath(package, "systemd", graph_unit), String)
         @test occursin("After=core.service\nRequisite=core.service\n", unit)
+        stop_timeout = only(last(collect(eachmatch(r"(?m)^TimeoutStopSec=(\d+)s?$", unit))).captures)
+        @test parse(Int, stop_timeout) > PipeWireAORTC.ControlClient.maximum_budget(PipeWireAORTC.OwnerBootstrapCodec.PROFILE)
         @test occursin("RuntimeDirectory=%N\n", unit)
         @test occursin(raw"ExecStop=/usr/bin/touch -- %t/%N/${INVOCATION_ID}.stop", unit)
         @test occursin(raw"/usr/bin/waitpid --exited", unit)

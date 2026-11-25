@@ -146,6 +146,10 @@ end
 function install_persistent_graphs!(package, prefix, spec, external;
     stop_unit = joinpath(PipeWireAORTC.resource_root(), "persistent-graph-stop.service.in"),
 )
+    if isfile(stop_unit)
+        Sys.isexecutable("/usr/bin/waitpid") ||
+            fail("persistent graph service shutdown requires /usr/bin/waitpid from util-linux")
+    end
     external === nothing &&
         fail("persistent graph mode requires an independent core and publishing source")
     package = realpath(package)

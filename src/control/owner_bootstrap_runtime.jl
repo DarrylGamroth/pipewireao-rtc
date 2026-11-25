@@ -719,6 +719,13 @@ end
     return Hsm.EventHandled
 end
 @on_event function (sm::Monitor{R}, ::Prepared, ::ConnectRequested, ticket) where {R}
+    if sm.cancel || sm.finishing
+        Endpoint.complete!(
+            sm.runtime.transport, ticket, sm.lifecycle;
+            result = Int32(-Base.Libc.ECANCELED), message = "owner is stopping",
+        )
+        return Hsm.EventHandled
+    end
     sm.active = ticket
     runtime = sm.runtime
     if runtime.persistent
@@ -775,7 +782,7 @@ end
         )
         sm.active = nothing
         return Hsm.transition!(sm, :Prepared)
-    elseif _ready(sm)
+    elseif !sm.cancel && !sm.finishing && _ready(sm)
         # Seal registry discovery before publishing Connected, and complete the
         # exact accepted ticket before main may enter scientific execution.
         _ticket_effect(sm.runtime) do
