@@ -12,8 +12,7 @@ Observed retained PID, invocation, or cgroup mismatches fence cleanup.
 module SessionLaunch
 
 import Clocks
-import PipeWireAO: LibPipeWire
-import PipeWireAOQueue_jll
+import PipeWireAO_jll
 
 import ..PipeWireAORTC
 using SHA: sha256
@@ -266,7 +265,7 @@ end
 
 function prepare_julia_overlay!(request, paths, spec, runtime)
     isempty(spec["owners"]) && return nothing
-    realpath(request.prefix) == realpath(LibPipeWire.PipeWireAO_jll.artifact_dir) &&
+    realpath(request.prefix) == realpath(PipeWireAO_jll.artifact_dir) &&
         return nothing
     overlay = joinpath(runtime, "native-prefix")
     mkdir(overlay; mode = 0o700)
@@ -742,8 +741,6 @@ function prepare!(
         core = services["core"]
         if external === nothing
             core_env = owner_environment(paths, spec, bindings, runtime, "core")
-            core_env["PIPEWIREAO_MODULE_DIR"] *=
-                ":" * dirname(PipeWireAOQueue_jll.libpipewire_module_queue)
             S.install_fragment!(
                 core.unit,
                 S.service_unit(

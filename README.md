@@ -252,11 +252,11 @@ julia --startup-file=no --project=. -e '
 The default PipeWireAO prefix is `/opt/pipewireao`. Select another installed
 prefix with the helper's `prefix` keyword. A Julia-only install can use
 `PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir` as its native prefix.
-RTC adds the registered queue module to the core's module search path.
+The selected native prefix must provide PipeWireAO 4.0.10 or later in the 4.x series.
+It supplies both the queue module and the discard SPA factory.
 Select additional SPA plugins through the application's native configuration.
 
-A site-managed prefix supplies the daemon and the first directory searched
-for native modules. The Julia environment still resolves its JLL packages.
+A site-managed prefix supplies the daemon and its native modules. The Julia environment still resolves its JLL packages.
 To use the site PipeWireAO library in every Julia process as well, configure
 a deployment-depot artifact override to an ABI-compatible SDK with the JLL's
 expected directory layout.

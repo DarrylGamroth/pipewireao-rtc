@@ -2,7 +2,7 @@
 
 julia_version = "1.13.4"
 manifest_format = "2.1"
-project_hash = "3dd01f246aa2dd1902e7c02fc866ef8877fcd486"
+project_hash = "ac723c007f0307893c4f55d2bee179516136be05"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
@@ -313,15 +313,8 @@ registries = "DarrylGamrothRegistry"
 uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 version = "0.9.6"
 
-[[deps.PipeWireAOQueue_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "PipeWireAO_jll"]
-git-tree-sha1 = "88777c3f2b4fa9d4a28b5bbe7d650de3176db576"
-registries = "DarrylGamrothRegistry"
-uuid = "30c7d52a-5243-5e1f-b778-22f49ec5fee3"
-version = "0.1.0+0"
-
 [[deps.PipeWireAORTC]]
-deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "PipeWireAOQueue_jll", "Pkg", "PrecompileTools", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
+deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "PipeWireAO_jll", "Pkg", "PrecompileTools", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
 version = "0.7.30"
@@ -346,10 +339,10 @@ version = "0.7.30"
 
 [[deps.PipeWireAO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "4a17dca6880c2bb53c3783fddce18dc129e6b696"
+git-tree-sha1 = "6fd3623d0e1b6630f07c2dd86aa3817033dc3ae1"
 registries = "DarrylGamrothRegistry"
 uuid = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
-version = "4.0.8+0"
+version = "4.0.10+0"
 
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "Random", "SHA", "TOML", "Tar", "UUIDs", "Zstd_jll", "p7zip_jll"]

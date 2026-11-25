@@ -75,9 +75,9 @@ jobs:
         run: |
           plugin="$RUNNER_TEMP/ndarray-example"
           mkdir "$plugin"
-          # Public example from the source revision used to build PipeWireAO_jll 4.0.8.
+          # Public example from the source revision used to build PipeWireAO_jll 4.0.10.
           curl -fsSL --retry 3 -o "$plugin/plugin.c" \
-            https://raw.githubusercontent.com/DarrylGamroth/PipeWireAO/2080cba77c33f069fa436b0ce96cbace934296fb/spa/plugins/filter-graph/plugin_ndarray_example.c
+            https://raw.githubusercontent.com/DarrylGamroth/PipeWireAO/14a64e1db579b2d4e3d257ff7aa10b6a35de3f5f/spa/plugins/filter-graph/plugin_ndarray_example.c
           echo "a4f86813214582bdd324e7cd269a852e030b7794d96c0a354550f92e40053445  $plugin/plugin.c" | sha256sum -c
           sdk=$(julia --startup-file=no --project=test -e 'using PipeWireAO; print(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)')
           touch "$plugin/config.h"

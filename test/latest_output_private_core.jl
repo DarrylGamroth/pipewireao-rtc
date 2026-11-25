@@ -312,7 +312,6 @@ end
 end
 
 @testset "A prepared pyramid output keeps the GUI queue through optional Link replacement" begin
-    queue_module = PipeWireAORTC.SessionLaunch.PipeWireAOQueue_jll.libpipewire_module_queue
     metadata = join(("{ type = $(r.type) size = $(r.size) required = false }"
         for r in PipeWireAORTC.Common.TELEMETRY_METADATA), ' ')
     queue = """
@@ -341,8 +340,9 @@ end
         node.group = pipewireao-telemetry
     } }
     """
-    with_control_private_core(; telemetry_loop = true, module_dirs = (dirname(queue_module),),
-        modules = queue, objects = driver) do socket, directory, _
+    with_control_private_core(;
+        telemetry_loop = true, modules = queue, objects = driver
+    ) do socket, directory, _
         check_intensity_publisher(socket, directory; queue = true)
     end
 end
