@@ -133,8 +133,8 @@ assets and Julia helpers as the retained rejected package, with only rebuilt
 executables and their provenance changed. No source validator modification was
 needed to resolve the admission failure.
 
-The [independent review](COPPER_CALIBRATION_CAPTURE_REVIEW.md) and
-[evidence ledger](COPPER_CALIBRATION_CAPTURE_EVIDENCE.json) bind source, policies,
+The [independent review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/COPPER_CALIBRATION_CAPTURE_REVIEW.md) and
+[evidence ledger](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/COPPER_CALIBRATION_CAPTURE_EVIDENCE.json) bind source, policies,
 package descriptors, failures, tests, receipts, all captured payloads and paired
 analysis. The complete Copper calibration campaign, 277→253 controller map,
 reference-centering contract, measured inverse acceptance and correction remain

@@ -113,7 +113,7 @@ the deployment workload. [GPI2 detector readout study](https://arxiv.org/abs/241
 
 ## Evidence
 
-The [archive](evidence.tar.gz) retains the ledgers and command parity vectors,
+The [archive](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/gpi2-matched-20261109/evidence.tar.gz) retains the ledgers and command parity vectors,
 calibration file hashes, build recipe and flag changes, PipeWire configurations,
 and timing analysis. The large detector corpus and generated FITS files are
 identified by SHA-256 and can be regenerated or reused from the instrument

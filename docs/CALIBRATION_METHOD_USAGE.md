@@ -277,16 +277,16 @@ actual basis, canonical order, source identities and completion records. It
 labels acceptance as none. Matrix dimensions and a finite result alone are not
 scientific acceptance.
 
-[Method review and comparison design](CALIBRATION_METHOD_COMPARISON.md) records
+[Method review and comparison design](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_METHOD_COMPARISON.md) records
 software review, pilot evidence and the remaining method-selection gates.
-[Quality validation](CALIBRATION_QUALITY_VALIDATION.md) records the independently
+[Quality validation](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_QUALITY_VALIDATION.md) records the independently
 qualified baseline against which methods will be compared.
 
 ## Qualification record
 
 This section records the earlier Python-owned workflow. Current Julia migration
 qualification is tracked in the
-[migration record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md).
+[migration record](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/JULIA_CALIBRATION_MIGRATION_VALIDATION.md).
 
 The maintained owner completed a Classic FGN CPU reverse-modal smoke on
 2026-10-03: two declared physical directions, four signed batches, 16 accepted
@@ -310,7 +310,7 @@ The evidence ledger binds their material inputs, outputs and failed prelaunch
 record. This qualifies the finite workflow and ordering behavior. Subsequent two-sweep
 zonal, complete Hadamard, 221-coordinate controller-modal and 64-mode spatial
 runs also completed through this entry point. Their finite prediction, energy
-and timing results are in [method measurements](CALIBRATION_METHOD_VALIDATION.md).
+and timing results are in [method measurements](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_METHOD_VALIDATION.md).
 Candidate completion does not select a new method or inverse; fresh common
 validation and a locked test remain necessary for that decision.
 

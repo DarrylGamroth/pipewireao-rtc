@@ -78,7 +78,7 @@ requires an instrumented recurrence.
 
 ## Evidence
 
-The [archive](evidence.tar.gz) contains the original-ledger analysis,
+The [archive](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/gpi2-deadline-misses-20261109/evidence.tar.gz) contains the original-ledger analysis,
 repeat ledgers, stage and GC records, frame-correlated device timestamps,
 profiler overhead records, and the analysis and launch scripts.
 [Archive SHA-256](evidence.tar.gz.sha256)

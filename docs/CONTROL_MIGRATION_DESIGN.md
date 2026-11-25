@@ -1,7 +1,7 @@
 # live-control migration design
 
 2026-10-05. Proposed narrow implementation design from
-[live control inventory](LIVE_CONTROL_INVENTORY.md); the initial source inspection performed no workloads or tests. The design is
+[live control inventory](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/LIVE_CONTROL_INVENTORY.md); the initial source inspection performed no workloads or tests. The design is
 now maintained on branch `work/native-control-planes-20261005`, worktree
 `pipewireao-rtc-native-controls`, starting at committed RTC revision
 `74099a2861ed7d60789a38c0f3ad4121b029bf48`. The separately documented CPU
@@ -56,8 +56,8 @@ the owner must publish completion explicitly. A subsequent diagnostic Julia
 cross-process private-core proof passed 30/30 assertions, including complete
 retained Props, staging without automatic ACK, outside-callback application,
 fresh subscribed query completion and removal. See
-[Filter mechanism proof](NATIVE_CONTROL_FILTER_PROOF.md) and `native-control-filter-proof.log`.
-The subsequent [common-envelope validation](NATIVE_CONTROL_ENVELOPE_VALIDATION.md)
+[Filter mechanism proof](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_FILTER_PROOF.md) and `native-control-filter-proof.log`.
+The subsequent [common-envelope validation](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_ENVELOPE_VALIDATION.md)
 passed 42/42 checks with a Julia client and Rust owner in separate processes.
 These diagnostic proofs do not establish production caller authority or installed
 qualification.
@@ -188,7 +188,7 @@ hold/fault state and cannot claim rollback or success.
 
 **Confirmed baseline prerequisite:** the inspected starting `roundtrip()` used
 `main_loop.run()` without a timeout, even inside nominally finite outer loops.
-The [synchronization correction](NATIVE_CONTROL_SYNC_VALIDATION.md) now has
+The [synchronization correction](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_SYNC_VALIDATION.md) now has
 stalled-core fail-before/pass-after evidence. It uses exact Core sync callbacks
 and finite `Loop::iterate`, propagating local observation/cleanup deadlines.
 The production endpoint must still carry one remaining request budget through
@@ -283,9 +283,9 @@ include their actual costs in that gate.
 
 Each phase exposes one reviewable contract and a CPU integration gate before an
 installed scientific campaign. No all-at-once graph/owner rewrite is needed.
-Phase B now has [endpoint evidence](NATIVE_RUNNER_ENDPOINT_VALIDATION.md).
+Phase B now has [endpoint evidence](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_RUNNER_ENDPOINT_VALIDATION.md).
 The supervisor-to-runner portion of phase C has
-[actual launcher/client evidence](NATIVE_RUNNER_CLIENT_VALIDATION.md); HEART
+[actual launcher/client evidence](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_RUNNER_CLIENT_VALIDATION.md); HEART
 wrapper reset/health and the following phases remain unfinished. The legacy
 public broker and readiness files are explicitly retained only as unmigrated
 interfaces, not native fallbacks.
@@ -297,8 +297,8 @@ affected paths are implemented.
 ## Remaining decisions and limits
 
 - No-port inactive Filter suitability has Julia and Rust cross-process mechanism
-  proofs, documented in [Filter mechanism proof](NATIVE_CONTROL_FILTER_PROOF.md).
-  The subsequent Julia-client/Rust-owner [common-envelope proof](NATIVE_CONTROL_ENVELOPE_VALIDATION.md)
+  proofs, documented in [Filter mechanism proof](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_FILTER_PROOF.md).
+  The subsequent Julia-client/Rust-owner [common-envelope proof](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_ENVELOPE_VALIDATION.md)
   passes 42/42 diagnostic checks. It uses synthetic controller identities and does
   not establish registry-bound authority, two actual caller connections, busy/stale
   admission, calibration hold/disconnect/inactivity handling or production effects.
@@ -307,7 +307,7 @@ affected paths are implemented.
   Production owner-specific enums, payload/catalog identity and registry-bound
   controller lifetime remain owner-specific implementation and integration gates.
 - Rust inner synchronization is now locally bounded with separate
-  [failure evidence](NATIVE_CONTROL_SYNC_VALIDATION.md). Full finite control still
+  [failure evidence](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_SYNC_VALIDATION.md). Full finite control still
   requires whole-request budget integration; timing out a client is insufficient.
 - Existing vendor HEART TCP commands and binary telemetry remain external HEART
   interfaces; replacing the wrapper's JSON control/health IPC does not claim to

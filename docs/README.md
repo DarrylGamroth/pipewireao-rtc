@@ -1,103 +1,21 @@
 # PipeWireAO RTC task index
 
-Start with [current work](roadmap.md#current-work). Read the row matching the
-change, then the affected clauses and their dependencies.
-The runner delegates science execution to FGN/FilterGraphs and transport to PipeWireAO.
+PipeWireAORTC runs the non-actuating development RTC. MediaSession owns
+lifecycle, admission and declared Links. PipeWireAO transports detector and
+command arrays. FGN and FilterGraphs execute the instrument's scientific graphs.
 
-## Source layout
-
-`src/control` contains the native control protocols and clients.
-`src/media_session` owns admission and declared Links.
-`src/deployment` contains export, installation and systemd supervision.
-`src/configuration` and `src/instruments` read deployment and instrument declarations.
-`src/calibration` owns live acquisition and its control contracts. Shared
-instrument tools own offline optical calibration campaigns.
-`src/analysis` owns optional observation and analysis.
-
-## Authorities
-
-| Authority | Purpose |
+| Task | Where to start |
 | --- | --- |
-| [Architecture](architecture.md) | Scope, ownership and `RTC-ARCH-*` decisions |
-| [Operating contract](operations.md) | `RTC-DEV-001` through `RTC-DEV-030` requirements |
-| [Roadmap](roadmap.md#current-work) | Current work and dependency order |
+| Install the RTC and supply an instrument definition | [Operator CLI and instrument deployment](../README.md#deploy-an-instrument-from-its-definitions) |
+| Start, stop or update an installed service | [systemd startup and shutdown](SYSTEMD_SESSION_STARTUP.md) |
+| Attach to a simulator that is already publishing | [Independent source binding](HIL_CONFIGURATION.md#attach-an-rtc-to-an-already-publishing-source) |
+| Configure the initial loop state and acquire a live measurement | [CAL2 open-loop startup](HIL_CONFIGURATION.md#start-cal2-with-correction-open) and [graph service lifetime](OWNER_BOOTSTRAP_DESIGN.md#graph-service-lifetime-across-rtc-sessions) |
+| Use native session controls or discover a running RTC | [Operator commands](../README.md#native-session-control), [discovery](SESSION_DISCOVERY.md) and [management endpoint](MANAGEMENT_ENDPOINT.md) |
+| Prepare and validate a calibration bundle | [Bundle and method usage](CALIBRATION_METHOD_USAGE.md) and [live acquisition](JULIA_CALIBRATION_ACQUISITION.md) |
+| Change a protocol or the scientific ownership boundary | [Architecture decisions](architecture.md), [operating requirements](operations.md) and [control envelope](CONTROL_ENVELOPE.md) |
+| Run software or private-core checks | [Validation commands](../AGENTS.md#validation) and [integration checks](../test/integration/README.md) |
+| Find outstanding work or reproduce a measurement | [Current roadmap](roadmap.md#current-work) and [verification records](EVIDENCE_INDEX.md) |
 
-Requirements and accepted decisions remain authoritative regardless of whether
-all their implementation/qualification gates are complete. Dated reports have
-revision/cohort-specific scope. Use source and the linked evidence to support a
-claim; do not infer completion from prose.
-
-## Read by task
-
-| Task | Relevant contract/design | Working guide or evidence |
-| --- | --- | --- |
-| Standalone HIL configuration | Resolved AOS graphs, exact bindings and compiled models; independent runtime and external link authority | [Configuration](HIL_CONFIGURATION.md), [optical verification](reviews/20261107-hil-optical-configuration/REVIEW.md) |
-| Simulator process ownership | HIL runs the simulator. RTC retains cold export, calibration and PipeWire control contracts. | [Application migration](HIL_CONFIGURATION.md#migrate-an-rtc-application), [initial extraction evidence](reviews/20261107-hil-extraction/REVIEW.md) |
-| Remaining graph-host scope | NEC-12; public library delegation, native admission and declared metadata contracts | [Review and verification](reviews/20261107-graph-host/REVIEW.md) |
-| FilterGraphs 0.10 migration | Public graph preparation and complete-frame execution; preserve optional science and dependency-only deployment | [Cohort verification](validation/filtergraphs-010-20261107/README.md) |
-| MediaSession session policy migration | RTC-ARCH-024/026; RTC-DEV-003/004/009/010/012/013/021/022/025/030 | [Current implementation boundary and closure plan](SESSION_POLICY_MIGRATION.md); replacement is under integration, not qualified |
-| Native/JLL 4.0.2 release and registered cohort | Strict SDK bounds; dependency-only deployment and public package identities | [Release verification](validation/rtc-cohort-402-20261106/README.md) |
-| Three-package graph reconciliation | Public FilterGraphAlgorithms 0.12 / FilterGraphs 0.9 / FilterGraphPipeWire 0.5 APIs; preserve RTC admission and completed cleanup | [Implementation and verification](reviews/20261106-graph-reconciliation/REVIEW.md) |
-| Naming cleanup and Julia type dispatch | Preserve protocol vocabulary, scientific behavior and RTC-ARCH-024/026 | [Migration and verification](reviews/20261104-naming-cleanup/REVIEW.md) |
-| Calibration worker messages and native command endpoint | RTC-ARCH-024/026, RTC-DEV-029/030; private graph/control state, bounded stop and explicit storage release | [Implementation, source cohort and verification](reviews/20261104-calibration-worker/REVIEW.md) |
-| Optical measurement kinds and calibration projections | RTC-DEV-029/030; preserve scientific values, graph provenance and cleanup | [Typed optical migration and ownership boundary](reviews/20261104-optical-types/REVIEW.md), [projection API migration](JULIA_CALIBRATION_ACQUISITION.md#cpu-initial-session-endpoint) |
-| Typed recovery observations and recipe dispatch | RTC-DEV-034/035; exact scope, partial generation ordering and cold unsupported-procedure rejection | [Observation interface](RECOVERY_OBSERVATIONS.md), [review and verification](reviews/20261104-observation-interfaces/REVIEW.md) |
-| Control HSMs, Active Objects and clocks | RTC-ARCH-024/026, RTC-DEV-029/030; serialized event ownership, exact tickets and bounded cleanup | [Integration and verification](reviews/20261104-control-hsm/REVIEW.md) |
-| Calibration acquisition and preparation HSMs | RTC-DEV-029/030; exact correlation, freshness, known/unknown outcomes and one restoration/release attempt | [Migration and verification](reviews/20261104-calibration-hsm/REVIEW.md), [Julia acquisition guide](JULIA_CALIBRATION_ACQUISITION.md#event-driven-procedures-and-online-numerical-consumers) |
-| Correction HSM event handling | RTC-DEV-032–036; preserve serialized admission, reference evidence, deadlines and one-shot effects | [State-machine review and verification](reviews/20261104-correction-hsm/REVIEW.md) |
-| Julia API documentation, type usage and package cleanup | Preserve RTC-ARCH-024/026 and RTC-DEV-030; source organization and owned calibration evidence | [Review and verification](reviews/20261104-package-cleanup/REVIEW.md) |
-| Compact SPA metadata and reference timestamps | [Shared contract](https://github.com/DarrylGamroth/PipeWireAO/blob/codex/simple-metadata/doc/dox/internals/acquisition-metadata.md) | Native 4.0 / PipeWireAO 0.9 source implementation under validation: explicit port profiles, one reference timestamp and capture schema 4. Installed applications remain unchanged until the replacement cohort passes coordinated validation. |
-| Headless WFS readouts and generic X/Y plots | RTC-DEV-006; scientific graph ownership and exact bounded observation cohorts | [Optional analysis validation](validation/optional-analysis-20261022/README.md), [review](reviews/20261022-optional-analysis/REVIEW.md), [usage](JULIA_DEPLOYMENT_USAGE.md#headless-wfs-measurements); [historical in-process graph gate](validation/wfs-measurements-20261022/README.md) |
-| Classic exact noisy-detector CPU replay and chart controls | Same FFT execution contract for exact replay; optional generic observation | [Controlled investigation and passing gate](validation/classic-detector-20261022/README.md), [independent review](reviews/20261022-classic-detector/REVIEW.md), [test preparation](../test/integration/README.md#managed-classic-cpu-closed-loop-replay) |
-| Headless wavefront RMS and generic time series | RTC-DEV-006 optional analysis; paired source identity and explicit source clocks | [Validation](validation/wavefront-series-20261022/README.md), [review](reviews/20261022-wavefront-series/REVIEW.md), [usage](JULIA_DEPLOYMENT_USAGE.md#headless-rms-measurements) |
-| Generic simulator residual wavefront | RTC-DEV-006 optional observation; simulator-owned optical truth | [CPU validation](validation/live-wavefront-20261022/README.md), [independent review](reviews/20261022-live-wavefront/REVIEW.md), [usage](JULIA_DEPLOYMENT_USAGE.md#optional-simulator-wavefront-images) |
-| Classic central actuator extrapolation | Instrument-owned completion/calibration; RTC-ARCH-026 finite CPU integration | [CPU comparison and replay](validation/classic-extrapolation-20261021/README.md), [independent review](reviews/20261021-classic-extrapolation/REVIEW.md) |
-| Classic shutdown correction and recovery | Native observer lifetime; preserved deadlines, CPU science and exact cleanup | [Shutdown validation](validation/classic-shutdown-20261021/README.md), [independent review](reviews/20261021-classic-shutdown/REVIEW.md) |
-| Classic CPU closed-loop and faults | RTC-ARCH-026, RTC-DEV-021/024; finite science and exact cleanup | [CPU validation](validation/classic-cpu-loop-20261021/README.md), [independent review](reviews/20261021-classic-cpu-loop/REVIEW.md) |
-| Classic live CPU and GUI controls | RTC-ARCH-026, RTC-DEV-021/031; preserved scientific declarations | [Live validation](validation/classic-live-cpu-20261021/README.md), [cleanup review](reviews/20261021-classic-live-cpu/REVIEW.md) |
-| Classic headless deployment refresh | RTC-ARCH-026, RTC-DEV-019–023; preserved scientific declarations | [Offline CPU validation](validation/classic-headless-offline-20261021/README.md), [independent review](reviews/20261021-classic-headless-offline/REVIEW.md) |
-| Headless RTC lifecycle and application links | RTC-ARCH-026 remains the sole application authority; the selected Julia `MediaSession`/PipeWireAO.jl replacement is under integration, not yet qualified; RTC-DEV-003/004/009/012/013/021/022/025/030 retain their meanings | [Current migration](SESSION_POLICY_MIGRATION.md), [roadmap](roadmap.md#current-work), [current boundary](architecture.md#accepted-workstation-integration-boundary); earlier link/systemd receipts remain scoped evidence |
-| Session fault and recovery tests | RTC-ARCH-026, RTC-DEV-009/013/021/022/030 | [Production-policy and installed-session procedures](../test/integration/README.md); physical-DM safe-state and approval remain deferred |
-| PipeWireAORTC package organization and small FITS/configuration applications | User decisions 2026-10-14; preserve RTC-ARCH-024/025 and native v1 contracts | [Review](PIPEWIREAORTC_REVIEW.md), [implementation contracts and gates](REGISTERED_RTC_MIGRATION.md), [independent verification](reviews/20261014/IMPLEMENTATION_VERIFICATION.md) |
-| Shared Julia tooling and independent instrument RTC projects | RTC-ARCH-024/025, RTC-DEV-029/030; existing ownership and native contracts | [Structure proposal](JULIA_RTC_STRUCTURE_PLAN.md) and [source boundary inventory](RTC_PACKAGE_BOUNDARIES.md); calibration/systemd tools and instrument-owned GUI profiles |
-| MediaSession/PipeWireAO session policy migration | User-selected implementation under integration; no Lua or libwireplumber RTC dependency; independent WirePlumber site/device policy remains optional and cannot become a second RTC authority | [Migration record](SESSION_POLICY_MIGRATION.md), [current roadmap](roadmap.md#current-work), [ecosystem boundary](ECOSYSTEM_INTEGRATION.md); previous WirePlumber audits and receipts retain their original scope |
-| Runner/configuration/ownership | [System boundary](architecture.md#system-boundary), [configuration](architecture.md#configuration-boundary); RTC-DEV-001–004, 009–013 | [Operations](operations.md#requirements) and the matching source/tests |
-| RTC-owned local management endpoint and GUI migration | RTC-ARCH-026; RTC-DEV-030/031; [endpoint contract](MANAGEMENT_ENDPOINT.md) | Shared bounded worker, descriptor transfer, durable receipts, owner activation and client-only GUI |
-| Artifact registration | [Headless artifact catalog](architecture.md#headless-artifact-catalog) | [Julia/CLI/GUI usage](JULIA_DEPLOYMENT_USAGE.md#headless-artifact-registration) |
-| Streaming statistics and acquired artifacts | Existing optional analysis and artifact catalog; no new live-control boundary | [Usage](JULIA_DEPLOYMENT_USAGE.md#streaming-statistics-and-acquired-artifacts), [numerical/SIMD/artifact validation](validation/streaming-statistics-20261028/README.md) |
-| Simulator startup settings | [RTC-DEV-031 retirement](operations.md#rtc-dev-031--cold-simulator-configuration-replacement) | [Standalone configuration](HIL_CONFIGURATION.md#export-existing-authoring-once) |
-| Graph properties/parameters | RTC-DEV-005, 010–012; [update classes](operations.md#update-classes) | [Native controls](CONTROL_MIGRATION_DESIGN.md), [public supervisor](SUPERVISOR_CONTROL.md) |
-| Correction-loop open/close | Existing native property updates; scientific controller retains state | [Semantics](HEADLESS_RTC_DESIGN.md#correction-loop-control--investigation-2026-10-26), [operation definitions and history](HEADLESS_RTC_DESIGN.md#hold-resume-flat-restoration-and-controller-reset), [usage](JULIA_DEPLOYMENT_USAGE.md#open-and-close-correction) |
-| Protective correction recovery | RTC-DEV-032–036; explicitly configured simulated complete-frame CPU owners | [Hierarchy and native interface](HEADLESS_RTC_DESIGN.md#protective-recovery-for-simulated-cpu-graphs--2026-10-27), [validation and review](validation/protective-recovery-20261027/README.md) |
-| Native controls/discovery/bootstrap | RTC-ARCH-024; [RTC-DEV-030](operations.md#rtc-dev-030--native-local-live-controls) | [Live-control inventory](LIVE_CONTROL_INVENTORY.md), [session discovery](SESSION_DISCOVERY.md), [bootstrap decision](OWNER_BOOTSTRAP_DESIGN.md) |
-| Installation/systemd/placement | [Deployment architecture](architecture.md#selected-deployment-package); RTC-DEV-019–023 | [Julia deployment usage](JULIA_DEPLOYMENT_USAGE.md), [installed runtime](INSTALLED_RUNTIME.md), [ordinary systemd session startup](SYSTEMD_SESSION_STARTUP.md), [deployment validation](DEPLOYMENT_VALIDATION.md) |
-| Registered Julia deployment boundary | PipeWireAORTC is resolved from the sealed application Project/Manifest; instrument declarations remain in the instrument repository; development tests are not application payload | [Package, resources and installation](JULIA_DEPLOYMENT_USAGE.md#package-and-resources), [current application boundary](../README.md#registered-applications) |
-| Instrument source export | Existing native deployment and registered dependency contracts; explicit host profile | [Current work](roadmap.md#instrument-source-and-deployment-separation--2026-10-22), `InstrumentExport`, `test/test_instrument_export.jl` |
-| Data-only instrument preparation | RTC-DEV-017; existing AOS YAML compiler, RTC-owned publication and cold settings | [Current work](roadmap.md#data-only-classic-instrument-migration--2026-10-22), [architecture](architecture.md); instrument repository migration/review records |
-| Standalone optical preparation | Same cold settings/component/binding and typed AOS compiler; no RTC control boundary | [Shared optical declarations](roadmap.md#shared-mirror-free-optical-declarations--2026-10-27), `test/test_external_optical_instrument.jl`, cold `test/test_simulation_source.jl`, optional `test/external_optical_preparation.jl` |
-| AOS/HIL/backends/offsets | [HIL architecture](architecture.md#selected-aoshil-deployment); RTC-DEV-014–017, 024–027 | [HIL usage](HIL_DEPLOYMENT_VALIDATION.md), [sustained usage](SUSTAINED_HIL_USAGE.md) |
-| Unchanged HEART integration | [HEART bridge](architecture.md#heart-simulation-bridge), [RTC-DEV-028](operations.md#rtc-dev-028--external-heart-simulation-deployment) | [HEART HIL](HEART_HIL_VALIDATION.md), [HEART calibration adapter](HEART_CALIBRATION_ADAPTER.md) |
-| Calibration/correction | [Calibration architecture](architecture.md#instrument-calibration-through-deployed-endpoints), [RTC-DEV-029](operations.md#rtc-dev-029--operational-interaction-calibration) | [Julia acquisition API](JULIA_CALIBRATION_ACQUISITION.md), [method usage](CALIBRATION_METHOD_USAGE.md), [completion plan](CALIBRATION_COMPLETION_PLAN.md), [native action API](CALIBRATION_ACTION_CONTROL.md) |
-| Built-instrument calibration bundles | Sensor-procedure API, bundle integrity, staging and selected startup context | [Standard calibration usage](CALIBRATION_METHOD_USAGE.md#built-application-calibration-bundles--2026-10-26), [migration evidence](validation/standard-calibration-20261026/README.md) |
-| GUI/non-gating observation | [RTC-DEV-006](operations.md#rtc-dev-006--optional-observation), RTC-DEV-022/030 | [Observation validation](LIVE_OBSERVATION_VALIDATION.md), [progress adjudication](NATIVE_HIL_PROGRESS_REVIEW.md); GUI owns rendering/client code |
-| Acceptance/performance investigation | [Current work](roadmap.md#current-work), affected numerical/resource clauses | [Qualification plan](NATIVE_FINAL_QUALIFICATION_PLAN.md); select only the affected gate and its receipts |
-
-Locate individual IDs/headings with `rg -n 'RTC-DEV-030|^##' docs/operations.md`
-and read their sections plus necessary dependencies. Follow links for a specific
-finding or result rather than loading the entire delivery catalog.
-
-## Evidence and deferred work
-
-- [Delivery evidence catalog](EVIDENCE_INDEX.md): preserved index of reviews,
-  reports and receipts; historical wording does not define current status.
-- [Application architecture adversarial review](APPLICATION_ARCHITECTURE_REVIEW.md):
-  ownership-transfer findings and qualification boundaries for WirePlumber reuse.
-- [Main integration snapshot](MAIN_INTEGRATION_20261006.md): exact source/dependency
-  merge and its qualification limits on 2026-10-06.
-- [WirePlumber session documentation review](validation/wireplumber-session-20261007/REVIEW.md):
-  WPS01–08/WPI source dispositions and final calibration corrections; runtime
-  evidence remains separately scoped.
-- [Inactive full-RTC archive](archive/full-rtc/README.md): non-normative deferred
-  design; read only for an explicitly selected scope change.
-- [PipeWireAO contracts](https://github.com/DarrylGamroth/PipeWireAO/tree/master/doc/dox/internals):
-  lower-level transport/FGN ownership. Scientific APIs remain with their packages.
+The architecture and operating contract define the `RTC-ARCH-*` and
+`RTC-DEV-*` requirements. Each verification record identifies the instrument,
+software versions and operating conditions it covers.

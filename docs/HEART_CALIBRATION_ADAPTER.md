@@ -62,7 +62,7 @@ Source evidence: `source/template/src/scaoTemplateCmdClient.c` declares the
 options; `source/template/src/hrtTemplateCmds.c` dispatches `DM_SHAPE`;
 `source/blocks/src/hrtClwcBlock.c` implements file application and clipping;
 `source/device/src/hrtStdDmHandler.c` documents micrometre input and emits the
-stdDM packets. The [existing functional HIL evidence](HEART_HIL_VALIDATION.md)
+stdDM packets. The [existing functional HIL evidence](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/HEART_HIL_VALIDATION.md)
 records the SPA decoder conversion: Float32(Float64(native µm) × 10⁻⁶), without
 permutation, and AOS scale 1.
 

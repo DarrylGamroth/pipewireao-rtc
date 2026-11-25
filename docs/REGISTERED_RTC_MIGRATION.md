@@ -1,6 +1,6 @@
 # Registered RTC packages and FITS artifacts
 
-Approved direction: user instructions and the adjudicated [application review](PIPEWIREAORTC_REVIEW.md), 2026-10-14. This document defines the implementation boundaries and acceptance obligations. Delivery status belongs in the roadmap's **Current work** section.
+Approved direction: user instructions and the adjudicated [application review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/PIPEWIREAORTC_REVIEW.md), 2026-10-14. This document defines the implementation boundaries and acceptance obligations. Delivery status belongs in the roadmap's **Current work** section.
 
 ## Source baseline and preserved state
 

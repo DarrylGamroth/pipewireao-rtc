@@ -19,7 +19,7 @@ final implementation disposition.
 | PipeWireAORTC (RTC below) | `/home/dgamroth/workspaces/codex/worktrees/rtc-wireplumber-reuse-20261021`, `codex/wireplumber-reuse` | `c1b7895b4032624a1024aafb1e858f029fce391b` | Clean |
 
 Read both repository instruction files, the RTC task index and
-[RTC-ARCH-025](../../WIREPLUMBER_SESSION_DESIGN.md). Reviewed AO session,
+[RTC-ARCH-025](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/WIREPLUMBER_SESSION_DESIGN.md). Reviewed AO session,
 connections, owner, acquisition, ingress and POD helpers; stock event dispatcher,
 transition, Lua event bindings, standard event source, `si-node` and
 `si-standard-link`; the native endpoint transport; and RTC configuration,

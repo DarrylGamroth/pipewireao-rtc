@@ -109,5 +109,5 @@ frames from separate FGN and JFG runs will be bit-identical.
 The former Python entrypoint remains a development reference. Historical
 campaign evidence retains its original producer. See
 [Julia deployment usage](JULIA_DEPLOYMENT_USAGE.md) for installed commands and
-the [migration record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md) for current
+the [migration record](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/JULIA_CALIBRATION_MIGRATION_VALIDATION.md) for current
 qualification.

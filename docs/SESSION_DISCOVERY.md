@@ -114,7 +114,7 @@ are discovery states rather than substitutes for the complete native status.
 
 Independent fixture checks pass 76 assertions for the bounded local contract
 and 26 against an actual private-core supervisor, in addition to 15 coordinator
-assertions. The [selection review](NATIVE_SESSION_SELECTION_REVIEW.md) records
+assertions. The [selection review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_SESSION_SELECTION_REVIEW.md) records
 the exact file-permission correction and the failure classification limit.
 These checks do not establish deployment-owned publication, installed science,
 GUI selection, Native/WASM portability, or application qualification. RTC issue

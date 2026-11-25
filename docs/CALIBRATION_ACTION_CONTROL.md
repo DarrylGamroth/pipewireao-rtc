@@ -16,7 +16,7 @@ profile. Installed qualification and final independent review remain pending;
 issue #7 remains open. The existing effect implementation,
 restoration fencing and scientific acquisition behavior remain authoritative.
 
-The [action inventory](NATIVE_CALIBRATION_ACTION_WIRE_INVENTORY.md),
+The [action inventory](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CALIBRATION_ACTION_WIRE_INVENTORY.md),
 [common envelope](CONTROL_ENVELOPE.md) and
 [acquisition lifecycle](ACQUISITION_LIFECYCLE_CONTROL.md) define the
 prior boundaries. This document specifies only the selected action payload.

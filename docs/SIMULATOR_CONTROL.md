@@ -3,9 +3,9 @@
 This is the selected complete-frame simulator control transport under
 [RTC-DEV-025/026](operations.md#rtc-dev-025--acknowledged-simulator-admission-and-controls).
 The selected source-owner implementation passes the installed Classic/Copper
-FGN/JFG lifecycle checks in [validation](LIVE_CONTROL_VALIDATION.md). Existing
+FGN/JFG lifecycle checks in [validation](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/LIVE_CONTROL_VALIDATION.md). Existing
 sustained frame evidence is separate. Independent findings and adjudications are
-in [LIVE_CONTROL_REVIEW.md](LIVE_CONTROL_REVIEW.md).
+in [LIVE_CONTROL_REVIEW.md](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/LIVE_CONTROL_REVIEW.md).
 
 ## Transport and ownership
 

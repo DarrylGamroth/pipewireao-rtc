@@ -189,7 +189,10 @@ tar --zstd -xf "$record/../rtc-0728-running/replay-evidence.tar.zst" -C "$scratc
     build.sh replay.c core.conf client.conf client-rt.conf replay.conf replay-rt.conf \
     env tools/analyze.py tools/fixture.jl
 tar --zstd -xf "$record/evidence.tar.zst" -C "$scratch"
-tar -xOzf "$record/../gpi2-deadline-misses-20261109/evidence.tar.gz" ./tools/gpi2_metrics.c \
+prior=docs/validation/gpi2-deadline-misses-20261109
+git show 5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea:"$prior/evidence.tar.gz" > "$scratch/evidence.tar.gz"
+(cd "$scratch" && sha256sum -c "$record/../gpi2-deadline-misses-20261109/evidence.tar.gz.sha256")
+tar -xOzf "$scratch/evidence.tar.gz" ./tools/gpi2_metrics.c \
     > "$scratch/tools/gpi2_metrics.c"
 cd "$scratch"
 for run in bare-1-rt trace-1-rt bare-2-rt trace-2-rt; do

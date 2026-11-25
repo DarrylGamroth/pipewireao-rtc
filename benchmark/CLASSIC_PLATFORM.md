@@ -165,7 +165,7 @@ The normal manifest is
 `6d8ab496a5e61591bf91373aa98220653806912113ae654187bede6faf15f44a`.
 Six archived executed harness files match the recorded hashes. The original
 normal campaign predates the cleanup/admission corrections described in
-[the independent review](../docs/CLASSIC_PLATFORM_REVIEW.md); all its groups
+[the independent review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CLASSIC_PLATFORM_REVIEW.md); all its groups
 were separately checked absent. The original executed source is preserved.
 All endpoint QoS readings match the intended conditions, and all after-run
 readings return to 2,000,000,000 µs. The 13 FGN/JFG parameter-file hashes match

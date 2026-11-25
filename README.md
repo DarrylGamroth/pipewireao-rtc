@@ -15,11 +15,10 @@ and command-line tools act as clients of the same headless RTC authority.
 
 ## Start here
 
+- [Deploy an instrument from its definitions](#deploy-an-instrument-from-its-definitions)
+- [Start and stop the installed RTC](docs/SYSTEMD_SESSION_STARTUP.md)
+- [Find the relevant design, operating contract or test](docs/README.md)
 - [Current work and qualification](docs/roadmap.md#current-work)
-- [Ownership and migration design](docs/HEADLESS_RTC_DESIGN.md)
-- [Julia deployment and calibration tools](docs/JULIA_DEPLOYMENT_USAGE.md)
-- [Proposed Julia RTC structure and migration](docs/JULIA_RTC_STRUCTURE_PLAN.md)
-- [Installed replacement checks](docs/validation/wireplumber-session-20261007/SESSION_CHECKS.md)
 
 ## Development workspace
 

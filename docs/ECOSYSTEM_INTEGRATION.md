@@ -126,7 +126,7 @@ preparation, numerical execution and update adoption. One-shot deployment tools
 prepare application environments and systemd units without creating links or
 releasing acquisition. Systemd service activation alone never admits ingress.
 
-The [adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) makes
+The [adversarial architecture review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/APPLICATION_ARCHITECTURE_REVIEW.md) makes
 link-ownership transfer conditional on preserving admission, negotiation and
 failure behavior. The first pilot retains established FGN hosting and separate
 JFG processes. `module-rt` supplies participating PipeWire thread scheduling;
@@ -346,7 +346,7 @@ Model new functionality on existing implementations and extend their interfaces
 where capabilities are missing. Loading the stock all-feature event source
 would also subscribe to unrelated scientific properties; the current profile
 uses the upstream dispatcher with selective ObjectManagers. The
-[CPU-only integration evidence](validation/wireplumber-reuse-20261021/SESSION_ITEMS.md)
+[CPU-only integration evidence](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/wireplumber-reuse-20261021/SESSION_ITEMS.md)
 records real NDArray negotiation, delivery and withdrawal without a simulator.
 
 ### Historical integration pilots — 2026-10-06/07
@@ -355,14 +355,14 @@ The following paragraphs record the pre-transfer implementation. Their
 observer-only and supervisor allocations are superseded by RTC-ARCH-025;
 the linked evidence keeps its original revision and qualification scope.
 
-The [initial compatibility fixture](validation/wireplumber-compatibility-20261006/README.md)
+The [initial compatibility fixture](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/wireplumber-compatibility-20261006/README.md)
 now passes with unmodified WirePlumber source built against AO through private
 build dependency aliases. Generic discovery, NDArray format/metadata parsing and
 explicit linking work for that complete-frame FITS/discard path. This requires
 no native WirePlumber patch; a maintained build/release selection and additional
 AO contracts still need qualification.
 
-The [Copper HIL coexistence pilot](validation/wireplumber-hil-coexistence-20261006/README.md)
+The [Copper HIL coexistence pilot](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/wireplumber-hil-coexistence-20261006/README.md)
 also passes with CUDA AOS and each CPU executor using existing artifacts. A
 port/link-only WirePlumber profile observes the exact admitted cohort while the
 runtime retains scientific admission and every link. Native stop/reset/resume,
@@ -396,7 +396,7 @@ held startup. Such an observer must not stop the RTC when it exits or authorize
 source release when it restarts. Separate scientific-owner units retain the
 failure-cohort gates in the architecture review.
 
-The [optional Copper user-service increment](validation/wireplumber-user-service-20261007/README.md)
+The [optional Copper user-service increment](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/wireplumber-user-service-20261007/README.md)
 now implements that boundary. A copied companion runs upstream WirePlumber
 directly under systemd; its Julia ExecStartPre adapter binds fresh configuration
 to the active RTC MainPID, exact native incarnation and admitted topology.
@@ -405,7 +405,7 @@ control. Both CPU executors with CUDA AOS pass the scoped lifecycle, prefix and
 cleanup gates. The runtime still supervises its scientific owners and owns all
 links; separate owner units and connection policy transfer remain unimplemented.
 
-The [declared-connection checks](validation/wireplumber-connection-policy-20261007/README.md)
+The [declared-connection checks](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/wireplumber-connection-policy-20261007/README.md)
 now compare negotiated contracts with session declarations and watch exact
 owner-client incarnations. Periodic RTC monitoring also detects required link
 removal/failure and latches external endpoint removal. Both selected Copper
@@ -445,7 +445,7 @@ The isolated FITS/discard compatibility and Copper runtime-owned-link
 coexistence steps pass within their recorded scopes. Explicit WirePlumber link
 realization now passes native, deployed clean, same-process adapter retry,
 all eight required-loss and fresh-admission checks for Copper CPU FGN/JFG
-with CUDA AOS. See the [scoped acceptance](validation/wireplumber-realization-20261007/README.md).
+with CUDA AOS. See the [scoped acceptance](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/wireplumber-realization-20261007/README.md).
 Separate owner service supervision remains pending. The
 [current roadmap](roadmap.md#current-work) owns delivery order:
 

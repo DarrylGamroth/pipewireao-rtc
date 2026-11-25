@@ -316,7 +316,7 @@ separate adjudicated review and must preserve both domains’ capacity/ordering 
 
 
 Final cold refinement/client evidence is recorded in
-[NATIVE_SUPERVISOR_RUNTIME_VALIDATION.md](NATIVE_SUPERVISOR_RUNTIME_VALIDATION.md).
+[NATIVE_SUPERVISOR_RUNTIME_VALIDATION.md](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_SUPERVISOR_RUNTIME_VALIDATION.md).
 Rust library tests passed 75 with 3 existing installed/private-core tests ignored;
 all 45 native codec/client tests passed. Strict all-target Clippy and Rust fmt passed.
 The actual private-core Julia/Rust public-client proof passed 63 assertions, including

@@ -19,8 +19,8 @@ This document specifies the selected request and result schemas and the
 implemented native runner endpoint. The two-caller private-core fixture
 qualifies normal admission, query, lifecycle, duplicate/rejection, caller
 removal and exit behavior. Remaining deadline/preparation gates are recorded
-separately in [endpoint validation](NATIVE_RUNNER_ENDPOINT_VALIDATION.md).
-The [supervisor client](NATIVE_RUNNER_CLIENT_VALIDATION.md) is implemented and
+separately in [endpoint validation](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_RUNNER_ENDPOINT_VALIDATION.md).
+The [supervisor client](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_RUNNER_CLIENT_VALIDATION.md) is implemented and
 has focused CPU caller evidence; other live control owners still require migration.
 No installed scientific or frame-latency claim follows from these cold control
 checks.

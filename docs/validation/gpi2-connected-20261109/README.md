@@ -178,7 +178,7 @@ configuration does not require changing the vendor sources.
 
 ## Evidence
 
-The [archive](evidence.tar.gz) retains the full release ledgers, three receipt
+The [archive](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/validation/gpi2-connected-20261109/evidence.tar.gz) retains the full release ledgers, three receipt
 timestamps per frame, controller callback and GC records, runner and
 configuration sources, and workstation comparison logs.
 [Archive SHA-256](evidence.tar.gz.sha256)

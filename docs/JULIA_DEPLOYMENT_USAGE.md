@@ -424,7 +424,7 @@ PipeWireAO files. It does not infer source equality from a Git revision alone.
 Adapter `39efcf5` requires an AOS graph-calibration boundary absent from the
 selected AOS checkout and fails import before admission. Select compatible
 `--aos-root` and `--adapter-root` inputs when exporting; the
-[migration record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md) binds the tested
+[migration record](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/JULIA_CALIBRATION_MIGRATION_VALIDATION.md) binds the tested
 files and preserves that failed attempt.
 
 ## Failure and scientific boundaries

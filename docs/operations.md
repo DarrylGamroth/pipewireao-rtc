@@ -549,7 +549,7 @@ Acquisition identity; use an independent metadata-aware observer for that
 acceptance check. No latency, scientific convergence, or hardware claim follows
 from a successful view. Complete controlled-preparation CPU evidence and
 remaining default cold repeatability/GUI limits are recorded in
-[LIVE_OBSERVATION_VALIDATION.md](LIVE_OBSERVATION_VALIDATION.md).
+[LIVE_OBSERVATION_VALIDATION.md](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/LIVE_OBSERVATION_VALIDATION.md).
 
 ### RTC-DEV-007 — Numerical and state equivalence
 
@@ -1044,7 +1044,7 @@ and reuse the existing Julia acquisition and AdaptiveOpticsCalibration APIs.
 Its installed operational path MUST NOT require Python, including indirect
 export or supervision dependencies. Python development scripts were removed
 from this repository on 2026-10-08. Their recorded results retain their original
-scope and source provenance; see [the Julia migration](JULIA_CALIBRATION_MIGRATION.md).
+scope and source provenance; see [the Julia migration](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/JULIA_CALIBRATION_MIGRATION.md).
 
 This requirement applies to explicitly selected operational-calibration
 sessions. Existing installed finite exchange profiles retain RTC-DEV-025,

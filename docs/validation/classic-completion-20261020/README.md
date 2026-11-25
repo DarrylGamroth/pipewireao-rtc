@@ -1,7 +1,7 @@
 # Classic completion evidence — 2026-10-20
 
 The selected profile is Classic on CUDA with a CPU JFG controller. The
-[acceptance table](../../CLASSIC_REGISTERED_DEPLOYMENT.md#classic-completion-for-review--2026-10-20)
+[acceptance table](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CLASSIC_REGISTERED_DEPLOYMENT.md#classic-completion-for-review--2026-10-20)
 tracks the final disposition. This is bounded software/simulation verification;
 physical calibration, convergence and a 500 Hz wall-clock guarantee are separate.
 
@@ -74,7 +74,7 @@ in the main display; eleven startup configuration facts are in Settings. These
 remain read-only facts, grouped in Configuration, Metadata and Details using
 the shared collapsible section layout. The agreed future editing workflow is edit, apply and
 restart; ordinary Stop/Start resumes the already prepared model and does not
-adopt a changed exposure. The [maintained guide](../../CLASSIC_REGISTERED_DEPLOYMENT.md#simulator-settings-and-restart)
+adopt a changed exposure. The [maintained guide](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CLASSIC_REGISTERED_DEPLOYMENT.md#simulator-settings-and-restart)
 records the preparation and calibration requirements.
 
 The grouped layout is committed at GUI `2fe96e1`. Production GUI `97e2999`

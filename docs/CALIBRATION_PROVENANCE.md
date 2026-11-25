@@ -74,7 +74,7 @@ audit has not reconstructed drafting history or cleared historical migrations.
 
 These findings do not demonstrate a GPL violation. They prevent a blanket
 claim that the package or distributed RTC stack is free of GPL obligations.
-The [quality plan](ANALYSIS_PLAN.md) keeps license/provenance checks separate
+The [quality plan](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/ANALYSIS_PLAN.md) keeps license/provenance checks separate
 from numerical and simulation acceptance.
 
 ## Observed FFTW provider

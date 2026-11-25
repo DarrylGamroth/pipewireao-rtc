@@ -32,7 +32,7 @@ The primary agent approved the distinct `pipewireao.rtc.owner-bootstrap/1` profi
 | [deploy.jl at the recorded baseline](https://github.com/DarrylGamroth/pipewireao-rtc/blob/2fb82e9/deployment/julia/src/deploy.jl), owner validation/startup/`stop_owner!` | Owners outside the migrated HEART/acquisition cases still wait/touch marker paths. Generic source file-control configuration remains accepted. | Root-owned strict profile selection and native client startup/cleanup; reject unsupported legacy configurations before spawning. |
 | [hil_export.jl](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/hil_export.jl), [calibration_export.jl](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/calibration_export.jl), JFG `deployment/export.py` | Ordinary simulator launches with `--threads=1,0`; generated external JFG launches with `--threads=2,0`; both carry marker descriptors/arguments. | Root-owned descriptors, sealed SDK assets/dependencies, thread flags and placement migrate together. |
 
-The [live-control inventory](LIVE_CONTROL_INVENTORY.md) identifies early preparation and failures before source-port publication as bootstrap debt. Saved output reports, immutable captures, configuration and provenance remain artifacts; their existence is never live readiness authority.
+The [live-control inventory](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/LIVE_CONTROL_INVENTORY.md) identifies early preparation and failures before source-port publication as bootstrap debt. Saved output reports, immutable captures, configuration and provenance remain artifacts; their existence is never live readiness authority.
 
 ## Thread ownership
 

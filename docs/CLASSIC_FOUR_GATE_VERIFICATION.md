@@ -279,7 +279,7 @@ The same canonical runners then passed the fresh frame/row qualifications above.
 No scientific or production source change was required.
 
 Previously found FR-01/FR-02 and the malformed-header issue are preserved in
-[the integration review](CLASSIC_FINAL_REVIEW.md). The current classifier
+[the integration review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CLASSIC_FINAL_REVIEW.md). The current classifier
 checks header length before unpacking and records failed evidence reads; its
 capacity artifact now completes. The timestamp audit supplies the necessary
 saved-data follow-up for FR-01. The retained primary-agent log

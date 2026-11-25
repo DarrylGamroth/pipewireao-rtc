@@ -3,7 +3,7 @@
 ## Main integration update — 2026-10-06
 
 The reviewed source is now on project main branches. See
-[the integration record](MAIN_INTEGRATION_20261006.md) for exact SDK dependency,
+[the integration record](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/MAIN_INTEGRATION_20261006.md) for exact SDK dependency,
 fresh paired-runtime cold checks and outstanding installed gates. Classic's six
 whole observation trajectories and the installed duplicate-session picker replay
 passed; Copper's baseline passed. The historical review below records the earlier
@@ -43,7 +43,7 @@ bounded SDK repair addresses interrupted native-lock ownership. The initial
 closure introduced prepared-parameter allocations; helper extraction restores
 the unchanged zero-allocation checks. SDK `d514d6b` passes 2,032 assertions and
 independent SIGINT, recursive-lock and GC checks. See
-[the reviewed verification](THREAD_LOOP_INTERRUPT_REVIEW.md). The Classic FGN
+[the reviewed verification](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/THREAD_LOOP_INTERRUPT_REVIEW.md). The Classic FGN
 installed shutdown reproducer now passes two exact cohorts, zero measured
 allocations and normal service exit; it omits the temporary selection client
 and does not qualify GUI attachment. Refresh the other packages from this
@@ -54,7 +54,7 @@ and both exact 512-exchange cohorts. Independent selection still produces
 4,045,040 measured bytes in its first post-prefix interval and zero in its
 second, with zero collections. This remains an open allocation gate, separate
 from the repaired SDK ownership defect. See the
-[integrated review and preparation](INTEGRATED_NATIVE_GATES_REVIEW.md).
+[integrated review and preparation](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/INTEGRATED_NATIVE_GATES_REVIEW.md).
 
 Defer the CUDA/HIP **RTC executor** investigation in JFG31 for this increment;
 retain its unresolved obligations rather than counting them as completed.

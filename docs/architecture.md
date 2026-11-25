@@ -870,9 +870,9 @@ write ordinary transport-neutral algorithms and properties.
 
 The migration is dependency ordered under RTC-DEV-030. The
 [design](CONTROL_MIGRATION_DESIGN.md),
-[control inventory](LIVE_CONTROL_INVENTORY.md),
-[mechanism proof](NATIVE_CONTROL_FILTER_PROOF.md) and
-[independent review](NATIVE_CONTROL_MIGRATION_REVIEW.md) distinguish selected
+[control inventory](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/LIVE_CONTROL_INVENTORY.md),
+[mechanism proof](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_FILTER_PROOF.md) and
+[independent review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/NATIVE_CONTROL_MIGRATION_REVIEW.md) distinguish selected
 behavior from implementation evidence. Native serialization does not itself
 establish application, finite owner execution, restoration or real-time
 qualification. Existing JSON interfaces remain explicitly unmigrated until

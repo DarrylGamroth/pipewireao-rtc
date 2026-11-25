@@ -6,13 +6,13 @@ This record concerns finite, completion-driven AOS scientific checks under
 RTC-ARCH-023 and RTC-DEV-029. It does not qualify physical instruments,
 wall-clock cadence, ordinary HEART progressive delivery or detector electronics.
 The [plan](CALIBRATION_COMPLETION_PLAN.md) records the frozen decision rules;
-the [review](CALIBRATION_COMPLETION_REVIEW.md) records independent findings.
+the [review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_COMPLETION_REVIEW.md) records independent findings.
 
 Starting RTC revision is `6f57ea48b2620fe13b9d09a08a02ee4aeca755ce`.
 Actual copied source, binary, array, recipe, environment and payload hashes in
 each completed package take precedence over repository HEAD. Raw evidence is
 retained in `~/.cache/rtc-calibration-completion-20261003/`.
-Classic CPU results are retained in [the prior method selection](CALIBRATION_METHOD_SELECTION.md).
+Classic CPU results are retained in [the prior method selection](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_METHOD_SELECTION.md).
 
 ## Final deployment verification
 
@@ -632,7 +632,7 @@ assertions plus an exact-truth assertion. Audit SHA256:
 `2550220c39a78c08b5f9953eef459068f523fe80ddce367d519997530c56a094`.
 Native recurrence agrees within 6.16 × 10⁻⁸ µm and sparse E projection within
 2.47 × 10⁻⁷ µm; the relayed metre commands match exactly. Final acceptance
-and scope are recorded in the [review](CALIBRATION_COMPLETION_REVIEW.md).
+and scope are recorded in the [review](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/CALIBRATION_COMPLETION_REVIEW.md).
 Earlier failed Classic reports
 remain failed and unchanged.
 
@@ -646,7 +646,7 @@ The [plan table](CALIBRATION_COMPLETION_PLAN.md#five-steps-and-existing-evidence
 and independent review specify the qualified cohorts and partial spatial spans.
 
 The generic PipeWireAO loan-exhaustion timeout CCR-006 has a separate
-[qualification of the released packages](PREPARED_EXCHANGE_DELIVERY.md). Frozen scientific
+[qualification of the released packages](https://github.com/DarrylGamroth/pipewireao-rtc/blob/5a1e471fc9c67cfaa2de153ffc480af1fdb7a7ea/docs/PREPARED_EXCHANGE_DELIVERY.md). Frozen scientific
 packages retain their original source identities. Separate work remains:
 ordinary native Copper streaming CCR-017; physical endpoints,
 instrument-specific tolerances and DU860 electronics; wall-clock cadence,
