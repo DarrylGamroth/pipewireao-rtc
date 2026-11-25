@@ -367,6 +367,39 @@ end
     @test rejection(g).result == -110 && g.pending === nothing
 end
 
+@testset "A replacement controller can Quit after a property outcome becomes unknown" begin
+    g, _ = gate()
+    mutation = only(select_actions(I.DispatchRequest, admit!(g, write_request(1)))).ticket
+    identity = S.Identity(FACTS.identity.global_id, 22, 23, 24)
+    replacement = C.ControllerIdentity(identity.global_id, identity.serial, Int64(23))
+
+    I.controllers!(g, [I.Controller(identity, FACTS.name)])
+    actions = I.take_actions!(g)
+    @test length(select_actions(I.AuthorityFailed, actions)) == 1
+    failed_record = last(select_actions(I.PublishRecords, actions)).completion
+    failed = R.decode_completion(failed_record)
+    @test failed.header.controller == CONTROLLER && failed.header.token == 1
+    @test failed.header.result == -5
+    @test occursin("outcome unknown", something(failed.error).message)
+
+    @test isempty(select_actions(I.DispatchRequest, admit!(g, request(2, :quit))))
+    @test rejection(g).result == -Base.Libc.ESTALE
+    actions = admit!(g, request(2, :quit; controller = replacement))
+    quit = only(select_actions(I.DispatchRequest, actions)).ticket
+
+    # The old removal can arrive after the new NodeInfo for the reused global ID.
+    I.controller_removed!(g, FACTS.identity.global_id, FACTS.identity.serial)
+    @test isempty(select_actions(I.AuthorityFailed, I.take_actions!(g)))
+    I.complete!(g, mutation, reply(mutation))
+    @test isempty(I.take_actions!(g)) && g.completion == failed_record
+
+    I.complete!(g, quit, reply(quit; quit = true); terminal = true)
+    published = only(select_actions(I.PublishRecords, I.take_actions!(g)))
+    accepted = R.decode_completion(published.completion)
+    @test accepted.header.controller == replacement && accepted.header.token == 2
+    @test accepted.result.outcome == R.Accepted && accepted.result.details.shutdown
+end
+
 @testset "signed nanosecond receipts retain exact boundaries" begin
     for origin in (Int64(-10_000_000_000), (Int64(1) << 53) + 37)
         clock = Clocks.CachedNanoClock(origin)
