@@ -35,6 +35,7 @@ const PRIVATE_CORE = (
     "calibration_named_transport",
     "calibration_readiness",
     "calibration_no_response_private_core",
+    "analysis_capture_explicit_private_core",
 )
 
 const SELECTIONS = (

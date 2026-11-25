@@ -7,67 +7,7 @@ using FilterGraphAlgorithms, FilterGraphs, FilterGraphPipeWire
 include("control_private_core.jl")
 const C = PipeWireAORTC.Common
 const CS = PipeWireAORTC.ConfigurationStore
-const OUTPUTS = ("mean", "variance", "stddev", "sample-count", "complete", "variance-valid")
-
-function configuration(directory, name; explicit_mean = false)
-    graph = Dict(
-        "filter.graph" => Dict(
-            "nodes" => [
-                Dict(
-                    "type" => "ndarray",
-                    "name" => "statistics",
-                    "label" => "array-statistics-f32",
-                    "config" => Dict(
-                        "size" => [2, 2],
-                        "mode" => "finite",
-                        "window_samples" => 8,
-                        "input_schema" => "test/analysis-samples-f32/1",
-                        "mean_schema" => "test/analysis-mean-f32/1",
-                        "variance_schema" => "test/analysis-variance-f32/1",
-                        "stddev_schema" => "test/analysis-stddev-f32/1",
-                    ),
-                ),
-            ],
-            "inputs" => ["statistics:sample"],
-            "outputs" => ["statistics:" * port for port in OUTPUTS],
-            "links" => [],
-        ),
-    )
-    PipeWireAORTC.ScienceExport.write_spa_config(joinpath(directory, "graph.conf"), graph)
-    links = [Dict("output" => "analysis-test-source:output_1", "input" => name * ":sample")]
-    explicit_mean && push!(
-        links, Dict("output" => name * ":mean", "input" => "analysis-explicit-mean:in")
-    )
-    config = Dict(
-        "name" => name,
-        "graph" => "graph.conf",
-        "rate" => "1000/1",
-        "links" => links,
-        "capture" => Dict(
-            "label" => "Native finite capture",
-            "scope" => Dict(
-                "session_label" => "native-test",
-                "graph" => "controller",
-                "parameter" => "reference",
-            ),
-            "products" => Dict(port => port for port in ("mean", "variance", "stddev")),
-            "units" => Dict("mean" => "adu", "variance" => "adu^2", "stddev" => "adu"),
-            "sample-count" => "sample-count",
-            "complete" => "complete",
-            "variance-valid" => "variance-valid",
-        ),
-    )
-    path = joinpath(directory, "analysis.conf")
-    PipeWireAORTC.ScienceExport.write_spa_config(path, config)
-    return path
-end
-
-function nodes(registry, name; prefix = false)
-    filter(find_globals(registry; interface = "PipeWire:Interface:Node")) do item
-        value = get(item.properties, "node.name", "")
-        prefix ? startswith(value, name) : value == name
-    end
-end
+include("helpers/analysis_capture_fixture.jl")
 
 function node_properties(loop, registry, original)
     snapshot = Ref{Union{Nothing,NodeInfo}}(nothing)
@@ -111,7 +51,12 @@ function acquire(
 )
     stage = joinpath(directory, name)
     mkpath(stage)
-    path = configuration(stage, name; explicit_mean)
+    output_links = if explicit_mean
+        (Dict("output" => name * ":mean", "input" => "analysis-explicit-mean:in"),)
+    else
+        ()
+    end
+    path = analysis_capture_configuration(stage, name; output_links)
     log_path = joinpath(stage, "analysis.log")
     receipt_path = joinpath(ENV["PIPEWIREAO_RUNTIME_DIR"], name * "-capture.json")
     state = joinpath(stage, "state")
@@ -135,13 +80,7 @@ function acquire(
                 )
             end
         end
-        command = `$(Base.julia_cmd()) --startup-file=no --threads=3 --project=$(dirname(Base.active_project())) -e 'using PipeWireAORTC; exit(PipeWireAORTC.Analysis.main(ARGS))' -- --config $path --remote $remote`
-        child = run(
-            pipeline(
-                addenv(command, "XDG_STATE_HOME" => state); stdout = log, stderr = log
-            );
-            wait = false,
-        )
+        child = start_analysis_capture(path, remote, state, log)
         wait_proof(
             180,
             "finite analysis readiness";
@@ -330,19 +269,13 @@ end
         )
         start!(source)
         name = "capture-missing-factory"
-        path = configuration(directory, name)
+        path = analysis_capture_configuration(directory, name)
         log_path = joinpath(directory, "analysis.log")
         log = open(log_path, "w+")
         child = nothing
         state = joinpath(directory, "state")
         try
-            command = `$(Base.julia_cmd()) --startup-file=no --threads=3 --project=$(dirname(Base.active_project())) -e 'using PipeWireAORTC; exit(PipeWireAORTC.Analysis.main(ARGS))' -- --config $path --remote $remote`
-            child = run(
-                pipeline(
-                    addenv(command, "XDG_STATE_HOME" => state); stdout = log, stderr = log
-                );
-                wait = false,
-            )
+            child = start_analysis_capture(path, remote, state, log)
             # Cold compilation is included in this bound; endpoint discovery's
             # unchanged 120s timeout cannot satisfy the required early failure.
             wait_proof(
