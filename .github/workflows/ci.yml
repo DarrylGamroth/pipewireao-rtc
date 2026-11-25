@@ -154,7 +154,7 @@ jobs:
       - name: Test physical offset inputs
         run: julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl physical_offset_inputs
       - name: Test physical offset observations
-        run: julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl physical_offsets
+        run: timeout --signal=INT --kill-after=10s 3m julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl physical_offsets
       - uses: julia-actions/julia-processcoverage@v1
         with:
           directories: src,ext
