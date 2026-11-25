@@ -296,6 +296,12 @@ function run_endpoint_proof(socket, directory, daemon)
         with_thread_loop_lock(second_client.loop) do _
             close(second_client.marker)
         end
+        wait_proof(
+            () -> !OwnerEndpoint.controller_present(endpoint, stopped_ticket.header.controller),
+            5,
+            "owner observed stopped caller removal";
+            check = check_owner,
+        )
         run_effects[] = true
         wait_proof(
             () -> istaskdone(stopped_request),
@@ -303,15 +309,20 @@ function run_endpoint_proof(socket, directory, daemon)
             "stopped caller cleanup";
             check = check_owner,
         )
-
-        # Another caller can complete while local cold encoding runs. The real
-        # request must choose its token after that work, without replaying it.
+        @test fetch(stopped_request) isa Client.UnknownOutcome
         wait_proof(
             () -> endpoint.pending === nothing,
             5,
             "stopped ticket retirement";
             check = check_owner,
         )
+        header, _ = Envelope.decode_completion(endpoint.completion)
+        @test Client.same_request(header, stopped_ticket.header)
+        @test header.result == -Base.Libc.ETIMEDOUT
+        @test effects[] == 3
+
+        # Another caller can complete while local cold encoding runs. The real
+        # request must choose its token after that work, without replaying it.
         encoding_client = connect_client()
         push!(clients, encoding_client)
         competing_client = connect_client()
