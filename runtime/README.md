@@ -73,6 +73,30 @@ PIPEWIREAO_MANAGEMENT_BINARY=/tmp/rtc-management-build/pipewireao-management \
   julia --project=. test/management_endpoint.jl
 ```
 
+### Line coverage
+
+From the repository root, use GCC and its matching `gcov`, gcovr 7.0 or
+later, and the instantiated Julia project. Start with a fresh build directory
+to measure only the current test run.
+
+```sh
+build=$(mktemp -d /tmp/rtc-management-coverage.XXXXXX)
+CC=gcc meson setup "$build" runtime -Db_coverage=true
+meson compile -C "$build"
+meson test -C "$build" --print-errorlogs
+PIPEWIREAO_MANAGEMENT_BINARY="$build/pipewireao-management" \
+  julia --startup-file=no --project=. test/management_endpoint.jl
+gcovr --root . --filter '^runtime/management\.c$' --print-summary \
+  --lcov "$build/management.raw.lcov" "$build"
+sed 's|^SF:.*/runtime/management\.c$|SF:runtime/management.c|' \
+  "$build/management.raw.lcov" > "$build/management.lcov"
+```
+
+The report counts lines in `runtime/management.c` exercised by the Meson JSON
+tests and the private-socket selector. The process deliberately killed by the
+crash test cannot flush its coverage counters. The profile data from graceful
+exits is included.
+
 ## Coupled source lifecycle
 
 A deployment permits at most eight external owners. Keep one primary
