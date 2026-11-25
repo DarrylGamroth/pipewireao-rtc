@@ -2,6 +2,103 @@ using Test, PipeWireAORTC
 import Clocks
 const Runtime = PipeWireAORTC.SessionRuntime
 
+@testset "Failed start cleanup requires the same invocation and a completed ledger" begin
+    C = PipeWireAORTC.Common
+    for replacement in (false, true)
+        mktempdir() do directory
+            unit = "pipewireao-session@fixture.service"
+            invocation = "a"^32
+            fragment = joinpath(directory, unit)
+            write(fragment, "[Unit]\nDescription=Fixture\n")
+            user = mkpath(joinpath(directory, "systemd", "user"))
+            link = joinpath(user, unit)
+            symlink(fragment, link)
+            root = joinpath(directory, "rtc-runtime")
+            runtime = mkpath(joinpath(root, invocation))
+            ledger = Dict{String,Any}(
+                "version" => PipeWireAORTC.SessionLaunch.LEDGER_VERSION,
+                "unit" => unit,
+                "runtime" => runtime,
+                "invocation" => invocation,
+                "cleanup_complete" => true,
+                "owners" => Dict(),
+            )
+            C.write_json(joinpath(runtime, "launch.json"), ledger)
+            stopped = joinpath(directory, "stop-requested")
+            systemctl = joinpath(directory, "systemctl")
+            write(
+                systemctl,
+                raw"""
+   #!/bin/sh
+   [ "$1" = --user ] || exit 2
+   case "$2" in
+       show)
+           [ "$5" = "$RTC_TEST_UNIT" ] || exit 2
+           state=activating
+           invocation="$RTC_TEST_INVOCATION"
+           if [ -f "$RTC_TEST_STOPPED" ]; then
+               state=failed
+               invocation="$RTC_TEST_POST_STOP_INVOCATION"
+           fi
+           printf '%s\n' "Id=$5" 'LoadState=loaded' "ActiveState=$state" \
+               'MainPID=0' "InvocationID=$invocation" 'ControlGroup=' \
+               "FragmentPath=$RTC_TEST_FRAGMENT"
+           ;;
+       stop)
+           [ "$3" = "$RTC_TEST_UNIT" ] || exit 2
+           : > "$RTC_TEST_STOPPED"
+           printf '%s\n' 'manager stopped the unit but lost the acknowledgement' >&2
+           exit 1
+           ;;
+       list-units|list-jobs) ;;
+       disable)
+           [ "$3" = --runtime ] && [ "$4" = "$RTC_TEST_UNIT" ] || exit 2
+           /bin/rm -- "$RTC_TEST_LINK"
+           ;;
+       *) exit 2 ;;
+   esac
+   """,
+            )
+            chmod(systemctl, 0o700)
+            failure = ErrorException("session failed to start")
+            withenv(
+                "PATH" => directory,
+                "XDG_RUNTIME_DIR" => directory,
+                "RTC_TEST_UNIT" => unit,
+                "RTC_TEST_INVOCATION" => invocation,
+                "RTC_TEST_POST_STOP_INVOCATION" => (replacement ? "b"^32 : invocation),
+                "RTC_TEST_FRAGMENT" => fragment,
+                "RTC_TEST_LINK" => link,
+                "RTC_TEST_STOPPED" => stopped,
+            ) do
+                if replacement
+                    @test_throws "failed session invocation changed during cleanup" (Runtime._reconcile_failed_start!(
+                        directory, unit, root, fragment, true, failure
+                    ))
+                    @test islink(link)
+                    @test !isfile(joinpath(directory, "start-failure.json"))
+                    @test !isfile(joinpath(directory, "final-launch.json"))
+                else
+                    @test Runtime._reconcile_failed_start!(
+                        directory, unit, root, fragment, true, failure
+                    ) === nothing
+                    @test !islink(link)
+                    @test C.read_json(joinpath(directory, "final-launch.json")) == ledger
+                    receipt = C.read_json(joinpath(directory, "start-failure.json"))
+                    @test receipt["cleanup_confirmed"] === true
+                    @test receipt["invocation"] == invocation
+                    @test receipt["failure"] == "session failed to start"
+                    @test occursin(
+                        "lost the acknowledgement", receipt["stop_command_error"]
+                    )
+                end
+            end
+            @test isfile(stopped)
+            @test isfile(fragment)
+        end
+    end
+end
+
 @testset "direct attach retains only the current unit incarnation" begin
     CLI = PipeWireAORTC.SessionCLI
     C = PipeWireAORTC.Common

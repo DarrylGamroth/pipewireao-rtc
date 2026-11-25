@@ -179,6 +179,123 @@ end
     end
 end
 
+@testset "Parameter deployment preserves the bound graph inlet and preload" begin
+    mktempdir() do package
+        prefix = Launch.LibPipeWire.PipeWireAO_jll.artifact_dir
+        julia = realpath(Base.julia_cmd().exec[1])
+        systemd = mkdir(joinpath(package, "systemd"))
+        payload = joinpath(package, "reference.bin")
+        values = Float32[1, 3, 2, 4, 8, 9]
+        write(payload, values)
+        write(joinpath(package, "client.conf"), "{}")
+        binding = "PIPEWIREAO_RTC_PARAMETER_REFERENCE"
+        spec = Dict{String,Any}(
+            "name" => "instrument",
+            "environment" => Dict(binding => "@PACKAGE@/reference.bin"),
+            "owners" => [Dict("role" => "controller")],
+            "placement" => Dict(
+                "session" => Dict{String,Any}(
+                    "cpus" => [2], "leader-cpu" => 2, "threads" => Any[]
+                ),
+            ),
+            "client" => Dict("rtc" => "client.conf"),
+        )
+        format = Dict{String,Any}(
+            "parameter" => true,
+            "shape" => [2, 3],
+            "element-type" => "F32_LE",
+            "layout" => "COLUMN_MAJOR",
+            "schema" => "pipewireao/reference/1",
+        )
+        output = merge(format, Dict("name" => "output_1", "direction" => "output"))
+        input = merge(format, Dict("name" => "reference", "direction" => "input"))
+        source = Dict{String,Any}(
+            "node.name" => "parameter-reference",
+            "factory" => "pipewireao.runtime-parameter",
+            "ports" => [output],
+        )
+        session = Dict{String,Any}(
+            "sources" => [source],
+            "graphs" => [Dict("node.name" => "controller", "ports" => [input])],
+            "links" => [
+                Dict(
+                    "output" => "parameter-reference:output_1",
+                    "input" => "controller:reference",
+                ),
+            ],
+            "parameters" => Dict("controller:reference" => binding),
+        )
+        external = (;
+            core = "fixture-core.service", socket = joinpath(package, "core.sock")
+        )
+        installed = Launch.install_direct_parameters!(
+            package, prefix, package, spec, session, external, julia
+        )
+        config = joinpath(systemd, "parameters", "sources.json")
+        @test config in installed.files
+        @test filemode(config) & 0o777 == 0o600
+        declaration = only(
+            PipeWireAORTC.ParameterSource.read_declarations(config, Base.Event())
+        )
+        @test (declaration.node_name, declaration.graph, declaration.inlet) ==
+            ("parameter-reference", "controller", "reference")
+        @test declaration.shape == [2, 3]
+        @test declaration.schema == "pipewireao/reference/1"
+        @test declaration.stride == 2 * sizeof(Float32)
+        @test declaration.initial
+        @test reinterpret(Float32, declaration.bytes) == values
+
+        fragment = installed.service["fragment"]
+        @test installed.service["sha256"] == Common.sha256_file(fragment)
+        @test installed.unit == replace(basename(fragment), "@." => "@%i.")
+        unit = split(read(fragment, String), '\n')
+        @test "PartOf=pipewireao-session@%i.service" in unit
+        @test "StopWhenUnneeded=yes" in unit
+        @test "Requisite=$(external.core)" in unit
+        @test installed.service["environment"]["PIPEWIRE_REMOTE"] == external.socket
+        @test isempty(spec["placement"]["session"]["threads"])
+        @test only(installed.placement["threads"])["name"] == "rtc-bootstrap"
+
+        argv = installed.service["argv"]
+        arguments = argv[(findfirst(==("--"), argv)+1):end]
+        function bind(invocation)
+            args = copy(arguments)
+            withenv("INVOCATION_ID" => invocation) do
+                Launch.bind_parameter_service!(args)
+            end
+            @test args[1:length(arguments)] == arguments
+            return Dict(args[index] => args[index+1] for index in 1:2:length(args))
+        end
+        first = bind("1"^32)
+        second = bind("2"^32)
+        @test first["--config"] == config
+        @test first["--remote"] == external.socket
+        @test first["--bootstrap-instance"] != first["--control-instance"]
+        @test second["--bootstrap-instance"] != first["--bootstrap-instance"]
+        @test second["--control-instance"] != first["--control-instance"]
+
+        links = Launch.D.session_links(session)
+        bindings = Dict("PACKAGE" => package, "REMOTE" => "core.sock")
+        runtime = mkdir(joinpath(package, "managed"))
+        request = Launch.Request(package, prefix, "fixture.service", julia, runtime)
+        managed = Launch.parameter_owner!(
+            request, spec, session, links, bindings, runtime; project = package
+        )
+        @test managed["control-node"] == installed.owner["control-node"]
+        @test managed["control-instance"] == bindings["PARAMETER_OWNER_INSTANCE"]
+        @test joinpath(runtime, "core.sock") in managed["argv"]
+        managed_config = joinpath(runtime, "parameters", "sources.json")
+        @test Common.read_json(managed_config) == Common.read_json(config)
+
+        input["layout"] = "ROW_MAJOR"
+        rejected = mkdir(joinpath(package, "rejected"))
+        @test_throws "parameter layouts differ" Launch.parameter_owner!(
+            request, spec, session, links, bindings, rejected; project = package
+        )
+        @test !isfile(joinpath(rejected, "parameters", "sources.json"))
+    end
+end
+
 @testset "Graph attachment executable pins calibration to its invocation" begin
     mktempdir() do directory
         calibration = joinpath(directory, "reconstructor.fits")
