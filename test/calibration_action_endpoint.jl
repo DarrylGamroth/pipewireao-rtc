@@ -1,4 +1,5 @@
 using Test, PipeWireAO, PipeWireAORTC
+import Sockets
 import Clocks
 
 include("control_private_core.jl")
@@ -123,4 +124,37 @@ end
 
 @testset "accepted calibration action retirement preserves run identity" begin
     with_control_private_core(action_retirement_proof)
+end
+
+@testset "Failed calibration publication releases its owned resources before retry" begin
+    with_control_private_core() do socket, directory, _
+        chmod(dirname(socket), 0o700)
+        # Preserve the socket inode after its listener closes, as after a daemon crash.
+        stale = joinpath(dirname(socket), "stale.sock")
+        listener = Sockets.listen(joinpath(directory, "listener"))
+        try
+            hardlink(joinpath(directory, "listener"), stale)
+        finally
+            close(listener)
+        end
+        @test issocket(stale)
+        name = "test.calibration.retry"
+        wakeup = Base.AsyncCondition()
+        effects = IOBuffer()
+        api = PipeWireAORTC.CalibrationEndpoint
+        @test_throws PipeWireAO.PipeWireError api.Endpoint(stale, name, Int64(23), effects; wakeup)
+        @test !isopen(wakeup)
+        @test !isopen(effects)
+
+        effects = IOBuffer()
+        endpoint = api.Endpoint(socket, name, Int64(24), effects)
+        try
+            @test endpoint.phase === :Prepared
+            @test_throws Client.UnknownOutcome api.check_current!(endpoint)
+        finally
+            close(endpoint)
+        end
+        @test !isopen(effects) && !isopen(endpoint.wakeup)
+        @test close(endpoint) === nothing
+    end
 end
