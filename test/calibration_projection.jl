@@ -5,36 +5,13 @@ using AdaptiveOpticsCalibration, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 const Calibration = PipeWireAORTC.InstrumentCalibration
 const Control = PipeWireAORTC.ControlClient
 
+include("helpers/calibration_application.jl")
+
 @testset "Calibration projections retain the controller's FITS authority" begin
     mktempdir() do application
-        rtc = mkpath(joinpath(application, "rtc"))
-        write(joinpath(application, "deployment.conf"), "{}\n")
-        write(joinpath(application, "instrument.json"), "{}\n")
-        graph = joinpath(rtc, "graph.conf")
-        write(
-            graph,
-            """
-            filter.graph = {
-                nodes = [
-                    { name = pixels type = ndarray label = pixel-calibration-u16-f32
-                      config = { image_size = [ 4 6 ] initial_flat = null initial_background = null } }
-                    { name = conditioner type = ndarray label = pdm-command-f32
-                      config = { actuator_count = 2 command_limits = [ -1 1 ] slew_limit = null
-                                 initial_current = null quantization_origin = null
-                                 quantization_step = null dither_seed = null } }
-                ]
-                links = []
-                inputs = [ "pixels:raw" "pixels:background" "conditioner:requested" ]
-                outputs = [ "pixels:calibrated" "conditioner:demanded" "conditioner:constraint-feedback" ]
-            }
-            """,
-        )
-        write(
-            joinpath(rtc, "parameters.conf"),
-            "parameters = [{ port = background path = background.fits hdu = 1 axes = [2 1] }]\n",
-        )
         background = reshape(Float32.(1:24), 4, 6)
-        Calibration.write_fits(joinpath(rtc, "background.fits"), background)
+        graph = write_calibration_controller(application, background)
+        rtc = dirname(graph)
         replacement = joinpath(rtc, "captured-background.fits")
         Calibration.write_fits(replacement, 2 .* background)
         source = PipeWireAORTC.Artifacts.FITSArtifact(replacement; axes = (2, 1))

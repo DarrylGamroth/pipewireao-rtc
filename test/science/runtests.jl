@@ -34,6 +34,7 @@ const PRIVATE_CORE = (
     "calibration_worker",
     "calibration_named_transport",
     "calibration_readiness",
+    "calibration_no_response_private_core",
 )
 
 const SELECTIONS = (
