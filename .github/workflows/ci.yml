@@ -44,6 +44,8 @@ jobs:
             Pkg.instantiate(; workspace=true)'
       - name: Test the RTC and run Aqua
         run: julia --startup-file=no --code-coverage=@ --project=test test/runtests.jl
+      - name: Verify the RTC package precompilation workloads offline
+        run: julia --startup-file=no --compiled-modules=no --threads=1,0 --code-coverage=@ --project=. test/precompile_workloads.jl
       - name: Test native RTC controls on disposable PipeWire cores
         run: |
           for selector in control_endpoint control_endpoint_faults media_session_private_core \
