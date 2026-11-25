@@ -38,6 +38,14 @@ julia --startup-file=no --project=test/science --threads=3,0 test/science/runtes
 julia --startup-file=no --project=test/science --threads=4,0 test/science/runtests.jl physical_offsets
 ```
 
+To check installed retained graph services, run the following on a disposable
+Linux host with a systemd user manager, `waitpid`, and permission for the
+declared service limits (RT priority 95 and 4 GiB locked memory).
+
+```sh
+julia --startup-file=no --project=test/science --threads=3,0 test/integration/retained_graph_service.jl
+```
+
 For RTC coverage, add
 `--code-coverage=@ --code-coverage=/absolute/path/to/selection-%p.info`
 before the script in each command. Use a separate trace name per selection.
