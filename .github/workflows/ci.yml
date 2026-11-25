@@ -178,8 +178,15 @@ jobs:
         with:
           pattern: '*-coverage'
           path: reports
+      - name: Identify executable Julia lines from the untested checkout
+        uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: src,ext
       - name: Merge reports and require project coverage above 90%
-        run: julia --startup-file=no .github/check_coverage.jl combined.info reports/core-coverage/*.info reports/science-coverage/lcov.info
+        run: |
+          julia --startup-file=no .github/check_coverage.jl combined.info lcov.info \
+            reports/core-coverage/lcov.info reports/core-coverage/management.info \
+            reports/core-coverage/runtime-install.info reports/science-coverage/lcov.info
       - name: Upload combined line coverage using GitHub OIDC
         if: "!cancelled() && hashFiles('combined.info') != ''"
         uses: codecov/codecov-action@v7

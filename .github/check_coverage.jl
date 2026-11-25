@@ -1,5 +1,5 @@
 # Union executable lines by repository path across separate test processes and jobs.
-function merge_reports(reports)
+function read_reports(reports)
     files = Dict{String,Dict{Int,Int}}()
     for report in reports
         lines = nothing
@@ -18,11 +18,24 @@ function merge_reports(reports)
             end
         end
     end
+    return files
+end
+
+function merge_reports(reports, baseline)
+    files = read_reports(reports)
     expected = Set(relpath(joinpath(root, name)) for dir in ("src", "ext")
                    for (root, _, names) in walkdir(dir) for name in names if endswith(name, ".jl"))
     push!(expected, "runtime/management.c")
     reported = Set(keys(files))
     expected == reported || error("LCOV source mismatch: missing $(setdiff(expected, reported)), unexpected $(setdiff(reported, expected))")
+    julia_sources = read_reports((baseline,))
+    Set(keys(julia_sources)) == setdiff(expected, ["runtime/management.c"]) ||
+        error("baseline must cover exactly the package Julia sources")
+    isempty(files["runtime/management.c"]) && error("empty coverage for runtime/management.c")
+    for (path, executable) in julia_sources
+        counts = files[path]
+        !isempty(executable) && isempty(counts) && error("empty coverage for executable source $path")
+    end
     return files
 end
 
@@ -55,5 +68,5 @@ function write_report(output, files)
     end
 end
 
-length(ARGS) >= 2 || error("usage: julia check_coverage.jl OUTPUT.info INPUT.info ...")
-write_report(first(ARGS), merge_reports(ARGS[2:end]))
+length(ARGS) >= 3 || error("usage: julia check_coverage.jl OUTPUT.info JULIA_BASELINE.info INPUT.info ...")
+write_report(first(ARGS), merge_reports(ARGS[3:end], ARGS[2]))
