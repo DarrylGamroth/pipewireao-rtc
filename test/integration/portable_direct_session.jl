@@ -83,7 +83,9 @@ function exported_port(objects, node, direction)
     return only(ports)["info"]["props"]["port.name"]
 end
 
-function export_detector(directory, seed, prefix, cpu, output, input, environment)
+function export_detector(
+    directory, seed, prefix, cpu, output, input, environment; detector_threads = []
+)
     authored = mkpath(joinpath(directory, "detector"))
     mkpath(joinpath(authored, "rtc"))
     for name in ("Project.toml", "Manifest.toml")
@@ -134,6 +136,7 @@ function export_detector(directory, seed, prefix, cpu, output, input, environmen
     RTC.ScienceExport.write_spa_config(joinpath(authored, "rtc/core.conf"), Dict("context.modules" => []))
     processes = Dict(role => Dict{String,Any}("cpus" => [cpu], "leader-cpu" => cpu) for role in
         ("core", "rtc", "session", "detector"))
+    processes["detector"]["threads"] = detector_threads
     processes["core"]["data-loops"] = Dict("rtc-data-loop" => [cpu], "telemetry-loop" => [cpu])
     processes["rtc"]["data-loops"] = Dict("rtc-data-loop" => [cpu])
     profile = Dict("scheduling" => Dict("processes" => processes))
@@ -157,7 +160,7 @@ function operator_cli(args...)
     end
 end
 
-function check_attachment(seed, root)
+function check_attachment(seed, root; reject_placement = false)
     prefix = get(ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
     paths = D.installed_paths(prefix)
     cpu = maximum(RTC.Placement.inherited_cpus())
@@ -196,12 +199,48 @@ function check_attachment(seed, root)
         end
         core = Systemd.properties(core_unit)
         provider_identity = Systemd.properties(provider_unit)
-        application = export_detector(root, seed, prefix, cpu, ports[]..., environment)
+        required_thread = Dict(
+            "name" => "required-probe", "cpus" => [cpu],
+            "policy" => "other", "priority" => 0, "count" => 1,
+        )
+        application = export_detector(
+            root, seed, prefix, cpu, ports[]..., environment;
+            detector_threads = reject_placement ? [required_thread] : [],
+        )
         withenv("JULIA_NUM_THREADS" => "1,0", "JULIA_LOAD_PATH" => environment["JULIA_LOAD_PATH"],
             "PIPEWIREAORTC_CORE_UNIT" => core_unit, "PIPEWIREAORTC_CORE_SOCKET" => socket,
             "PIPEWIREAORTC_SOURCE_UNIT" => provider_unit) do
+            if reject_placement
+                unexpected = nothing
+                try
+                    @test_throws "systemd session operation failed" unexpected =
+                        Runtime.start!(application, stage; prefix, deadline = deadline(300))
+                finally
+                    unexpected === nothing || Runtime.stop!(unexpected; deadline = deadline(60))
+                end
+                failure = RTC.Common.read_json(joinpath(stage, "start-failure.json"))
+                @test failure["cleanup_confirmed"] === true
+                @test !isfile(joinpath(stage, "session.json"))
+                registry = Discovery.existing_registry_directory()
+                @test registry === nothing || !any(Discovery.list_sessions(registry)) do entry
+                    entry.record !== nothing && entry.record.remote == socket
+                end
+                rejected_unit = failure["unit"]
+                journal = read(`journalctl --user --unit=$rejected_unit --no-pager -o cat`, String)
+                @test occursin("requires 1 thread(s) matching", journal) &&
+                    occursin(required_thread["name"], journal) && occursin("observed 0", journal)
+                @test Systemd.quiescent_unit(rejected_unit)
+                run(pipeline(ignorestatus(systemctl("reset-failed", rejected_unit)); stderr = devnull))
+                @test Systemd.properties(provider_unit)["InvocationID"] ==
+                    provider_identity["InvocationID"]
+                bus = native_registry(socket, prefix, environment)
+                @test !any(item -> item["type"] == "PipeWire:Interface:Link", bus)
+                @test exported_port(bus, SOURCE, "out") == ports[][1]
+                return nothing
+            end
             handle = Runtime.start!(application, stage; prefix, deadline = deadline(300))
         end
+        reject_placement && return nothing
         attached = Runtime.attach(stage; deadline = deadline(20))
         @test attached.invocation == handle.invocation
         @test Runtime.attach(handle.unit; deadline = deadline(20)).main_pid == attached.main_pid
@@ -211,6 +250,27 @@ function check_attachment(seed, root)
         @test ready["observation_remote"] == socket
         @test ready["processes"]["core"]["pid"] == parse(Int, core["MainPID"])
         @test ready["processes"]["detector"]["pid"] == parse(Int, provider_identity["MainPID"])
+        @testset "Ready retains observed owner placement" begin
+            record = RTC.Common.read_json(joinpath(attached.runtime_root, "launch.json"))
+            placement = record["placement_snapshot"]
+            @test Set(keys(placement)) == Set(("core", "detector", "session"))
+            for (role, pid) in (
+                ("core", parse(Int, core["MainPID"])),
+                ("detector", parse(Int, provider_identity["MainPID"])),
+                ("session", attached.main_pid),
+            )
+                observed = placement[role]
+                @test observed["pid"] == pid
+                leader = only(filter(thread -> thread["tid"] == pid, observed["threads"]))
+                @test (leader["cpus"], leader["policy"], leader["priority"]) == ([cpu], 0, 0)
+                @test all(thread -> thread["cpus"] == [cpu], observed["threads"])
+                contract = role == "session" ? record["admission"]["placement"] :
+                    record["owners"][role]["placement"]
+                live = RTC.Placement.snapshot(pid, contract)
+                @test leader == only(filter(thread -> thread["tid"] == pid, live["threads"]))
+                @test observed["locked_bytes"] >= contract["locked-bytes"]
+            end
+        end
         registry = native_registry(socket, prefix, environment)
         link = only(filter(item -> item["type"] == "PipeWire:Interface:Link", registry))
         @test startswith(link["info"]["props"]["object.path"], "pipewireao/session/")
@@ -327,8 +387,14 @@ end
 
 length(ARGS) == 1 || error("usage: portable_direct_session.jl REGISTERED_SEED_DIRECTORY")
 @testset "Installed RTC direct attachment and native Quit" begin
+    seed = realpath(only(ARGS))
     mktempdir("/var/tmp"; prefix = "rtc-direct-") do directory
-        check_attachment(realpath(only(ARGS)), directory)
+        check_attachment(seed, directory)
+    end
+    @testset "Installed admission rejects a missing provider thread" begin
+        mktempdir("/var/tmp"; prefix = "rtc-direct-") do directory
+            check_attachment(seed, directory; reject_placement = true)
+        end
     end
 end
 
