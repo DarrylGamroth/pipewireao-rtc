@@ -383,9 +383,10 @@ with each instrument; callbacks stage only bounded scalar requests.
 Pushes to `main` and pull requests run the Julia package tests, Aqua, native
 management tests, and RTC control tests on private PipeWire cores. On `main`,
 a separate CPU job runs the [science extension tests](test/science/README.md)
-with read-only access to their dependencies. CI merges line counts for `src/`,
-`ext/`, and `runtime/management.c`, uploads the result to Codecov using GitHub
-OIDC, and requires more than 90% of executable lines to be covered.
+with read-only access to their dependencies. CI combines Julia's execution
+counts from all jobs before CoverageTools accounts for untested functions in
+`src/` and `ext/`. It adds native coverage for `runtime/management.c`, uploads
+the report to Codecov using GitHub OIDC, and requires more than 90% line coverage.
 
 ## Fault qualification tests
 

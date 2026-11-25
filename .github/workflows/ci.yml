@@ -99,6 +99,8 @@ jobs:
           grep -Fx 'SF:runtime/management.c' management.info
       - name: Process Julia line coverage
         uses: julia-actions/julia-processcoverage@v1
+        env:
+          DISABLE_AMEND_COVERAGE_FROM_SRC: 'yes'
         with:
           directories: src,ext
       - uses: actions/upload-artifact@v4
@@ -156,6 +158,8 @@ jobs:
       - name: Test physical offset observations
         run: timeout --signal=INT --kill-after=10s 3m julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl physical_offsets
       - uses: julia-actions/julia-processcoverage@v1
+        env:
+          DISABLE_AMEND_COVERAGE_FROM_SRC: 'yes'
         with:
           directories: src,ext
       - uses: actions/upload-artifact@v4
@@ -183,13 +187,13 @@ jobs:
         with:
           pattern: '*-coverage'
           path: reports
-      - name: Identify executable Julia lines from the untested checkout
-        uses: julia-actions/julia-processcoverage@v1
-        with:
-          directories: src,ext
+      - name: Install the Julia coverage reader
+        run: julia --startup-file=no --project=.github -e 'using Pkg; Pkg.instantiate()'
+      - name: Check coverage aggregation against a single Julia run
+        run: julia --startup-file=no --project=.github .github/test_coverage.jl
       - name: Merge reports and require project coverage above 90%
         run: |
-          julia --startup-file=no .github/check_coverage.jl combined.info lcov.info \
+          julia --startup-file=no --project=.github .github/check_coverage.jl combined.info \
             reports/core-coverage/lcov.info reports/core-coverage/management.info \
             reports/core-coverage/runtime-install.info reports/science-coverage/lcov.info
       - name: Upload combined line coverage using GitHub OIDC

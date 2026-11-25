@@ -1,8 +1,11 @@
 # Union executable lines by repository path across separate test processes and jobs.
+using CoverageTools: amend_coverage_from_src!
+
 function read_reports(reports)
     files = Dict{String,Dict{Int,Int}}()
     for report in reports
         lines = nothing
+        has_counts = false
         for record in eachline(report)
             if startswith(record, "SF:")
                 file = relpath(normpath(record[4:end]))
@@ -13,28 +16,34 @@ function read_reports(reports)
                 line, hits = parse(Int, fields[1]), parse(Int, fields[2])
                 line > 0 && hits >= 0 || error("invalid coverage in $report: $record")
                 lines[line] = get(lines, line, 0) + hits
+                has_counts = true
             elseif record == "end_of_record"
                 lines = nothing
             end
         end
+        has_counts || error("empty coverage report: $report")
     end
     return files
 end
 
-function merge_reports(reports, baseline)
+function merge_reports(reports)
     files = read_reports(reports)
     expected = Set(relpath(joinpath(root, name)) for dir in ("src", "ext")
                    for (root, _, names) in walkdir(dir) for name in names if endswith(name, ".jl"))
     push!(expected, "runtime/management.c")
     reported = Set(keys(files))
     expected == reported || error("LCOV source mismatch: missing $(setdiff(expected, reported)), unexpected $(setdiff(reported, expected))")
-    julia_sources = read_reports((baseline,))
-    Set(keys(julia_sources)) == setdiff(expected, ["runtime/management.c"]) ||
-        error("baseline must cover exactly the package Julia sources")
     isempty(files["runtime/management.c"]) && error("empty coverage for runtime/management.c")
-    for (path, executable) in julia_sources
-        counts = files[path]
-        !isempty(executable) && isempty(counts) && error("empty coverage for executable source $path")
+    for path in expected
+        endswith(path, ".jl") || continue
+        # Match a single Julia coverage run. The source fallback marks functions
+        # which are unobserved across *all* jobs, including unloaded extensions.
+        raw = files[path]
+        nlines = countlines(path)
+        all(line -> line <= nlines, keys(raw)) || error("coverage outside source: $path")
+        counts = Union{Nothing,Int}[get(raw, line, nothing) for line in 1:nlines]
+        amend_coverage_from_src!(counts, path)
+        files[path] = Dict(i => hits for (i, hits) in pairs(counts) if !isnothing(hits))
     end
     return files
 end
@@ -68,5 +77,7 @@ function write_report(output, files)
     end
 end
 
-length(ARGS) >= 3 || error("usage: julia check_coverage.jl OUTPUT.info JULIA_BASELINE.info INPUT.info ...")
-write_report(first(ARGS), merge_reports(ARGS[3:end], ARGS[2]))
+if abspath(PROGRAM_FILE) == @__FILE__
+    length(ARGS) >= 2 || error("usage: julia check_coverage.jl OUTPUT.info INPUT.info ...")
+    write_report(first(ARGS), merge_reports(ARGS[2:end]))
+end
