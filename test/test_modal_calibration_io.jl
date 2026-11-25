@@ -139,3 +139,61 @@ end
     @test parameters[Symbol("shape-active-to-full")] == completion
     @test all(iszero, parameters[Symbol("shape-offset")])
 end
+
+@testset "Archived sparse command completion preserves physical and controlled coordinates" begin
+    mktempdir() do directory
+        path = joinpath(directory, "completion.csv")
+        # Physical rows 0 and 3 directly control columns 0 and 2. Row 2 interpolates.
+        header = "-32 2 4 3\n"
+        rows = "0,0,1\n2,0,0.25\n2,2,0.75\n3,2,1\n"
+        write(path, header * rows)
+        digest = K.digest(path)
+        result = K.heart_completion(path; expected_sha256 = digest, shape = (4, 3))
+        @test result.controlled == [1, 3]
+        @test result.completion == Float32[1 0; 0 0; 0.25 0.75; 0 1]
+        @test result.feedback == Float32[1 0 0 0; 0 0 0 1]
+        @test K.controlled_rows(result.completion) == [1, 4]
+        for (line, message) in (("0,0,1", "duplicate"), ("4,1,1", "outside"),
+                ("1,1,NaN", "nonfinite"), ("1,2", "invalid sparse record"))
+            write(path, header * rows * line * "\n")
+            @test_throws "differs from the reviewed input" K.heart_completion(path;
+                expected_sha256 = digest, shape = (4, 3))
+            @test_throws message K.heart_completion(path; expected_sha256 = K.digest(path), shape = (4, 3))
+        end
+    end
+end
+
+@testset "Scalar and per-actuator command limits survive conversion to graph precision" begin
+    limits = K.checked_command_limits(Float32, -1, [0.5, 2], 2)
+    @test limits.lower === -1.0f0
+    @test limits.upper == Float32[0.5, 2]
+    @test_throws DimensionMismatch K.checked_command_limits(Float32, [-1], [1, 2], 2)
+    @test_throws ArgumentError K.checked_command_limits(Float32, [0, 3], 2, 2)
+    @test_throws ArgumentError K.checked_command_limits(Float32, 1.0, nextfloat(1.0), 2)
+    @test_throws ArgumentError K.checked_command_limits(Float32, -1, [1, Inf], 2)
+    @test_throws ArgumentError K.checked_command_limits(Float32, -1, floatmax(Float64), 2)
+end
+
+@testset "Calibration updates only the ports bound to a changed graph parameter" begin
+    port(name, shape) = Dict{String,Any}("name" => name, "shape" => shape, "element-type" => "F32_LE")
+    bias = merge(port("bias", [2]), Dict("parameter" => true))
+    slopes = port("slopes", [2])
+    source = port("output", [2])
+    other = port("bias", [2])
+    session = Dict(
+        "graphs" => [Dict("node.name" => "dm", "ports" => [bias, slopes])],
+        "sources" => [Dict("node.name" => "offset", "ports" => [source, other])],
+        "links" => [Dict("input" => "dm:bias", "output" => "offset:output")],
+    )
+    contract = Dict("element-type" => "F32_LE", "shape" => [4, 3])
+    contracts = Dict("dm" => Dict("parameters" => Dict("bias" => contract)))
+    gui = Dict{String,Any}("panel" => [Dict("graph" => "dm", "parameter" => "bias", "shape" => [2])])
+    K.refresh_session_parameters!(session, contracts)
+    K.refresh_parameter_metadata!(gui, contracts)
+    @test bias["shape"] == source["shape"] == only(gui["panel"])["shape"] == [4, 3]
+    @test slopes["shape"] == other["shape"] == [2]
+    source["shape"][1] = 1
+    @test bias["shape"] == contract["shape"] == [4, 3]
+    contract["element-type"] = "U16_LE"
+    @test_throws "GUI parameter bindings require F32_LE" K.refresh_parameter_metadata!(gui, contracts)
+end
