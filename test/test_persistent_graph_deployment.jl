@@ -153,7 +153,8 @@ end
         activation = (; julia, project = package, digest = "a"^64)
         unit = Install.installed_unit(template, spec; launcher = "/launcher", package, prefix,
             executable = "/rtc", activation, external, direct)
-        @test occursin("ExecStart=\"/rtc\" -c \"$(direct.config)\"", unit)
+        @test occursin("\"--compiled-modules=strict\"", unit)
+        @test occursin("\"--\" -c \"$(direct.config)\"", unit)
         @test occursin("--runtime-root %t/pipewireao-session-%i --direct", unit)
         @test occursin("After=core.service site-controller.service source.service", unit)
         @test occursin("Requisite=core.service site-controller.service source.service", unit)

@@ -273,6 +273,15 @@ end
     activation = Dict("julia" => julia, "project" => project, "julia-sysimage" => image,
                       "files" => Dict(image => id))
     with_image = D.session_process_binding(activation, binding["config"])
+    cached = D.session_process_binding(merge(activation, Dict("installed-cache" => true)), binding["config"])
+    @test cached["installed-cache"] === true
+    @test "--compiled-modules=strict" in cached["argv"]
+    @test_throws r"invalid headless RTC process arguments" D.verify_session_process(
+        getpid(), merge(cached, Dict("argv" => with_image["argv"]))
+    )
+    @test_throws r"invalid installed RTC cache selection" D.verify_session_process(
+        getpid(), merge(cached, Dict("installed-cache" => false))
+    )
     selected = realpath(unsafe_string(Base.JLOptions().image_file))
     file = stat(selected)
     current = Dict("sysimage" => selected, "device" => file.device, "inode" => file.inode)
@@ -298,7 +307,7 @@ end
     template = read(
         joinpath(PipeWireAORTC.resource_root(), "pipewireao-session@.service.in"), String
     )
-    @test occursin("ExecStart=@RTC_COMMAND@ -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", template)
+    @test occursin("ExecStart=@RTC_INSTALLED_COMMAND@ -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", template)
     @test !occursin("-p ao-rtc", template)
 end
 

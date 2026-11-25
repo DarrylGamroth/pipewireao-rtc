@@ -137,7 +137,9 @@ end
         ["CPUAffinity=3"]
     @test spec == original
     @test "TimeoutStartSec=120.0" in split(unit, '\n')
-    @test occursin("ExecStart=\"/sdk/bin/rtc\" -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", unit)
+    @test occursin("ExecStart=\"/bin/julia\" ", unit)
+    @test occursin("\"--compiled-modules=strict\"", unit)
+    @test occursin("\"--\" -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", unit)
     @test !occursin("ExecStartPre=", unit)
     @test !occursin("EnvironmentFile=", unit)
     @test !occursin("/session-only", unit)
@@ -156,10 +158,11 @@ end
     @test occursin("\"--threads=1,0\"", with_image)
     @test occursin("\"--\" -c %t/pipewireao-session-%i/\${INVOCATION_ID}/rtc/rtc.conf", with_image)
     @test occursin("ExecStop=\"/launcher\" stop --unit", with_image)
-    legacy_template = replace(template, "@RTC_COMMAND@" => "@RTC_EXECUTABLE@")
+    older_template = replace(template, I.INSTALLED_COMMAND => "@RTC_COMMAND@")
+    legacy_template = replace(older_template, "@RTC_COMMAND@" => "@RTC_EXECUTABLE@")
     @test I.installed_unit(legacy_template, spec; launcher = "/launcher", package = "/app",
         prefix = "/sdk", executable = "/sdk/bin/rtc", activation) ==
-        I.installed_unit(template, spec; launcher = "/launcher", package = "/app",
+        I.installed_unit(older_template, spec; launcher = "/launcher", package = "/app",
             prefix = "/sdk", executable = "/sdk/bin/rtc", activation)
     @test_throws ArgumentError I.installed_unit(legacy_template, spec; launcher = "/launcher",
         package = "/app", prefix = "/sdk", executable = "/sdk/bin/rtc", activation = image)
@@ -360,4 +363,77 @@ end
     @test PipeWireAORTC.SessionRuntime._source_endpoint(
         Dict("external" => true, "control-protocol" => "external-stream")
     ) == Dict("profile" => "external-stream")
+end
+
+@testset "Installed Julia services can restart after shared RTC cache replacement" begin
+    science = PipeWireAORTC.ScienceExport
+    julia = Base.julia_cmd().exec[1]
+    mktempdir() do directory
+        shared = mkdir(joinpath(directory, "depot"))
+        project = mkdir(joinpath(directory, "app with space"))
+        package = mkdir(joinpath(directory, "rtc"))
+        uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+        write(joinpath(project, "Project.toml"), "[deps]\nPipeWireAORTC = \"$uuid\"\n")
+        helper = mkdir(joinpath(directory, "helper"))
+        helper_uuid = "c130b872-fe56-40d8-962e-2d12398be2d8"
+        write(joinpath(helper, "Project.toml"), "name = \"CacheHelper\"\nuuid = \"$helper_uuid\"\n")
+        write(joinpath(mkdir(joinpath(helper, "src")), "CacheHelper.jl"),
+            "module CacheHelper\nvalue(args) = last(args)\nend\n")
+        write(joinpath(project, "Manifest.toml"), """
+            manifest_format = "2.0"
+            [[deps.CacheHelper]]
+            path = "../helper"
+            uuid = "$helper_uuid"
+            [[deps.PipeWireAORTC]]
+            deps = ["CacheHelper"]
+            path = "../rtc"
+            uuid = "$uuid"
+            version = "0.1.0"
+            """)
+        write(joinpath(package, "Project.toml"), """
+            name = "PipeWireAORTC"
+            uuid = "$uuid"
+            [deps]
+            CacheHelper = "$helper_uuid"
+            """)
+        source = joinpath(mkdir(joinpath(package, "src")), "PipeWireAORTC.jl")
+        write(source, """
+            module PipeWireAORTC
+            module MediaSession
+            using CacheHelper
+            main(args) = (print(CacheHelper.value(args)); 0)
+            end
+            const SessionCLI = MediaSession
+            end
+            """)
+        config = "/rtc/file with space"
+        service = Cmd(science.rtc_arguments(julia, project, config; installed_cache = true))
+        client = joinpath(directory, "client")
+        write(client, I.installed_launcher(julia; environment = project, installed_cache = true))
+        chmod(client, 0o700)
+        withenv("JULIA_DEPOT_PATH" => shared * ":", "JULIA_LOAD_PATH" => "@:@stdlib") do
+            @test !success(pipeline(service; stdout = devnull, stderr = devnull))
+            @test !isdir(joinpath(shared, "compiled"))
+            # The foreground command can build the missing image. Installation
+            # must also keep a usable private copy when this shared image exists.
+            @test read(Cmd(science.rtc_arguments(julia, project, config)), String) == config
+            I.prepare_package_cache(julia, project)
+            rm(joinpath(shared, "compiled"); recursive = true)
+            @test read(service, String) == config
+            @test read(`$client stop $config`, String) == config
+            cache = joinpath(project, science.RTC_CACHE_DIRECTORY)
+            rm(cache; recursive = true)
+            @test !success(pipeline(service; stdout = devnull, stderr = devnull))
+            @test !isdir(cache)
+            @test !isdir(joinpath(shared, "compiled"))
+            # The managed entry and its re-exec can use different depot settings.
+            alternate = mkdir(joinpath(directory, "alternate"))
+            settings = I.cache_environment(Dict("JULIA_DEPOT_PATH" => "@PACKAGE@/alternate:",
+                "JULIA_LOAD_PATH" => "@:@stdlib", "RTC_LOG" => "@RUNTIME@/log"), directory, "", nothing)
+            @test settings == Dict("JULIA_DEPOT_PATH" => alternate * ":")
+            I.prepare_package_cache(julia, project; settings)
+            @test read(addenv(service, settings...), String) == config
+            @test read(service, String) == config
+        end
+    end
 end
