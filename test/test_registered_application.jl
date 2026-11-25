@@ -196,9 +196,9 @@ end
                 launch.ADMISSION_UNIT_ENV => "pipewireao-session@test.service",
                 "INVOCATION_ID" => "a"^32, "XDG_RUNTIME_DIR" => package) do
             root = joinpath(package, "pipewireao-session-test", "a"^32)
-            @test_throws ArgumentError PipeWireAORTC.SessionCLI.activate_installed!("/other.conf")
-            @test_throws D.DeploymentError PipeWireAORTC.SessionCLI.activate_installed!(
-                joinpath(root, "rtc", "rtc.conf")
+            @test_throws ArgumentError PipeWireAORTC.SessionCLI.with_installed_attachment(identity, "/other.conf")
+            @test_throws D.DeploymentError PipeWireAORTC.SessionCLI.with_installed_attachment(
+                identity, joinpath(root, "rtc", "rtc.conf")
             )
             @test !ispath(root)
         end

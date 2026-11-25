@@ -127,6 +127,14 @@ end
     @test SessionLaunch.stop_hook_valid(hook, request)
     direct_hook = replace(hook, "session-test ;" => "session-test --direct ;")
     @test SessionLaunch.stop_hook_valid(direct_hook, request; direct = true)
+    exec = PipeWireAORTC.SystemdOwners.ExecCommand
+    argv = [request.launcher, "stop", "--unit", request.unit, "--runtime-root", request.runtime_root, "--direct"]
+    command = exec(request.launcher, argv, false)
+    @test SessionLaunch.stop_hook_valid([command], request; direct = true)
+    for commands in (typeof(command)[], [command, command], [exec("/other", argv, false)],
+        [exec(request.launcher, argv[1:end-1], false)], [exec(request.launcher, argv, true)])
+        @test !SessionLaunch.stop_hook_valid(commands, request; direct = true)
+    end
     @test !SessionLaunch.stop_hook_valid(direct_hook, request)
     @test !SessionLaunch.stop_hook_valid(hook, request; direct = true)
     for changed in (
@@ -179,7 +187,7 @@ end
     )
     context = CLI.InstalledAdmission(
         request, "a"^32, "/runtime/rtc/rtc.conf", record, (pid, UInt64(1), "/cgroup"),
-        (endpoint.global_id, endpoint.serial), nothing,
+        (endpoint.global_id, endpoint.serial), nothing, nothing,
     )
     @test CLI._endpoint_identity(context, endpoint) == context.endpoint
     for changed in (

@@ -141,6 +141,7 @@ end
         @test direct.services == merge(owners, Dict("core" => external.core, "detector" => external.source))
         @test direct.config == joinpath(systemd, "rtc.conf")
         fixed = Launch.D.decode(direct.config, prefix)
+        @test direct.configuration == fixed
         @test fixed["context.properties"]["remote.name"] == external.socket
         @test fixed["pipewireao.session"] == Dict("session" => session)
         @test all(isfile, direct.files)
