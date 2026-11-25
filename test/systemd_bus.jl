@@ -238,3 +238,49 @@ end
         @test_throws S.OwnerError S.unit_properties(manager, unit; clock)
     end
 end
+
+@testset "Invocation cleanup with a $ledger launch ledger" for ledger in (:readable, :missing)
+    mktempdir() do root
+        invocation = replace(string(uuid4()), "-" => "")
+        runtime = mkdir(joinpath(root, invocation))
+        coordinator = S.Coordinator("rtc-test@$invocation.service", invocation, "")
+        record = Dict{String,Any}(
+            "version" => L.LEDGER_VERSION, "unit" => coordinator.unit,
+            "invocation" => invocation, "source_role" => "detector", "runtime" => runtime,
+            "phase" => "prepared", "error" => nothing, "owners" => Dict{String,Any}(),
+        )
+        services = S.Service[]
+        try
+            for role in ("core", "detector", "graph")
+                service = L.reserve_owner!(coordinator, role, Dict(), record)
+                push!(services, service)
+                start_fixture(service.unit, "/usr/bin/true")
+                S.launching!(service)
+                S.retain!(service, S.properties(service.unit))
+                S.verify!(service)
+                merge!(record["owners"][role], S.record(service))
+            end
+            path = joinpath(runtime, "launch.json")
+            ledger === :readable && L.launch_record!(runtime, record)
+            args = ["cleanup", "--invocation", invocation, "--runtime-root", root, "--source-role", "detector"]
+            withenv("INVOCATION_ID" => invocation, "SERVICE_RESULT" => "success") do
+                if ledger === :readable
+                    L.main(args)
+                    saved = PipeWireAORTC.Common.read_json(path)
+                    @test saved["phase"] == "stopped"
+                    @test saved["cleanup_complete"] && isnothing(saved["error"])
+                    @test all(service -> S.quiescent_unit(service.unit), services)
+                else
+                    @test_throws "owner ledger unavailable after core/source revocation" L.main(args)
+                    @test all(service -> S.quiescent_unit(service.unit), services[1:2])
+                    @test S.alive(services[3])
+                    @test !isfile(path)
+                end
+            end
+        finally
+            for service in services
+                success(pipeline(systemctl("stop", service.unit); stderr = devnull))
+            end
+        end
+    end
+end

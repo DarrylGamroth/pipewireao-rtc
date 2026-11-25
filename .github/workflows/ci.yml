@@ -50,6 +50,11 @@ jobs:
               calibration_action_endpoint test_calibration_capture_private_core media_session_process; do
             julia --startup-file=no --code-coverage=@ --project=. "test/$selector.jl"
           done
+      - name: Test owner bootstrap and acquisition lifecycle
+        run: |
+          for selector in owner_bootstrap acquisition_lifecycle_client test_owner_entrypoints; do
+            julia --startup-file=no --code-coverage=@ --threads=2,0 --project=. "test/$selector.jl"
+          done
       - name: Test calibration responses and native session disconnect
         run: |
           julia --startup-file=no --code-coverage=@ --project=test test/test_simulation_responses.jl
