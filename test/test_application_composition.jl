@@ -198,7 +198,7 @@ end
                     Dict("node.name" => playback, "node.loop.name" => "telemetry-loop"),
             ),
         )
-        core = Dict(
+        core = Dict{String,Any}(
             "context.modules" => [queue],
             "context.objects" => [
                 Dict(
@@ -211,6 +211,14 @@ end
                 ),
             ],
         )
+        control_loop = Dict("loop.name" => "rtc-data-loop", "loop.class" => "data.rt")
+        telemetry_loop = Dict("loop.name" => "telemetry-loop", "loop.rt-prio" => 0)
+        properties = Dict("context.data-loops" => [control_loop], "support.dbus" => false)
+        base_core = Dict("context.properties" => properties)
+        C.write_json(joinpath(base, "core.conf"), base_core)
+        E.seal!(base)
+        core["context.properties"] = merge(properties,
+            Dict("context.data-loops" => [control_loop, telemetry_loop]))
         E.telemetry_queues!(core)
         @test E.validate_telemetry_groups(core) === nothing
         C.write_json(joinpath(component, "core.conf"), core)
@@ -265,7 +273,24 @@ end
         @test merged["node-owners"]["sensor"] == "cal2-optics"
         @test length(merged["owners"]) == 2 &&
             merged["auxiliary-source-owners"] == ["cal2-optics"]
-        @test D.decode(joinpath(output, "core.conf"), PREFIX)["context.modules"] == [queue]
+        merged_core = D.decode(joinpath(output, "core.conf"), PREFIX)
+        @test merged_core["context.modules"] == [queue]
+        @test merged_core["context.properties"] == core["context.properties"]
+        @test C.read_json(joinpath(base, "core.conf")) == base_core
+        for (key, conflict) in (
+            ("context.data-loops", [merge(control_loop, Dict("loop.class" => "telemetry"))]),
+            ("support.dbus", true),
+        )
+            incompatible = deepcopy(core)
+            incompatible["context.properties"][key] = conflict
+            C.write_json(joinpath(component, "core.conf"), incompatible)
+            E.seal!(component)
+            rejected = joinpath(directory, "conflicting-" * key)
+            @test_throws "conflicting" E.compose(base, component, rejected; options...)
+            @test !ispath(rejected)
+        end
+        C.write_json(joinpath(component, "core.conf"), core)
+        E.seal!(component)
         @test D.decode(joinpath(output, "session.conf"), PREFIX)["links"] ==
             session["links"]
         @test read(joinpath(component, "deployment.conf")) == before
