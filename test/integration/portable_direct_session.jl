@@ -10,6 +10,7 @@ const RTC = PipeWireAORTC
 const Runtime = RTC.SessionRuntime
 const Systemd = RTC.SystemdOwners
 const D = RTC.DeploymentConfiguration
+const Discovery = RTC.SessionDiscovery
 const SOURCE = "portable.detector"
 const SINK = "portable.sink"
 const SCHEMA = "test/portable-detector-f32/1"
@@ -141,6 +142,12 @@ end
 
 deadline(seconds) = RTC.ControlClient.monotonic() + seconds
 
+function published_session(directory, id)
+    return filter(Discovery.list_sessions(directory)) do entry
+        entry.record !== nothing && entry.record.session_id == id
+    end
+end
+
 function check_attachment(seed, root)
     prefix = get(ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
     paths = D.installed_paths(prefix)
@@ -198,11 +205,46 @@ function check_attachment(seed, root)
         registry = native_registry(socket, prefix, environment)
         link = only(filter(item -> item["type"] == "PipeWire:Interface:Link", registry))
         @test startswith(link["info"]["props"]["object.path"], "pipewireao/session/")
+        id = ready["ready"]["session_id"]
+        directory = Discovery.existing_registry_directory()
+        locator = joinpath(directory, "session-$id.pod")
+        @testset "Installed process binding rejects extra Julia arguments" begin
+            launch = RTC.Common.read_json(joinpath(attached.runtime_root, "launch.json"))
+            binding = launch["session_process"]
+            argv = insert!(copy(binding["argv"]), 2, "--code-coverage=user")
+            @test_throws r"invalid headless RTC process arguments" D.verify_session_process(
+                attached.main_pid, merge(binding, Dict("argv" => argv)),
+            )
+        end
+        @testset "Installed MediaSession publishes a live Ready locator" begin
+            @test isfile(locator)
+            entry = only(published_session(directory, id))
+            @test entry.record.owner_pid == attached.main_pid
+            @test entry.record.remote == socket
+            @test entry.record.node_name == "pipewireao.rtc.session.portable-detector"
+            client = RTC.SessionClient.select_direct_session(entry; deadline = deadline(20))
+            @test client isa RTC.SessionClient.Connection
+            if client isa RTC.SessionClient.Connection
+                try
+                    status = client.selected.status
+                    @test status.session_id == id && status.lifecycle === :ready
+                    @test status.owner_pid == attached.main_pid
+                    @test status.incarnation == entry.record.incarnation
+                finally
+                    close(client)
+                end
+            end
+        end
         stopped = Runtime.stop!(attached; deadline = deadline(60))
         @test stopped["direct_attach"] && stopped["phase"] == "stopped"
         @test stopped["cleanup_complete"] && stopped["service_result"] == "success"
         @test Runtime.final_record(stage)["invocation"] == handle.invocation
         @test Systemd.quiescent_unit(handle.unit)
+        @testset "Native Quit withdraws installed discovery" begin
+            @test stopped["discovery_locator"] == locator
+            @test !ispath(locator)
+            @test isempty(published_session(directory, id))
+        end
         for (unit, before) in ((core_unit, core), (provider_unit, provider_identity))
             after = Systemd.properties(unit)
             @test after["ActiveState"] == "active"
