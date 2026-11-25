@@ -12,13 +12,22 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
-### Installed session maintenance review — 2026-11-25
+### Install the RTC from instrument definitions — 2026-11-25
 
-The [maintenance review](reviews/20261125-installed-session/REVIEW.md) identifies
-a missed direct-stop deadline during bus authentication, a cache-policy mismatch
-for preserved shutdown launchers and ignored identity arguments in staged final
-reports. Their fixes and the proposed separation of installed admission from
-the operator CLI are pending.
+The Julia operator app exports a scientist's instrument directory in the site's
+registered environment and installs the resulting service. Deployment keeps
+calibration, package pins and host placement together. An instrument can omit
+its Project.toml when the site provides one. Restart uses the installed inputs.
+[Deployment commands](../README.md#deploy-an-instrument-from-its-definitions)
+
+MediaSession uses an internal module for installed identity, placement and
+discovery. Direct stop bounds bus authentication and keeps the unit reference
+through exit reconciliation. Strict units bind verified shutdown hooks, and
+staged reports honor the requested unit and invocation. Both installed Classic
+CPU paths passed open-loop admission and native Quit. Stopping the retained
+graph itself after direct RTC shutdown exposed a separate native cleanup
+failure that remains open.
+[Maintenance fixes and verification](reviews/20261125-installed-session/REVIEW.md#implementation-and-verification)
 
 ### Qualify the installed RTC package cache — 2026-11-24
 

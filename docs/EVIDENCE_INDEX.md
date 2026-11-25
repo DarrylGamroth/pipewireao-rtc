@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Installed admission, shutdown and Julia app deployment — 2026-11-25
+
+The [maintenance verification](reviews/20261125-installed-session/REVIEW.md#implementation-and-verification)
+covers stop deadlines, retained exit identity, historical launcher compatibility,
+the installed admission module and installation from instrument definitions.
+
 ## Installed RTC package cache — 2026-11-24
 
 A fresh CAL2 installation reached held Ready in 5.933 s using the ordinary
