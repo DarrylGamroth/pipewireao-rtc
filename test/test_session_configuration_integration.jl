@@ -391,3 +391,52 @@ end
     @test Observation.imaging_source(periodic, (; source = signed)) === periodic
     @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end
+
+@testset "Latest scalar publication follows the installed display view" begin
+    mktempdir() do directory
+        write(joinpath(directory, "graph.conf"), """
+            node.name = correction
+            filter.graph = {
+                nodes = [ { type = ndarray name = dm label = pdm-command-f32
+                    config = { actuator_count = 1 command_limits = [-1 1] slew_limit = null
+                               initial_current = null quantization_origin = null
+                               quantization_step = null dither_seed = null } } ]
+                links = [] inputs = ["dm:requested"] outputs = ["dm:demanded"]
+            }
+            """)
+        schema = E.graph_port_contracts(joinpath(directory, "graph.conf"))["outputs"]["demanded"]["schema"]
+        initial = ["julia", "-e", PipeWireAORTC.GraphStartup.ENTRY, "--", "--graph", "@PACKAGE@/graph.conf"]
+        C.write_json(joinpath(directory, "instrument.json"),
+            Dict("deformable_mirrors" => Dict(), "wavefront_sensors" => Dict()))
+        function prepare(; display=true, expected=schema)
+            owner = Dict("role" => "controller", "argv" => copy(initial))
+            spec = Dict("name" => "software-dm", "session" => "session.conf",
+                "core" => "core.conf", "owners" => [owner], "node-owners" => Dict("correction" => "controller"))
+            view = Dict("id" => "demand", "expected_schema" => expected,
+                "source" => Dict("node_name" => "dm-display", "media_name" => "DM demand"))
+            C.write_yaml(joinpath(directory, "display.yaml"),
+                Dict("schema_version" => 11, "view" => display ? [view] : []))
+            C.write_json(joinpath(directory, "session.conf"),
+                Dict("graphs" => [Dict("node.name" => "correction", "ports" => [])], "links" => []))
+            C.write_json(joinpath(directory, "core.conf"), Dict("context.modules" => [],
+                "context.objects" => [Dict("factory" => "spa-node-factory", "args" => Dict(
+                    "factory.name" => "support.node.driver", "node.group" => "pipewireao-telemetry"))]))
+            E.prepare_session_configuration!(directory, spec, [Dict("path" => "graph.conf")],
+                "instrument.json", PREFIX; configurations=[Dict("format" => "yaml", "path" => "display.yaml")],
+                latest_outputs=Dict("controller" => Dict("output" => "demanded", "view" => "demand",
+                    "publisher" => "dm-publisher", "queue" => "dm-queue")))
+            return owner["argv"][length(initial)+1:end], D.decode(joinpath(directory, "core.conf"), PREFIX)["context.modules"]
+        end
+        flags, modules = prepare()
+        @test flags == ["--latest-output", "demanded", "dm-publisher", "DM demand",
+                        "--latest-output-sink", "dm-queue-input", "playback_1"]
+        queue = only(modules)
+        @test queue["name"] == "libpipewire-module-queue" && queue["flags"] == ["nofail"]
+        @test queue["args"]["playback.props"]["node.name"] == "dm-display"
+        @test queue["args"]["queue.max-buffers"] == 1
+        @test queue["args"]["queue.overflow"] == "drop-oldest"
+        @test isempty(D.decode(joinpath(directory, "session.conf"), PREFIX)["links"])
+        @test prepare(; display=false) == (["--unpublished-output", "demanded"], [])
+        @test_throws "matching source view" prepare(; expected="different/1")
+    end
+end
