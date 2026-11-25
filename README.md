@@ -378,6 +378,15 @@ Instrument owners apply accepted requests between completed exchanges and
 publish under their source loop lock. Scientific stepping and reporting remain
 with each instrument; callbacks stage only bounded scalar requests.
 
+## Continuous integration
+
+Pushes to `main` and pull requests run the Julia package tests, Aqua, native
+management tests, and RTC control tests on private PipeWire cores. On `main`,
+a separate CPU job runs the [science extension tests](test/science/README.md)
+with read-only access to their dependencies. CI merges line counts for `src/`,
+`ext/`, and `runtime/management.c`, uploads the result to Codecov using GitHub
+OIDC, and requires more than 90% of executable lines to be covered.
+
 ## Fault qualification tests
 
 [RTC fault tests](test/integration/README.md) cover session lifecycle fault paths

@@ -45,7 +45,9 @@ jobs:
         run: julia --startup-file=no --code-coverage=@ --project=test test/runtests.jl
       - name: Test native RTC controls on disposable PipeWire cores
         run: |
-          for selector in control_endpoint control_endpoint_faults media_session_private_core parameter_ndarray_private_core owner_bootstrap_sealed owner_terminal; do
+          for selector in control_endpoint control_endpoint_faults media_session_private_core \
+              parameter_ndarray_private_core owner_bootstrap_sealed owner_terminal \
+              calibration_action_endpoint test_calibration_capture_private_core media_session_process; do
             julia --startup-file=no --code-coverage=@ --project=. "test/$selector.jl"
           done
       - name: Exercise cold application export
