@@ -9,7 +9,7 @@ struct PublicationFailed <: AbstractEvent
 end
 
 mutable struct Admission
-    deployment::SessionCLI.InstalledAdmission
+    deployment::SessionAdmission.InstalledAdmission
     remote::String
     client::Union{Nothing,ControlClient.Client}
     confirmation::Union{Nothing,Task}
@@ -861,7 +861,7 @@ function Session(
         throw(ArgumentError("session configuration has unsupported context modules"))
     isdefined(PipeWireAO, :iterate!) ||
         throw(ArgumentError("MediaSession requires PipeWireAO's owner-thread iterate! API"))
-    deployment = attachment === nothing ? SessionCLI.installed_admission(file; clock) : attachment.deployment
+    deployment = attachment === nothing ? SessionAdmission.installed_admission(file; clock) : attachment.deployment
     admission = deployment === nothing ? nothing :
         Admission(deployment, config["context.properties"]["remote.name"], nothing, nothing, nothing, false)
     queue = EventQueue()
@@ -1071,7 +1071,7 @@ function Base.close(session::Session)
         end
         _close_resource!(failures, admission.client)
         try
-            SessionCLI.retire_admission!(admission.deployment)
+            SessionAdmission.retire_admission!(admission.deployment)
         catch error
             push!(failures, error)
         end
@@ -1089,7 +1089,7 @@ function main(arguments = ARGS)
     length(arguments) == 2 && first(arguments) == "-c" ||
         throw(ArgumentError("usage: pipewireao-rtc -c CONFIG"))
     config = last(arguments)
-    return SessionCLI.with_installed_attachment(config) do attachment
+    return SessionAdmission.with_installed_attachment(config) do attachment
         run_session(config, attachment)
     end
 end
@@ -1108,7 +1108,7 @@ function run_session(config, attachment)
     end
     close(session)
     if result == 0 && session.admission !== nothing && session.admission.notified
-        SessionCLI.finish_direct_quit!(session.admission.deployment)
+        SessionAdmission.finish_direct_quit!(session.admission.deployment)
     end
     return result
 end

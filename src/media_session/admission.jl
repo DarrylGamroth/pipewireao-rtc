@@ -1,3 +1,14 @@
+function confirm_ready(reply::SessionCodec.Completion)
+    reply.header.operation == UInt32(3) &&
+    reply.header.result == 0 &&
+    reply.result !== nothing &&
+    reply.error === nothing &&
+    reply.lifecycle == RunnerCodec.Ready ||
+        throw(ArgumentError("fresh direct Status did not confirm Ready"))
+    return nothing
+end
+confirm_ready(reply) = throw(ArgumentError("fresh direct Status did not confirm Ready"))
+
 # Managed activation verifies the public native endpoint from a separate PipeWire
 # connection in the RTC process. Only the session owner advances the machine.
 function admission_endpoint(session)
@@ -29,7 +40,7 @@ function perform!(session::Session, job, ::VerifyAdmission)
     )
     admission.client = client
     endpoint = admission_endpoint(session)
-    SessionCLI.verify_admission!(admission.deployment, endpoint; deadline, clock)
+    SessionAdmission.verify_admission!(admission.deployment, endpoint; deadline, clock)
     check_job(session, job)
     admission_endpoint(session) == endpoint ||
         throw(ArgumentError("RTC endpoint changed during placement verification"))
@@ -63,12 +74,12 @@ function confirm_installed_ready!(session, admission, deadline)
             deadline = min(deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000))),
             check,
         )
-        SessionCLI.confirm_ready(completion)
+        confirm_ready(completion)
         details = completion.result.details
         !details.running && details.owned_links == length(session.declared_links) ||
             throw(ArgumentError("RTC Status did not confirm held execution and declared Links"))
         endpoint = admission_endpoint(session)
-        SessionCLI.publish_ready!(admission.deployment, endpoint; deadline, clock) do
+        SessionAdmission.publish_ready!(admission.deployment, endpoint; deadline, clock) do
             check()
             admission_endpoint(session) == endpoint ||
                 throw(ArgumentError("RTC endpoint changed before Ready publication"))
@@ -133,24 +144,24 @@ function perform!(session::Session, job, ::ConfirmReady)
     clock = session.source_clock
     deadline = job.ticket.deadline
     while true
-        SessionCLI.check_ready_units!(admission.deployment; deadline, clock)
+        SessionAdmission.check_ready_units!(admission.deployment; deadline, clock)
         synchronize!(session, job)
         registry_serial(session, node_id(session.endpoint)) == endpoint.serial ||
             throw(ArgumentError("RTC endpoint changed before Ready notification"))
         verify_held_links!(session)
-        SessionCLI.units_changed(admission.deployment; deadline, clock) || return nothing
+        SessionAdmission.units_changed(admission.deployment; deadline, clock) || return nothing
     end
 end
 
 function after_completion!(session::Session, ::ConfirmReady)
     Hsm.current(session.machine) === :Ready || return nothing
     try
-        SessionCLI.units_changed(session.admission.deployment;
+        SessionAdmission.units_changed(session.admission.deployment;
             deadline = session.machine.deadline, clock = session.source_clock) &&
             throw(ArgumentError("systemd service changed after the final held Link check"))
         drain!(session)
         Hsm.current(session.machine) === :Ready || return nothing
-        SessionCLI.notify_ready!()
+        SessionAdmission.notify_ready!()
         session.admission.notified = true
         manager = session.admission.deployment.manager
         manager === nothing || close(manager)

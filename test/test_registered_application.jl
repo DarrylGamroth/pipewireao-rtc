@@ -192,15 +192,15 @@ end
         activation = I.install_activation!(
             package, prefix, realpath(Base.julia_cmd().exec[1]), package, launcher, spec, nothing
         )
-        read_activation(digest) = PipeWireAORTC.SessionCLI.activation_document(package, digest)
+        read_activation(digest) = PipeWireAORTC.SessionAdmission.activation_document(package, digest)
         @test read_activation(activation.digest)["profile"] == spec
         launch = PipeWireAORTC.SessionLaunch
         withenv(launch.ACTIVATION_ENV => activation.digest, launch.INSTALLATION_ENV => package,
                 launch.ADMISSION_UNIT_ENV => "pipewireao-session@test.service",
                 "INVOCATION_ID" => "a"^32, "XDG_RUNTIME_DIR" => package) do
             root = joinpath(package, "pipewireao-session-test", "a"^32)
-            @test_throws ArgumentError PipeWireAORTC.SessionCLI.with_installed_attachment(identity, "/other.conf")
-            @test_throws D.DeploymentError PipeWireAORTC.SessionCLI.with_installed_attachment(
+            @test_throws ArgumentError PipeWireAORTC.SessionAdmission.with_installed_attachment(identity, "/other.conf")
+            @test_throws D.DeploymentError PipeWireAORTC.SessionAdmission.with_installed_attachment(
                 identity, joinpath(root, "rtc", "rtc.conf")
             )
             @test !ispath(root)

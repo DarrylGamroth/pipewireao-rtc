@@ -14,7 +14,7 @@ end
 
 const RTC = PipeWireAORTC.MediaSession
 const Launch = PipeWireAORTC.SessionLaunch
-const CLI = PipeWireAORTC.SessionCLI
+const Admission = PipeWireAORTC.SessionAdmission
 const ENDPOINT_NAMES = Set(("pipewireao.rtc.session.identity-test", "pipewireao.rtc.controller.identity-test"))
 
 function attachment_fixture(socket, directory, pid, prefix)
@@ -51,7 +51,7 @@ function attachment_fixture(socket, directory, pid, prefix)
     invocation = repeat("1", 32)
     record = Dict{String,Any}("version" => Launch.LEDGER_VERSION, "direct_attach" => true,
         "owners" => Dict("core" => Dict("pid" => pid)))
-    deployment = CLI.InstalledAdmission(request, invocation, path, record,
+    deployment = Admission.InstalledAdmission(request, invocation, path, record,
         (Int(getpid()), UInt64(1), "/fixture"), nothing, nothing, nothing)
     return path, (; config = configuration, deployment)
 end

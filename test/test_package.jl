@@ -32,7 +32,9 @@ end
         ],
     )
     @test only(self)["name"] == "PipeWireAORTC"
-    @test P.SessionCLI.SessionConfiguration === P.SessionConfiguration
+    @test P.MediaSession.SessionAdmission === P.SessionAdmission
+    @test !isdefined(P.MediaSession, :SessionCLI)
+    @test P.SessionAdmission.SessionConfiguration === P.SessionConfiguration
     @test P.SessionCLI.SessionLaunch === P.SessionLaunch
     @test P.SessionCLI.SessionInstall === P.SessionInstall
     for name in (

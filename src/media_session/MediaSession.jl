@@ -16,7 +16,7 @@ using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import ..PipeWireAORTC
 import ..Common
 import ..RunnerCodec
-import ..SessionCLI
+import ..SessionAdmission
 import ..SessionProfile
 import ..SessionCodec
 import ..ControlCodec

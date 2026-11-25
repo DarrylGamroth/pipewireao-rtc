@@ -165,7 +165,7 @@ end
 end
 
 @testset "installed admission binds native identity to the prepared invocation" begin
-    CLI = PipeWireAORTC.SessionCLI
+    Admission = PipeWireAORTC.SessionAdmission
     pid = Int(getpid())
     endpoint = (
         session_id = "a5555555-5555-4555-8555-555555555555",
@@ -185,11 +185,11 @@ end
         "session_uuid" => endpoint.session_id, "session_control_instance" => endpoint.instance,
         "session_pid" => pid, "remote" => endpoint.remote,
     )
-    context = CLI.InstalledAdmission(
+    context = Admission.InstalledAdmission(
         request, "a"^32, "/runtime/rtc/rtc.conf", record, (pid, UInt64(1), "/cgroup"),
         (endpoint.global_id, endpoint.serial), nothing, nothing,
     )
-    @test CLI._endpoint_identity(context, endpoint) == context.endpoint
+    @test Admission._endpoint_identity(context, endpoint) == context.endpoint
     for changed in (
         (; endpoint..., session_id = "b5555555-5555-4555-8555-555555555555"),
         (; endpoint..., instance = Int64(30)),
@@ -200,23 +200,23 @@ end
         (; endpoint..., global_id = typemax(UInt32)),
         (; endpoint..., serial = UInt64(0)),
     )
-        @test_throws ArgumentError CLI._endpoint_identity(context, changed)
+        @test_throws ArgumentError Admission._endpoint_identity(context, changed)
     end
-    @test_throws "native endpoint changed after installed admission" CLI.publish_ready!(
+    @test_throws "native endpoint changed after installed admission" Admission.publish_ready!(
         () -> error("must not reach publication"),
         context, (; endpoint..., serial = UInt64(82)); deadline = nothing, clock = nothing,
     )
     withenv(SessionLaunch.ADMISSION_UNIT_ENV => nothing, "INVOCATION_ID" => "a"^32) do
-        @test CLI.installed_admission("/arbitrary/direct.conf") === nothing
+        @test Admission.installed_admission("/arbitrary/direct.conf") === nothing
     end
     withenv(SessionLaunch.ADMISSION_UNIT_ENV => request.unit, "INVOCATION_ID" => "stale") do
-        @test_throws "invalid systemd invocation identity" CLI.installed_admission(context.config)
+        @test_throws "invalid systemd invocation identity" Admission.installed_admission(context.config)
     end
-    @test_throws ArgumentError CLI.main(["publish"])
+    @test_throws ArgumentError PipeWireAORTC.SessionCLI.main(["publish"])
 end
 
 @testset "installed discovery preserves a conflicting incarnation" begin
-    CLI = PipeWireAORTC.SessionCLI
+    Admission = PipeWireAORTC.SessionAdmission
     Discovery = PipeWireAORTC.SessionDiscovery
     name = "fixture"
     id = "a5555555-5555-4555-8555-555555555555"
@@ -231,16 +231,16 @@ end
     )
     mktempdir() do runtime
         withenv("XDG_RUNTIME_DIR" => runtime) do
-            path = CLI._verified_discovery!(record, ready)
-            @test_throws "different session already owns discovery UUID" CLI._verified_discovery!(
+            path = Admission._verified_discovery!(record, ready)
+            @test_throws "different session already owns discovery UUID" Admission._verified_discovery!(
                 record, conflict
             )
             @test Discovery._read_record(path).incarnation == ready.incarnation
-            @test CLI._verified_discovery!(record, ready) == path
-            CLI.retire_record!(record, path)
+            @test Admission._verified_discovery!(record, ready) == path
+            Admission.retire_record!(record, path)
             @test isfile(path)
             record["session_control_instance"] = ready.incarnation
-            CLI.retire_record!(record, path)
+            Admission.retire_record!(record, path)
             @test !ispath(path)
         end
     end
