@@ -149,3 +149,29 @@ end
     end
     @test !isopen(loop)
 end
+
+@testset "Admission checks the live leader, thread count and locked memory" begin
+    cpu = minimum(filter(>=(2), LoopPlacement.inherited_cpus()))
+    required = Dict("cpus" => [cpu], "policy" => "other", "priority" => 0, "count" => 1)
+    contract = Dict("cpus" => [cpu], "leader-cpu" => cpu, "rt-priority" => 0,
+        "locked-bytes" => 0, "threads" => [required])
+    # The shell publishes readiness after taskset has bound its single thread.
+    open(`taskset --cpu-list $cpu sh -c 'echo ready; read release'`, "r+") do child
+        try
+            @test readline(child) == "ready"
+            pid = getpid(child)
+            snapshot = LoopPlacement.snapshot(pid, contract)
+            @test snapshot["pid"] == pid
+            thread = only(snapshot["threads"])
+            @test (thread["tid"], thread["cpus"], thread["policy"], thread["priority"]) ==
+                (pid, [cpu], 0, 0)
+            @test_throws "observed 1" LoopPlacement.snapshot(pid,
+                merge(contract, Dict("threads" => [merge(required, Dict("count" => 2))])))
+            @test_throws "below requested" LoopPlacement.snapshot(pid,
+                merge(contract, Dict("locked-bytes" => snapshot["locked_bytes"] + 1)))
+        finally
+            println(child, "release")
+            flush(child)
+        end
+    end
+end
