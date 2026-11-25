@@ -58,6 +58,7 @@ jobs:
       - name: Test calibration responses and native session disconnect
         run: |
           julia --startup-file=no --code-coverage=@ --project=test test/test_simulation_responses.jl
+          julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/parameter_owner_private_core.jl
           julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/media_session_host.jl
           julia --startup-file=no --code-coverage=@ --threads=1,0 --project=test test/integration/independent_core_identity.jl
       - name: Test service admission and native Quit against the user manager
@@ -127,6 +128,7 @@ jobs:
         run: |
           julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl cold
           julia --startup-file=no --code-coverage=@ --threads=4,1 --project=test/science test/science/runtests.jl private_core
+          julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl retained_owner
           julia --startup-file=no --code-coverage=@ --threads=3,0 --project=test/science test/science/runtests.jl physical_offset_inputs
           julia --startup-file=no --code-coverage=@ --threads=4,0 --project=test/science test/science/runtests.jl physical_offsets
       - uses: julia-actions/julia-processcoverage@v1
