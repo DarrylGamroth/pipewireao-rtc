@@ -197,3 +197,29 @@ end
     contract["element-type"] = "U16_LE"
     @test_throws "GUI parameter bindings require F32_LE" K.refresh_parameter_metadata!(gui, contracts)
 end
+
+@testset "Central mirror completion preserves harmonic shapes and outer coupling" begin
+    positions = Tuple(Tuple(index) for index in CartesianIndices((5, 5)))
+    mirror = (; layout=(; grid_shape=(5, 5), command_positions=positions))
+    # The outer corner is already completed from the centre and a sensed actuator.
+    original = Float32[i == j for i in 1:25, j in 2:25]
+    original[1, 12] = 0.75f0
+    original[1, 1] = 0.25f0
+    registration = (; actuator_pitch_pupil_radius=0.25)
+    result = K.central_completion(original, 0.26, mirror; pupil_registration=registration)
+    @test result.obscured == [8, 12, 13, 14, 18]
+    @test result.controlled == setdiff(2:25, result.obscured)
+    @test size(result.completion) == (25, 19)
+
+    # A plane is discrete-harmonic throughout the five connected interior sites.
+    plane = Float32[2x - 3y + 4 for (x, y) in positions]
+    physical = result.completion * plane[result.controlled]
+    @test maximum(abs, physical[2:end] - plane[2:end]) <= 8eps(Float32) * maximum(abs, plane)
+    @test physical[1] ≈ 0.75f0 * plane[13] + 0.25f0 * plane[2]
+    @test_throws "missing lattice neighbour" K.central_completion(
+        Float32[i == j for i in 1:25, j in 1:25], 1.0, mirror; pupil_registration=registration,
+    )
+    @test_throws "boundary is not directly controlled" K.central_completion(
+        original[:, filter(!=(2), axes(original, 2))], 0.26, mirror; pupil_registration=registration,
+    )
+end
