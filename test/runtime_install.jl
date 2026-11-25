@@ -1,7 +1,6 @@
-# Standalone cold selector. Requires the current RTC version and its dependencies
-# in a registry (a temporary local validation registry is sufficient). Uses only
-# temporary applications; never starts a core, owner, or service. Run with Julia
-# >= 1.13: julia --project=. test/runtime_install.jl
+# Standalone cold selector. Run runtime_install_registry.jl to register the
+# checked-out Git tree in a disposable registry. This selector can also use an
+# already registered RTC release. It never starts a core, owner, or service.
 # Add --prepare-only for the offline export regression without registry setup.
 using Test, TOML, PipeWireAORTC
 
@@ -30,6 +29,22 @@ function cold_application(project, code, arguments = String[])
     )
     result.returncode == 0 || error(result.stdout * result.stderr)
     return result
+end
+
+function registered_trees(path)
+    packages = TOML.parsefile(path)["deps"]
+    return Dict(
+        record["uuid"] => (record["version"], record["git-tree-sha1"]) for
+        records in values(packages) for record in records if haskey(record, "git-tree-sha1")
+    )
+end
+
+function app_command(cli, action, arguments)
+    coverage = get(ENV, "PIPEWIREAORTC_INSTALL_COVERAGE", nothing)
+    coverage === nothing && return `$cli $action $arguments`
+    package = ENV["PIPEWIREAORTC_INSTALL_REGISTERED_SOURCE"]
+    report = joinpath(coverage, action * ".info")
+    return `$cli --code-coverage=@$package --code-coverage=$report -- $action $arguments`
 end
 
 @testset "registered application cold install and software relocation" begin
@@ -187,6 +202,11 @@ end
         cp(joinpath(authored, "Project.toml"), joinpath(environment, "Project.toml"))
         cold_application(environment, "using Pkg; Pkg.resolve(); Pkg.instantiate()")
         manifest = TOML.parsefile(joinpath(environment, "Manifest.toml"))
+        reference = get(ENV, "PIPEWIREAORTC_INSTALL_MANIFEST", nothing)
+        if reference !== nothing
+            @test registered_trees(joinpath(environment, "Manifest.toml")) ==
+                registered_trees(reference)
+        end
         @test !haskey(manifest, "workspace")
         @test !haskey(manifest["deps"], "Test")
         for entries in values(manifest["deps"]), entry in entries
@@ -202,6 +222,11 @@ end
         run(addenv(`$(Base.julia_cmd().exec[1]) --startup-file=no -e $add $(string(Base.pkgversion(P)))`,
             "JULIA_DEPOT_PATH" => depots, "JULIA_LOAD_PATH" => "@:@stdlib",
             "JULIA_PKG_PRECOMPILE_AUTO" => "0"))
+        if reference !== nothing
+            app_environment = joinpath(app_depot, "environments", "apps", "PipeWireAORTC")
+            @test registered_trees(joinpath(app_environment, "Manifest.toml")) ==
+                registered_trees(reference)
+        end
         cli = joinpath(app_depot, "bin", "pipewireao-rtc-session")
         instrument_profile = joinpath(directory, "instrument profile.yaml")
         host = joinpath(directory, "site host.yaml")
@@ -209,8 +234,10 @@ end
         P.Common.write_yaml(host, external_profile)
         data_before = file_hashes(definitions)
         prepared = joinpath(directory, "prepared detector")
-        run(`$cli export --instrument $definitions --profile $instrument_profile --host $host
-            --environment $environment --destination $prepared --pipewire-prefix $prefix`)
+        run(app_command(
+            cli, "export", `--instrument $definitions --profile $instrument_profile --host $host
+                --environment $environment --destination $prepared --pipewire-prefix $prefix`
+        ))
         @test file_hashes(definitions) == data_before
         for name in ("Project.toml", "Manifest.toml")
             @test read(joinpath(prepared, name)) == read(joinpath(environment, name))
@@ -218,7 +245,9 @@ end
         @test D.profile(joinpath(prepared, "deployment.conf"), prefix)["owners"] ==
             declaration["owners"]
         installed_detector = joinpath(directory, "installed detector")
-        run(`$cli install --package $prepared --destination $installed_detector --pipewire-prefix $prefix`)
+        run(app_command(
+            cli, "install", `--package $prepared --destination $installed_detector --pipewire-prefix $prefix`
+        ))
         @test isfile(joinpath(installed_detector, "systemd", "pipewireao-session@.service"))
         @test D.application_environment(external_spec, installed_detector) == installed_detector
 
@@ -314,19 +343,23 @@ end
         @assert dependency.is_tracking_registry
         @assert pkgdir(P) == dependency.source
         @assert !startswith(pkgdir(P), ARGS[1] * "/")
+        if length(ARGS) == 4
+            @assert bytes2hex(Pkg.GitTools.tree_hash(pkgdir(P))) == ARGS[4]
+        end
         @assert read(joinpath(pkgdir(P), "src/deployment/session_install.jl"), String) == read(ARGS[3], String)
         @assert P.DeploymentConfiguration.application_environment(
             P.Common.read_json(joinpath(ARGS[1], "deployment.conf")), ARGS[1]) == realpath(ARGS[1])
         """
-        cold_application(
+        arguments = [
             relocated,
-            code,
-            [
-                relocated,
-                string(Base.pkgversion(P)),
-                joinpath(P.package_root(), "src/deployment/session_install.jl"),
-            ],
-        )
+            string(Base.pkgversion(P)),
+            joinpath(P.package_root(), "src/deployment/session_install.jl"),
+        ]
+        if reference !== nothing
+            tree = only(TOML.parsefile(reference)["deps"]["PipeWireAORTC"])["git-tree-sha1"]
+            push!(arguments, tree)
+        end
+        cold_application(relocated, code, arguments)
         @test file_hashes(relocated) == installed
         @test file_hashes(source) == before
         # Sealed launchers must match the pinned installer arguments and one

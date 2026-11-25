@@ -117,11 +117,17 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.test(; allow_reresolve=fa
 - Choose focused checks by behavior. For cold instrument export and profile
   validation, use [test_instrument_export.jl](test/test_instrument_export.jl).
   For export, registered resolution, installation and software relocation,
-  see [runtime_install.jl](test/runtime_install.jl). Set a compatible
-  `PIPEWIREAO_PREFIX`. The `--prepare-only` path runs offline without a registry
-  entry. Reinstall generated units after moving an application with absolute
-  service paths. This selector uses temporary applications without starting
-  services.
+  run `julia --startup-file=no --project=. test/runtime_install_registry.jl`
+  after instantiating the workspace. This selector registers the Git `HEAD`
+  tree in a disposable depot under `/var/tmp` and verifies the installed
+  dependency trees against the workspace lock. It uses the PipeWireAO JLL
+  prefix unless `PIPEWIREAO_PREFIX` selects a compatible SDK. Pass an LCOV
+  output path as the optional argument to record the registered CLI's
+  coverage against the checkout. For offline export without a registry
+  entry, pass `--prepare-only` to
+  [runtime_install.jl](test/runtime_install.jl). The installation selector uses
+  temporary applications without starting services. Reinstall generated units
+  after moving an application with absolute service paths.
 - Use the [HIL configuration guide](docs/HIL_CONFIGURATION.md) for simulation
   export selectors. Use the instrument repository's README for instrument
   build, calibration and private-core commands. For optional science or
