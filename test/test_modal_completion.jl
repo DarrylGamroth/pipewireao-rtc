@@ -113,14 +113,34 @@ end
     expected = Float32.(affine .* (result.roles .!= 0))
     error = result.completion * Float32.(affine[result.controlled, :]) - expected
     @test maximum(abs, error) <= 3e-6
+    # Verify the stored coefficients with a Float64 product so SGEMM rounding
+    # does not dominate the Frobenius residual at this matrix size.
+    feedback64 = Float64.(result.feedback)
+    left_inverse_error = norm(feedback64 * Float64.(result.completion) - I)
+    @test left_inverse_error <= 3e-6
+
+    # Each completion column is the exact response to one unit command.
+    # Exercise the Float32 matrix-vector reverse projection per command.
+    returned_command = zeros(Float32, size(result.feedback, 1))
+    maximum_unit_command_error = 0f0
+    for column in axes(result.completion, 2)
+        mul!(returned_command, result.feedback, view(result.completion, :, column))
+        returned_command[column] -= 1f0
+        maximum_unit_command_error = max(maximum_unit_command_error, norm(returned_command))
+    end
+    @test maximum_unit_command_error <= 3e-6
+
+    # Direct rows are an identity, so σ_min(completion) ≥ 1 and its
+    # pseudoinverse is a contraction. Allow for rounding the saved coefficients.
+    feedback_two_norm = opnorm(feedback64, 2)
+    @test feedback_two_norm <= 1 + eps(Float32) * norm(feedback64)
     @info "Provisional GPI completion diagnostics" maximum_affine_error = maximum(
         abs, error
     ) relative_affine_error = norm(error) / norm(expected) maximum_absolute_weight = maximum(
         abs, result.completion
     ) completion_infinity_norm = opnorm(result.completion, Inf) feedback_infinity_norm = opnorm(
         result.feedback, Inf
-    ) feedback_two_norm = opnorm(result.feedback, 2)
-    @test result.feedback * result.completion ≈ Matrix{Float32}(I, 1412, 1412) atol = 3e-6
+    ) feedback_two_norm left_inverse_error maximum_unit_command_error
     @test all(iszero, result.feedback[:, findall(iszero, result.roles)])
     guard = findfirst(radius -> 1 < radius <= 1 + 4 / 43, radii)
     @test any(!iszero, result.feedback[:, guard])
@@ -185,6 +205,7 @@ end
     @test any(!iszero, active_feedback)
     correction = result.completion * active_feedback
     @test dot(correction, physical_feedback) > 0
+    @test norm(correction) <= norm(physical_feedback)
     @test norm(requested - correction - demanded) < norm(physical_feedback)
     @test all(iszero, result.selector * physical_feedback)
     @test all(iszero, requested[findall(iszero, result.roles)])
