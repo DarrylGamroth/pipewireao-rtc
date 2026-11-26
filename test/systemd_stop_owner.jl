@@ -57,7 +57,7 @@ function main(root, remote, unit, mode)
             );
             atomic = true,
         )
-        haskey(ENV, "NOTIFY_SOCKET") && PipeWireAORTC.SessionAdmission.notify_ready!()
+        haskey(ENV, "NOTIFY_SOCKET") && S.notify_ready!()
         event("ready")
         while true
             mode == "exited" && isfile(joinpath(root, "exit-owner")) && break
