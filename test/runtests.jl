@@ -71,6 +71,7 @@ Base.include(
     Module(:CanonicalMetadataTests), joinpath(@__DIR__, "test_canonical_metadata.jl")
 )
 Base.include(Module(:CAL2CaptureTests), joinpath(@__DIR__, "test_cal2_capture.jl"))
+include("test_quit_queue_counters.jl")
 Base.include(
     Module(:CalibrationMaterializationTests),
     joinpath(@__DIR__, "test_calibration_materialization.jl"),
