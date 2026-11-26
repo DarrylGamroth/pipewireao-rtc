@@ -35,6 +35,16 @@ These observations apply to their respective source revisions and fixtures.
 [Graph shutdown evidence](reviews/20261125-installed-session/REVIEW.md#retained-graph-service-shutdown) ·
 [Service procedure](SYSTEMD_SESSION_STARTUP.md#keep-controller-graph-services-running-across-an-rtc-restart)
 
+On RTC 0.7.33, standalone CAL2 reached held Ready in 8.435 s and
+reattached in 6.931 s with its independent CPU simulator publishing. Both
+integrators primed on live camera data with correction open. RTC-only
+SIGKILL exposed a stale discovery locator. The direct service now retires
+that locator in `ExecStopPost` after an abnormal exit. Installed Classic
+passed CPU observer stall, reconnect, DM edit and calibration checks.
+GPI2 sustained a 1 Hz wall-clock CPU simulation on rtc-devel with its
+2 kHz model configuration. The CPU observations retain their own scopes.
+[CPU qualification and remaining historical cases](validation/cpu-qualification-20261126/README.md)
+
 ### Delivery order
 
 Freeze the exact package and native cohort before extending installed claims.
