@@ -463,7 +463,11 @@ end
             hook, "cleanup", "--invocation", invocation, "--runtime-root", runtime,
             "--source-role", "detector",
         ]
-        @test !occursin("ExecStopPost=", direct_unit)
+        retire = hook_command(direct_unit, "ExecStopPost=")
+        @test retire.exec == [hook, "retire-direct", "--unit", unit, "--runtime-root", runtime]
+        @test launch.direct_retirement_hook_valid(
+            [launch.S.ExecCommand(hook, retire.exec, false)], request,
+        )
         stop_record = launch.S.ExecCommand(hook, direct_stop.exec, false)
         @test launch.stop_hook_valid([stop_record], request; direct = true)
         legacy_request = launch.Request(project, "/sdk", unit, client, runtime)

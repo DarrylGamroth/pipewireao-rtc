@@ -265,7 +265,9 @@ A failed, missing or unknown acknowledgement is not retried.
 For direct attachment, the kernel and PipeWire close the RTC connection on
 process exit. The retained graph owners retire their attachments when the
 native claimant disappears, and systemd retires the RTC's parameter and
-analysis units. A replacement needs fresh admission before it can start.
+analysis units. The installed post-exit hook retires the exact invocation's
+discovery locator after an abnormal exit. A successful normal exit skips the
+Julia cleanup client. A replacement needs fresh admission before it can start.
 
 When the RTC starts a managed owner cohort, systemd runs the installed
 emergency cleanup client after exit.

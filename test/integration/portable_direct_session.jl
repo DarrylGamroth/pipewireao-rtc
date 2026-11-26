@@ -181,7 +181,7 @@ function observed_placement(record, attached)
     end
 end
 
-function check_attachment(seed, root; reject_placement = false)
+function check_attachment(seed, root; reject_placement = false, abrupt_exit = false)
     prefix = get(ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
     paths = D.installed_paths(prefix)
     cpu = maximum(RTC.Placement.inherited_cpus())
@@ -369,6 +369,23 @@ function check_attachment(seed, root; reject_placement = false)
             held = command("session-stop")
             @test held["ok"] && held["state"] == "Ready"
         end
+        if abrupt_exit
+            run(systemctl("kill", "--kill-whom=main", "--signal=SIGKILL", attached.unit))
+            wait_proof(30, "dead RTC and withdrawn discovery locator") do
+                values = Systemd.properties(attached.unit; extra = "Result")
+                values["ActiveState"] == "failed" && values["MainPID"] == "0" &&
+                    values["Result"] == "signal" && !ispath(locator)
+            end
+            @test isempty(published_session(directory, id))
+            for (unit, before) in ((core_unit, core), (provider_unit, provider_identity))
+                after = Systemd.properties(unit)
+                @test after["ActiveState"] == "active" && after["MainPID"] == before["MainPID"]
+                @test after["InvocationID"] == before["InvocationID"]
+            end
+            registry = native_registry(socket, prefix, environment)
+            @test !any(item -> item["type"] == "PipeWire:Interface:Link", registry)
+            return nothing
+        end
         stopped = Runtime.stop!(attached; deadline = deadline(60))
         @test stopped["direct_attach"] && stopped["phase"] == "stopped"
         @test stopped["cleanup_complete"] && stopped["service_result"] == "success"
@@ -441,6 +458,11 @@ length(ARGS) == 1 || error("usage: portable_direct_session.jl REGISTERED_SEED_DI
     seed = realpath(only(ARGS))
     mktempdir("/var/tmp"; prefix = "rtc-direct-") do directory
         check_attachment(seed, directory)
+    end
+    @testset "RTC-only SIGKILL withdraws installed discovery" begin
+        mktempdir("/var/tmp"; prefix = "rtc-direct-kill-") do directory
+            check_attachment(seed, directory; abrupt_exit = true)
+        end
     end
     @testset "Installed admission rejects a missing provider thread" begin
         mktempdir("/var/tmp"; prefix = "rtc-direct-") do directory

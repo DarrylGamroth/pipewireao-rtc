@@ -101,10 +101,14 @@ end
 
         julia_args = ["--startup-file=no", "--project=$environment"]
         entry = "Base.exit_on_sigint(false); using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))"
-        for command in ("prepare", "publish", "stop", "cleanup", "control", "restart", "sessions", "")
+        @test success(addenv(`$launcher retire-direct`, "SERVICE_RESULT" => "success",
+            "EXIT_CODE" => "exited", "EXIT_STATUS" => "0"))
+        for command in ("prepare", "publish", "stop", "cleanup", "retire-direct",
+                        "control", "restart", "sessions", "")
             args = isempty(command) ? String[] : [command, "--runtime-root", "path with spaces", ""]
             optimization = command == "prepare" ? ["-O0", "--compile=min"] : String[]
-            open(`$launcher $args`, "r+") do process
+            open(addenv(`$launcher $args`, "SERVICE_RESULT" => "success",
+                "EXIT_CODE" => "killed", "EXIT_STATUS" => "TERM"), "r+") do process
                 pid = getpid(process)
                 println(process, "ready")
                 flush(process)
@@ -135,6 +139,11 @@ end
         [exec(request.launcher, argv[1:end-1], false)], [exec(request.launcher, argv, true)])
         @test !SessionLaunch.stop_hook_valid(commands, request; direct = true)
     end
+    retire = [request.launcher, "retire-direct", "--unit", request.unit,
+              "--runtime-root", request.runtime_root]
+    @test SessionLaunch.direct_retirement_hook_valid([exec(request.launcher, retire, false)], request)
+    @test !SessionLaunch.direct_retirement_hook_valid([exec(request.launcher, retire, true)], request)
+    @test !SessionLaunch.direct_retirement_hook_valid([command], request)
     @test !SessionLaunch.stop_hook_valid(direct_hook, request)
     @test !SessionLaunch.stop_hook_valid(hook, request; direct = true)
     for changed in (

@@ -108,23 +108,40 @@ function _record_direct_stop!(args, invocation, pid, ticks)
     return nothing
 end
 
-function stop_invocation!(args, invocation, previous, deadline, trace, clock)
-    direct = get(args, :direct, false)
+function shutdown_hook_properties(args, invocation; deadline, clock)
     values = S.properties(
-        args.unit; extra = "ControlPID," * SessionLaunch.LIFETIME_PROPERTIES, deadline, clock
+        args.unit; extra = "ControlPID,SubState," * SessionLaunch.LIFETIME_PROPERTIES, deadline, clock
     )
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "deactivating" &&
     SessionLaunch.session_lifetime_valid(values; allow_exec = true) &&
     S.valid_invocation(values["InvocationID"]) == invocation &&
     tryparse(Int, values["ControlPID"]) == getpid() ||
-        throw(ArgumentError("native stop is not this session's ExecStop"))
+        throw(ArgumentError("native shutdown hook is not this session's control process"))
     group = values["ControlGroup"]
     observed = S.proc_cgroup(getpid())
     startswith(group, "/") &&
     group != "/" &&
     (observed == group || startswith(observed, group * "/")) ||
-        throw(ArgumentError("native stop is outside this session's cgroup"))
+        throw(ArgumentError("native shutdown hook is outside this session's cgroup"))
+    return values
+end
+
+function retire_direct!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
+    invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000))
+    values = shutdown_hook_properties(args, invocation; deadline, clock)
+    values["SubState"] == "stop-post" && values["MainPID"] == "0" ||
+        throw(ArgumentError("direct retirement requires the RTC to have exited"))
+    record = _direct_stop_record(args, invocation; missing_ok = true)
+    record === nothing || retire_record!(record, get(record, "discovery_locator", nothing))
+    return nothing
+end
+
+function stop_invocation!(args, invocation, previous, deadline, trace, clock)
+    direct = get(args, :direct, false)
+    values = shutdown_hook_properties(args, invocation; deadline, clock)
+    group = values["ControlGroup"]
     # After public Quit or an unexpected process exit, retire only this
     # invocation's locator. A failed activation can leave the prior receipt.
     if values["MainPID"] == "0"
@@ -355,7 +372,7 @@ throw; the executable wrapper preserves Julia's error reporting and exit status.
 function main(argv = ARGS)
     isempty(argv) && throw(
         ArgumentError(
-            "expected export, install, prepare, stop, cleanup, sessions, select-session, control or restart",
+            "expected export, install, prepare, stop, retire-direct, cleanup, sessions, select-session, control or restart",
         ),
     )
     command = first(argv)
@@ -380,6 +397,9 @@ function main(argv = ARGS)
     elseif command == "stop"
         args = C.cli_arguments(rest; required = ["unit", "runtime-root"], flags = ["direct"])
         stop!(args)
+    elseif command == "retire-direct"
+        args = C.cli_arguments(rest; required = ["unit", "runtime-root"])
+        retire_direct!(args)
     elseif command == "cleanup"
         runtime_root =
             C.cli_arguments(rest; required = ["invocation", "runtime-root", "source-role"]).runtime_root
