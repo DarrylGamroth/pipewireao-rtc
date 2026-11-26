@@ -401,6 +401,7 @@ end
             retained = Launch.installed_graphs(package, prefix, spec, external)
             item = retained["owners"]["controller"]
             @test item["unit"] == graph_unit
+            @test item["type"] == "notify"
             @test item["placement"] == placement
             arguments = item["argv"]
             @test external.socket in arguments
