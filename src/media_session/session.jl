@@ -27,6 +27,7 @@ mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     configuration::Dict{String,Any}
     admission::Union{Nothing,Admission}
     declared_links::Vector{DeploymentConfiguration.LinkDeclaration}
+    link_plan::Union{Nothing,SessionConfiguration.LinkPlan}
     loop::MainLoop
     context::Context{MainLoop}
     core::C
@@ -69,6 +70,8 @@ mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     done::Bool
     exitcode::Int
 end
+
+link_plan(session::Session) = session.link_plan
 
 include("admission.jl")
 
@@ -851,9 +854,15 @@ function Session(
         )
     end
     spec = configuration["session"]
-    declared_links = DeploymentConfiguration.validate_session_links(spec)
-    isempty(declared_links) && throw(ArgumentError("session requires a declared connection"))
-    DeploymentConfiguration.validate_execution_groups(spec, declared_links)
+    link_plan = attachment isa SessionAdmission.DirectAttachment ? attachment.link_plan : nothing
+    declared_links = if link_plan === nothing
+        links = DeploymentConfiguration.validate_session_links(spec)
+        isempty(links) && throw(ArgumentError("session requires a declared connection"))
+        DeploymentConfiguration.validate_execution_groups(spec, links)
+        links
+    else
+        link_plan.declarations
+    end
     validate_external_stream(configuration, declared_links)
     source_end_supported = !external_stream(configuration)
     modules = [entry["name"] for entry in config["context.modules"]]
@@ -930,6 +939,7 @@ function Session(
             configuration,
             admission,
             declared_links,
+            link_plan,
             loop,
             context,
             core,
@@ -1089,9 +1099,7 @@ function main(arguments = ARGS)
     length(arguments) == 2 && first(arguments) == "-c" ||
         throw(ArgumentError("usage: pipewireao-rtc -c CONFIG"))
     config = last(arguments)
-    return SessionAdmission.with_installed_attachment(config) do attachment
-        run_session(config, attachment)
-    end
+    return SessionAdmission.with_installed_attachment(Base.Fix1(run_session, config), config)
 end
 
 function run_session(config, attachment)
@@ -1173,6 +1181,30 @@ function precompile_registry(::Type{T}) where {T<:Session}
     return nothing
 end
 
+function precompile_installed_session(::Type{T}) where {T<:Session}
+    attachment = SessionAdmission.DirectAttachment
+    callback = typeof(Base.Fix1(run_session, ""))
+    precompile(SessionAdmission.with_installed_attachment, (callback, String))
+    precompile(SessionAdmission.with_direct_attachment,
+        (callback, String, Dict{String,Any}, String, String, String))
+    precompile(run_session, (String, attachment))
+    precompile(Core.kwcall,
+        (NamedTuple{(:attachment,),Tuple{attachment}}, Type{Session}, String))
+    precompile(SessionConfiguration.bind_session_configuration,
+        (Dict{String,Any}, Dict{String,Any}, Dict{String,String}, Dict{String,Any}))
+    precompile(SessionConfiguration.installed_links, (Dict{String,Any}, Dict{String,Any}))
+    precompile(serve!, (T,))
+    precompile(create_links!, (T, Job))
+    precompile(confirm_installed_ready!, (T, Admission, Int64))
+    precompile(_validate_link!, (T, LinkRecord, LinkInfo))
+    precompile(validate_format, (PolicyPod, PortContract))
+    PortContract(Dict{String,Any}(
+        "shape" => Any[8, 8], "element-type" => "Float32", "schema" => "array",
+        "layout" => "row-major", "rate" => "100/1",
+    ))
+    return nothing
+end
+
 # Infer the same concrete wrappers as live construction without opening a core.
 @compile_workload begin
     precompile_ingress()
@@ -1189,6 +1221,7 @@ end
         prepare_dispatch!(session_type)
         precompile_registry(session_type)
         precompile_admission(session_type)
+        precompile_installed_session(session_type)
         for rank in RunnerCodec.PARAMETER_NDARRAY_PRECOMPILE_RANKS
             prepare_parameter_ndarray!(session_type, rank)
         end

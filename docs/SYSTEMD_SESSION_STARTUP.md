@@ -56,8 +56,11 @@ shipped with their pinned RTC.
 A direct attachment uses the fixed `systemd/rtc.conf` in the installed
 application. The installer writes the topology and private core address
 and adds the declared RTC environment to the generated service.
-The installer also records the topology verified by the native SPA parser in
-the activation document. Direct activation requires a reachable user D-Bus
+The installer records the verified topology, node ownership, instrument
+publication properties and Link negotiation order in the activation document.
+MediaSession binds the sealed plan to live PipeWire Nodes and Ports and checks
+their negotiated Formats and identities before admission.
+Direct activation requires a reachable user D-Bus
 broker at the address selected by libsystemd. MediaSession subscribes to the
 user systemd manager before reading the declared services' properties. It
 checks the CoreInfo process ID on the PipeWire connection that will publish
@@ -105,9 +108,18 @@ systemctl --user link "$app"/systemd/pipewireao-graph-*.service
 systemctl --user daemon-reload
 ```
 
-Start the independent core and publishing source. Starting the RTC pulls in any
-stopped graph units. You can also start those units ahead of the RTC to load
-their calibration before the first session. Every RTC activation checks the
+Start the independent core. Start the source and graph units independently
+so the controllers can prepare while the source starts publishing.
+
+```sh
+graph_units=("$app"/systemd/pipewireao-graph-*.service)
+systemctl --user start "${graph_units[@]##*/}"
+```
+
+Start all declared graph units in one request to prepare them in parallel.
+With newly installed graph units, systemd waits until each graph has loaded
+its calibration, built its open workspace and published native Prepared.
+Starting the RTC also pulls in any stopped generated graph units. Every RTC activation checks the
 loaded unit and process identity, installed inputs, actual placement and fresh
 native endpoints. A changed installation requires a matching graph service
 deployment and fresh admission.

@@ -230,7 +230,7 @@ function prepare_fixture(path, unit, root, launcher)
             key in ("RTC_CONFIG", "PIPEWIREAO_REMOTE", "PIPEWIREAORTC_PROJECT")
         ),
     )
-    RTC.SessionAdmission.notify_ready!()
+    S.notify_ready!()
     wait(Base.Event())
 end
 

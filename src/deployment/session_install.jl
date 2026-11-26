@@ -148,7 +148,8 @@ function install_direct!(
         throw(ArgumentError("missing service for a directly attached node"))
     # Native FGN modules still need the invocation-owned host.
     "fgn" in values(spec["node-owners"]) && return nothing
-    launch.external_source!(spec, deepcopy(owners[source_role]))
+    owners[source_role] = deepcopy(owners[source_role])
+    launch.external_source!(spec, owners[source_role])
 
     systemd = joinpath(package, "systemd")
     config = joinpath(systemd, "rtc.conf")
@@ -169,10 +170,9 @@ function install_direct!(
         close(io)
         D.decode(path, prefix)
     end
-    links = D.validate_session_links(session)
-    isempty(links) && throw(ArgumentError("native session requires at least one declared connection"))
-    D.validate_execution_groups(session, links)
-    configuration = PipeWireAORTC.SessionConfiguration.runtime_configuration(
+    configuration_api = PipeWireAORTC.SessionConfiguration
+    links = D.session_links(session)
+    configuration = configuration_api.runtime_configuration(
         remote, Dict("session" => session),
     )
     PipeWireAORTC.ScienceExport.write_spa_config(config, configuration)
@@ -182,8 +182,11 @@ function install_direct!(
     parameters = launch.install_direct_parameters!(package, prefix, project, spec, session, external, julia)
     if parameters !== nothing
         services["parameters"] = parameters.unit
+        owners = configuration_api.owner_declarations([collect(values(owners)); parameters.owner])
         push!(wants, parameters.unit)
     end
+    topology = configuration_api.session_topology(spec, session, bindings, spec["node-owners"], owners; links)
+    link_plan = configuration_api.seal_links(links)
     analysis = install_direct_analysis!(package, prefix, julia, project, spec, external)
     append!(wants, analysis.units)
     files = [config; analysis.files]
@@ -199,7 +202,8 @@ function install_direct!(
             throw(ArgumentError("invalid RTC environment declaration: $key"))
         environment[key] = resolved
     end
-    return (; config, configuration, services, socket = remote, graphs, parameters, wants, requisite, environment, files)
+    return (; config, configuration, topology, link_plan, services, socket = remote,
+        graphs, parameters, wants, requisite, environment, files)
 end
 
 function install_direct_analysis!(package, prefix, julia, project, spec, external)
@@ -280,6 +284,8 @@ function install_activation!(
     if direct !== nothing
         document["config"] = direct.config
         document["direct-configuration"] = direct.configuration
+        document["direct-topology"] = direct.topology
+        document["direct-link-plan"] = direct.link_plan
         for file in direct.files
             document["files"][file] = launch.graph_file_identity(file)
         end
@@ -683,6 +689,7 @@ function finish_install(
     persistent = persistent_graph_owners ? launch.install_persistent_graphs!(
         destination, prefix, installed_spec, external;
         stop_unit = unit_template_path(environment, "persistent-graph-stop.service.in"),
+        ready_unit = unit_template_path(environment, "persistent-graph-ready.service.in"),
     ) : nothing
     graphs = referenced === nothing ? persistent : referenced
     direct = if external !== nothing && isfile(direct_template)

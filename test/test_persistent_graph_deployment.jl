@@ -145,6 +145,12 @@ end
         @test direct.configuration == fixed
         @test fixed["context.properties"]["remote.name"] == external.socket
         @test fixed["pipewireao.session"] == Dict("session" => session)
+        @test direct.topology["node-owners"] == spec["node-owners"]
+        @test direct.topology["owners"]["detector"]["control-protocol"] == Launch.D.EXTERNAL_STREAM
+        @test !haskey(first(spec["owners"]), "control-protocol")
+        plan = Configuration.installed_links(direct.link_plan, session)
+        @test plan.order == [1]
+        @test plan.prerequisites == [Int[]]
         @test all(isfile, direct.files)
         analysis_unit = Launch.support_unit_name("analysis-pupil", spec["name"], package)
         analysis = read(joinpath(systemd, analysis_unit), String)
@@ -334,7 +340,7 @@ end
 
 @testset "Installation generates static graph arguments and a retained unit manifest" begin
     mktempdir() do package
-        prefix = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
+        prefix = realpath(String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
         write(joinpath(package, "Project.toml"), """
         [deps]
         PipeWireAORTC = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
@@ -383,6 +389,7 @@ end
         graph_unit = only(installed.units)
         unit = read(joinpath(package, "systemd", graph_unit), String)
         @test occursin("After=core.service\nRequisite=core.service\n", unit)
+        @test occursin("Type=notify\nNotifyAccess=main\n", unit)
         stop_timeout = only(last(collect(eachmatch(r"(?m)^TimeoutStopSec=(\d+)s?$", unit))).captures)
         @test parse(Int, stop_timeout) > PipeWireAORTC.ControlClient.maximum_budget(PipeWireAORTC.OwnerBootstrapCodec.PROFILE)
         @test occursin("RuntimeDirectory=%N\n", unit)
@@ -394,6 +401,7 @@ end
             retained = Launch.installed_graphs(package, prefix, spec, external)
             item = retained["owners"]["controller"]
             @test item["unit"] == graph_unit
+            @test item["type"] == "notify"
             @test item["placement"] == placement
             arguments = item["argv"]
             @test external.socket in arguments

@@ -847,45 +847,6 @@ function update!(runtime, event::LinkError)
     return nothing
 end
 
-function _link_order(rows)
-    successors = Dict{UInt32,Set{UInt32}}()
-    for (output, input, passive) in rows
-        push!(get!(successors, output.node, Set{UInt32}()), input.node)
-    end
-    depths, visiting = Dict{UInt32,Int}(), Set{UInt32}()
-    function rank(node)
-        haskey(depths, node) && return depths[node]
-        node in visiting && throw(ArgumentError("session links contain a scheduling cycle"))
-        push!(visiting, node)
-        depth = 0
-        for successor in get(successors, node, Set{UInt32}())
-            depth = max(depth, rank(successor) + 1)
-        end
-        delete!(visiting, node)
-        return depths[node] = depth
-    end
-    for (output, input, passive) in rows
-        rank(output.node)
-    end
-    return sortperm(eachindex(rows); by = index -> (rank(rows[index][2].node), index))
-end
-# Each incoming edge waits for the downstream node's outgoing edges. Fan-out
-# on the same port also keeps the original negotiation order and format.
-function link_prerequisites(rows, order)
-    before = [Int[] for _ in rows]
-    for (position, index) in enumerate(order)
-        output, input, _ = rows[index]
-        for previous in @view order[1:(position - 1)]
-            earlier_output, earlier_input, _ = rows[previous]
-            if input.node == earlier_output.node || output.port == earlier_output.port ||
-               input.port == earlier_input.port
-                push!(before[index], previous)
-            end
-        end
-    end
-    return before
-end
-
 function request_link!(runtime, job, prefix, index, row)
     output, input, passive = row
     for endpoint in (output, input),
@@ -960,6 +921,8 @@ function link_negotiated!(runtime, record)
     return record.negotiated && !record.pending
 end
 
+link_plan(runtime) = nothing
+
 function create_links!(runtime, job)
     isempty(runtime.links) && !runtime.withdrawing ||
         throw(ArgumentError("old Link cohort remains"))
@@ -975,8 +938,9 @@ function create_links!(runtime, job)
         push!(rows, (output, input, declaration.passive))
     end
     prefix = "pipewireao/session/$(job.ticket.session)/$(job.ticket.epoch)/"
-    order = _link_order(rows)
-    before = link_prerequisites(rows, order)
+    plan = link_plan(runtime)
+    order = plan === nothing ? _link_order(rows) : plan.order
+    before = plan === nothing ? link_prerequisites(rows, order) : plan.prerequisites
     records = Union{Nothing,LinkRecord}[nothing for _ in rows]
     settled = falses(length(rows))
     await_condition!(runtime, job) do

@@ -28,7 +28,8 @@ using PrecompileTools, TOML, Test
         @test !any(id.name in ("FilterGraphs", "AdaptiveOpticsSimPipeWireHIL", "AMDGPU", "CUDA")
                    for id in keys(Base.loaded_modules))
         required = Set(["ControlClient.bind_owner", "ControlClient.bind_marker",
-            "MediaSession.precompile_admission", "MediaSession.prepare_parameter_ndarray!",
+            "MediaSession.precompile_admission", "MediaSession.precompile_installed_session",
+            "MediaSession.prepare_parameter_ndarray!",
             "ParameterSource.precompile_parameter_codecs!"])
         open(trace) do io
             for line in eachline(io)

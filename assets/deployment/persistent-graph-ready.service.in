@@ -1,0 +1,4 @@
+[Service]
+Type=notify
+NotifyAccess=main
+TimeoutStartSec=@TIMEOUT_START@

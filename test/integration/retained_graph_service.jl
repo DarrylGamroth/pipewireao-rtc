@@ -189,6 +189,7 @@ function verify_retained_service(directory, prefix)
             package, replacement, prefix, replacement_spec, external
         )
         fragment = joinpath(package, "systemd", graph_unit)
+        @test "Type=notify" in readlines(fragment)
         try
             start_provider(external.core, cpu, `$(paths["daemon"]) -c core.conf`, environment)
             wait_proof(() -> ispath(external.socket), 10, "retained private core")

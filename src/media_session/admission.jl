@@ -161,7 +161,7 @@ function after_completion!(session::Session, ::ConfirmReady)
             throw(ArgumentError("systemd service changed after the final held Link check"))
         drain!(session)
         Hsm.current(session.machine) === :Ready || return nothing
-        SessionAdmission.notify_ready!()
+        SystemdOwners.notify_ready!()
         session.admission.notified = true
         manager = session.admission.deployment.manager
         manager === nothing || close(manager)

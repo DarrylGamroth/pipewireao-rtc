@@ -87,10 +87,9 @@ function hosted_graph_names(value::AbstractVector)
     return value
 end
 
-function node_pids(session, records, node_owners)
+function node_ownership(session, node_owners, fgn)
     names, factories = declared_nodes(session)
     mapping = Dict{String,String}(node_owners)
-    fgn = get(records, "fgn", nothing)
     if fgn !== nothing
         graph_nodes = hosted_graph_names(get(fgn, "graph-nodes", nothing))
         for name in graph_nodes
@@ -111,7 +110,7 @@ function node_pids(session, records, node_owners)
     end
     Set(keys(mapping)) == Set(names) ||
         fail("every declared source, graph and sink needs one exact owner mapping")
-    return Dict{String,Int}(name => verified_pid(records, mapping[name]) for name in names)
+    return mapping
 end
 
 function positive_instance(bindings, key)
@@ -212,11 +211,54 @@ function session_configuration(
     spec, session, bindings, records;
     node_owners::Dict{String,String}, links = D.session_links(session)
 )
+    topology = session_topology(spec, session, bindings, node_owners, owner_specs(spec);
+        links, fgn = get(records, "fgn", nothing))
+    return bind_session_configuration(topology, deepcopy(session), bindings, records)
+end
+
+function session_topology(spec, session, bindings, node_owners, declarations;
+    links = D.session_links(session), fgn = nothing,
+)
     D.validate_session_links(session, links)
     isempty(links) && fail("native session requires at least one declared connection")
     D.validate_execution_groups(session, links)
     name = session_name(get(spec, "name", nothing))
     source_role = declared_source_role(get(spec, "source-owner", nothing))
+    haskey(declarations, source_role) || fail("source owner has no declaration")
+    source = declarations[source_role]
+    haskey(source, "control-protocol") || fail("source owner is missing control-protocol")
+    external = D.uses_external_stream(source)
+    external || haskey(source, "control-node") || fail("source owner is missing control-node")
+    auxiliary_roles = auxiliary_source_roles(
+        get(spec, "auxiliary-source-owners", String[]), declarations, source_role
+    )
+    external && !isempty(auxiliary_roles) && fail("independent input cannot control auxiliary sources")
+    source_nodes = String[]
+    for role in auxiliary_roles
+        declaration = declarations[role]
+        D.uses_source_control_protocol(declaration) &&
+        D.uses_bootstrap_protocol(declaration) ||
+            fail("auxiliary source requires native SourceControl and owner bootstrap")
+        push!(source_nodes, declaration["control-node"])
+    end
+    external || push!(source_nodes, source["control-node"])
+    length(unique(source_nodes)) == length(source_nodes) ||
+        fail("primary and auxiliary sources require distinct control node names")
+    return Dict{String,Any}(
+        "node-owners" => node_ownership(session, node_owners, fgn),
+        "core-nodes" => sort!([node for (node, role) in node_owners if role == "core"]),
+        "owners" => declarations,
+        "source-role" => source_role,
+        "auxiliary-roles" => auxiliary_roles,
+        "node.name" => "pipewireao.rtc.session." * name,
+        "controller.node.name" => "pipewireao.rtc.controller." * name,
+        "startup.timeout-ms" => D.startup_timeout_ms(spec),
+        "properties" => PipeWireAORTC.InstrumentDefinition.publication(spec, bindings),
+    )
+end
+
+function bind_session_configuration(topology, session, bindings, records)
+    source_role = topology["source-role"]
     verified_pid(records, source_role)
     core_pid = verified_pid(records, "core")
     remote = if get(records["core"], "external", false)
@@ -234,39 +276,21 @@ function session_configuration(
     public_instance != controller_instance || fail("session endpoint instances must differ")
     admission_instance != public_instance && admission_instance != controller_instance ||
         fail("admission controller instance must be distinct from session endpoints")
-    pids = node_pids(session, records, node_owners)
-    core_nodes = sort!([name for (name, role) in node_owners if role == "core"])
-    core_owner = Dict("pid" => core_pid, "nodes" => core_nodes)
-    declarations = owner_specs(spec)
+    pids = Dict{String,Int}(name => verified_pid(records, role)
+        for (name, role) in topology["node-owners"])
+    core_owner = Dict("pid" => core_pid, "nodes" => topology["core-nodes"])
+    declarations = topology["owners"]
     all(role -> haskey(declarations, role) || role in ("core", "fgn"), keys(records)) ||
         fail("an owner process record has no matching owner declaration")
     owners = Any[
         owner_record(role, declarations[role], records, bindings) for
         role in sort!(collect(keys(records))) if haskey(declarations, role)
     ]
-    haskey(declarations, source_role) || fail("source owner has no declaration")
-    source_declaration = declarations[source_role]
-    source = owner_record(source_role, source_declaration, records, bindings)
-    haskey(source, "control-protocol") || fail("source owner is missing control-protocol")
-    external = D.uses_external_stream(source)
-    external || haskey(source, "control-node") || fail("source owner is missing control-node")
-    auxiliary_roles = auxiliary_source_roles(
-        get(spec, "auxiliary-source-owners", String[]), declarations, source_role
-    )
-    external && !isempty(auxiliary_roles) && fail("independent input cannot control auxiliary sources")
-    auxiliary = map(auxiliary_roles) do role
-        declaration = declarations[role]
-        D.uses_source_control_protocol(declaration) &&
-        D.uses_bootstrap_protocol(declaration) ||
-            fail("auxiliary source requires native SourceControl and owner bootstrap")
-        owner_record(role, declaration, records, bindings)
-    end
-    source_nodes = String[entry["control-node"] for entry in auxiliary]
-    external || push!(source_nodes, source["control-node"])
-    length(unique(source_nodes)) == length(source_nodes) ||
-        fail("primary and auxiliary sources require distinct control node names")
+    source = owner_record(source_role, declarations[source_role], records, bindings)
+    auxiliary = [owner_record(role, declarations[role], records, bindings)
+        for role in topology["auxiliary-roles"]]
     policy = Dict{String,Any}(
-        "session" => deepcopy(session),
+        "session" => session,
         "owners" => owners,
         "source" => source,
         "auxiliary-sources" => auxiliary,
@@ -275,13 +299,13 @@ function session_configuration(
         "instance" => string(public_instance),
         "controller.instance" => string(controller_instance),
         "session.uuid" => uuid,
-        "node.name" => "pipewireao.rtc.session." * name,
-        "controller.node.name" => "pipewireao.rtc.controller." * name,
+        "node.name" => topology["node.name"],
+        "controller.node.name" => topology["controller.node.name"],
         "admission.controller-instance" => string(admission_instance),
-        "startup.timeout-ms" => D.startup_timeout_ms(spec),
+        "startup.timeout-ms" => topology["startup.timeout-ms"],
         "properties" => merge(
             Dict("pipewireao.rtc.session.session-uuid" => uuid),
-            PipeWireAORTC.InstrumentDefinition.publication(spec, bindings),
+            topology["properties"],
         ),
     )
     return runtime_configuration(remote, policy)
@@ -299,6 +323,27 @@ function runtime_configuration(remote, policy)
             Dict("name" => "libpipewire-module-client-node"),
         ],
         "pipewireao.session" => policy,
+    )
+end
+
+struct LinkPlan
+    declarations::Vector{D.LinkDeclaration}
+    order::Vector{Int}
+    prerequisites::Vector{Vector{Int}}
+end
+
+function seal_links(links)
+    rows = [(link.output, link.input, link.passive) for link in links]
+    order = link_order(rows)
+    return Dict("order" => order, "prerequisites" => link_prerequisites(rows, order))
+end
+
+function installed_links(plan, session)
+    # The installer validated this data before recording the activation digest.
+    return LinkPlan(
+        D.LinkDeclaration[D.link_declaration(row) for row in session["links"]],
+        Vector{Int}(plan["order"]),
+        [Vector{Int}(before) for before in plan["prerequisites"]],
     )
 end
 
@@ -320,6 +365,48 @@ function write_session_config(
     path = joinpath(directory, "rtc.conf")
     Export.write_spa_config(path, config)
     return path
+end
+
+function link_order(rows)
+    isempty(rows) && return Int[]
+    node_type = typeof(first(rows)[1].node)
+    successors = Dict{node_type,Set{node_type}}()
+    for (output, input, passive) in rows
+        push!(get!(successors, output.node, Set{node_type}()), input.node)
+    end
+    depths, visiting = Dict{node_type,Int}(), Set{node_type}()
+    function rank(node)
+        haskey(depths, node) && return depths[node]
+        node in visiting && throw(ArgumentError("session links contain a scheduling cycle"))
+        push!(visiting, node)
+        depth = 0
+        for successor in get(successors, node, Set{node_type}())
+            depth = max(depth, rank(successor) + 1)
+        end
+        delete!(visiting, node)
+        return depths[node] = depth
+    end
+    for (output, input, passive) in rows
+        rank(output.node)
+    end
+    return sortperm(eachindex(rows); by = index -> (rank(rows[index][2].node), index))
+end
+# Each incoming edge waits for the downstream node's outgoing edges. Fan-out
+# on the same port also keeps the original negotiation order and format.
+function link_prerequisites(rows, order)
+    before = [Int[] for _ in rows]
+    for (position, index) in enumerate(order)
+        output, input, _ = rows[index]
+        for previous in @view order[1:(position - 1)]
+            earlier_output, earlier_input, _ = rows[previous]
+            if input.node == earlier_output.node ||
+               (output.node == earlier_output.node && output.port == earlier_output.port) ||
+               (input.node == earlier_input.node && input.port == earlier_input.port)
+                push!(before[index], previous)
+            end
+        end
+    end
+    return before
 end
 
 end # module
