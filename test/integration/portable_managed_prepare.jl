@@ -294,6 +294,7 @@ exec $julia_cleanup --startup-file=no --project=$(D.shell_quote(project)) $(D.sh
             "JULIA_DEPOT_PATH" => join(DEPOT_PATH, ':'),
             "JULIA_LOAD_PATH" => "@:@stdlib",
             "OPENBLAS_NUM_THREADS" => "1",
+            "TMPDIR" => "/proc",
         )
         command = join(
             S.unit_argument.(
@@ -346,6 +347,9 @@ ExecStopPost=$launcher cleanup --invocation \${INVOCATION_ID} --runtime-root $ro
             owners = record["owners"]
             @test Set(keys(owners)) ==
                 Set(("core", "detector", "fgn", "parameters", "analysis-probe", "analysis-missing"))
+            detector_pid = owners["detector"]["pid"]
+            detector_environment = split(read("/proc/$detector_pid/environ", String), '\0')
+            @test "CUDA_CACHE_PATH=$(joinpath(root, "cuda-cache"))" in detector_environment
             probe = owners["analysis-probe"]
             @test probe["optional"] && probe["state"] == "submitted"
             @test owners["analysis-missing"]["optional"]

@@ -5,6 +5,8 @@ module PortableDirectSessionTests
 using Clocks, Test, PipeWireAO, PipeWireAORTC, UUIDs
 
 include(joinpath(@__DIR__, "..", "control_private_core.jl"))
+include("quit_queue_counters.jl")
+using .QuitQueueCounters: queue_properties, quit_queue_counters
 
 const RTC = PipeWireAORTC
 const Runtime = RTC.SessionRuntime
@@ -13,9 +15,23 @@ const D = RTC.DeploymentConfiguration
 const Discovery = RTC.SessionDiscovery
 const SOURCE = "portable.detector"
 const SINK = "portable.sink"
+const QUEUE = "portable.detector-queue"
+const CAPTURE = "$QUEUE-input"
 const SCHEMA = "test/portable-detector-f32/1"
 
 systemctl(args...) = `systemctl --user $args`
+
+function capture_queue_module()
+    return Dict(
+        "name" => "libpipewire-module-queue",
+        "args" => Dict(
+            "node.name" => QUEUE, "queue.media" => "application/ndarray",
+            "queue.max-buffers" => 1, "queue.storage" => "copy", "queue.overflow" => "drop-oldest",
+            "capture.props" => Dict("node.name" => CAPTURE, "node.loop.name" => "rtc-data-loop"),
+            "playback.props" => Dict("node.loop.name" => "telemetry-loop"),
+        ),
+    )
+end
 
 function start_unit(unit, cpu, command, environment)
     settings = ["--setenv=$key=$value" for (key, value) in environment]
@@ -40,6 +56,7 @@ context.modules = [
     { name = libpipewire-module-link-factory args = { allow.link.passive = true } }
     { name = libpipewire-module-metadata }
     { name = libpipewire-module-access }
+    $(RTC.Common.metadata_json(capture_queue_module()))
 ]
 """)
     write(joinpath(directory, "client.conf"), """
@@ -100,7 +117,7 @@ function export_detector(
         "client" => Dict(role => "shared-runtime/client-simulator.conf.in" for role in
             ("core", "session", "detector")),
         "owners" => [Dict("role" => "detector", "control-protocol" => "external-stream")],
-        "source-owner" => "detector", "node-owners" => Dict(SOURCE => "detector", SINK => "detector"),
+        "source-owner" => "detector", "node-owners" => Dict(SOURCE => "detector", CAPTURE => "core"),
         "session-runtime" => Dict(
             "argv" => ["@PACKAGE@/rtc/bin/pipewireao-rtc", "-c", "@RUNTIME@/rtc/rtc.conf"],
             "environment" => session_environment,
@@ -128,12 +145,15 @@ function export_detector(
         "rtc/mirror-controls.yaml" => Dict("schema_version" => 1, "deformable_mirrors" => Dict()),
         "rtc/application.yaml" => spec,
         "rtc/session.yaml" => Dict("sources" => [node(SOURCE, output, "output")],
-            "sinks" => [node(SINK, input, "input")], "graphs" => [],
-            "links" => [Dict("output" => "$SOURCE:$output", "input" => "$SINK:$input")]),
+            "sinks" => [node(CAPTURE, input, "input")], "graphs" => [],
+            "links" => [Dict("output" => "$SOURCE:$output", "input" => "$CAPTURE:$input")]),
     )
         RTC.Common.write_yaml(joinpath(authored, file), document)
     end
-    RTC.ScienceExport.write_spa_config(joinpath(authored, "rtc/core.conf"), Dict("context.modules" => []))
+    RTC.ScienceExport.write_spa_config(
+        joinpath(authored, "rtc/core.conf"),
+        Dict("context.modules" => [capture_queue_module()]),
+    )
     processes = Dict(role => Dict{String,Any}("cpus" => [cpu], "leader-cpu" => cpu) for role in
         ("core", "rtc", "session", "detector"))
     processes["detector"]["threads"] = detector_threads
@@ -181,7 +201,7 @@ function observed_placement(record, attached)
     end
 end
 
-function check_attachment(seed, root; reject_placement = false)
+function check_attachment(seed, root; reject_placement = false, abrupt_exit = false)
     prefix = get(ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
     paths = D.installed_paths(prefix)
     cpu = maximum(RTC.Placement.inherited_cpus())
@@ -195,11 +215,15 @@ function check_attachment(seed, root; reject_placement = false)
     environment["JULIA_LOAD_PATH"] = "@:@stdlib"
     environment["OPENBLAS_NUM_THREADS"] = "1"
     environment["TMPDIR"] = "/var/tmp"
+    for key in ("CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES")
+        environment[key] = ""
+    end
     julia = D.selected_julia_executable(Base.julia_cmd().exec[1])
     project = dirname(Base.active_project())
     provider = joinpath(@__DIR__, "portable_direct_provider.jl")
+    publish_request = joinpath(root, "publish")
     provider_command = `$julia --startup-file=no --threads=1,0 --project=$project
-        $provider $socket $SOURCE $SINK $SCHEMA`
+        $provider $socket $SOURCE $SINK $SCHEMA $publish_request`
     stage = joinpath(root, "stage")
     handle = nothing
     # Resolve the cold package image before the start helper's installer budget.
@@ -211,10 +235,10 @@ function check_attachment(seed, root; reject_placement = false)
         wait_proof(() -> ispath(socket), 10, "independent core socket")
         start_unit(provider_unit, cpu, provider_command, environment)
         ports = Ref{Tuple{String,String}}()
-        wait_proof(40, "independent detector and sink Ports") do
+        wait_proof(40, "independent detector and queue capture Ports") do
             objects = native_registry(socket, prefix, environment)
             output = exported_port(objects, SOURCE, "out")
-            input = exported_port(objects, SINK, "in")
+            input = exported_port(objects, CAPTURE, "in")
             (output === nothing || input === nothing) && return false
             ports[] = (output, input)
             return true
@@ -369,6 +393,32 @@ function check_attachment(seed, root; reject_placement = false)
             held = command("session-stop")
             @test held["ok"] && held["state"] == "Ready"
         end
+        if abrupt_exit
+            run(systemctl("kill", "--kill-whom=main", "--signal=SIGKILL", attached.unit))
+            wait_proof(30, "dead RTC and withdrawn discovery locator") do
+                values = Systemd.properties(attached.unit; extra = "Result")
+                values["ActiveState"] == "failed" && values["MainPID"] == "0" &&
+                    values["Result"] == "signal" && !ispath(locator)
+            end
+            @test isempty(published_session(directory, id))
+            for (unit, before) in ((core_unit, core), (provider_unit, provider_identity))
+                after = Systemd.properties(unit)
+                @test after["ActiveState"] == "active" && after["MainPID"] == before["MainPID"]
+                @test after["InvocationID"] == before["InvocationID"]
+            end
+            registry = native_registry(socket, prefix, environment)
+            @test !any(item -> item["type"] == "PipeWire:Interface:Link", registry)
+            return nothing
+        end
+        touch(publish_request)
+        before_quit = Ref{Vector}()
+        wait_proof(10, "one pending capture loan on the RTC link") do
+            objects = native_registry(socket, prefix, environment)
+            queue = queue_properties(objects, QUEUE)
+            queue["queue.state.pending-depth"] == 1 || return false
+            before_quit[] = objects
+            return true
+        end
         stopped = Runtime.stop!(attached; deadline = deadline(60))
         @test stopped["direct_attach"] && stopped["phase"] == "stopped"
         @test stopped["cleanup_complete"] && stopped["service_result"] == "success"
@@ -388,6 +438,14 @@ function check_attachment(seed, root; reject_placement = false)
         registry = native_registry(socket, prefix, environment)
         @test !any(item -> item["type"] == "PipeWire:Interface:Link", registry)
         @test exported_port(registry, SOURCE, "out") == ports[][1]
+        @testset "Native Quit returns the capture loan and retires its pool" begin
+            counters = quit_queue_counters(before_quit[], registry, QUEUE)
+            @test counters["capture_buffers_before"] > 0
+            @test counters["capture_buffers_after"] == 0
+            @test counters["pending_before"] == 1 && counters["pending_after"] == 0
+            @test counters["counter_changes"]["withdrawal-returns"] == 1
+            @info "Capture queue across native Quit" queue = QUEUE counters = RTC.Common.metadata_json(counters)
+        end
 
         @testset "Published placement refuses a replacement detector invocation" begin
             detector = ready_record["owners"]["detector"]
@@ -402,7 +460,7 @@ function check_attachment(seed, root; reject_placement = false)
             wait_proof(40, "replacement detector and sink Ports") do
                 objects = native_registry(socket, prefix, environment)
                 exported_port(objects, SOURCE, "out") == ports[][1] &&
-                    exported_port(objects, SINK, "in") == ports[][2]
+                exported_port(objects, CAPTURE, "in") == ports[][2]
             end
             replacement = Systemd.properties(provider_unit)
             @test replacement["ActiveState"] == "active"
@@ -441,6 +499,11 @@ length(ARGS) == 1 || error("usage: portable_direct_session.jl REGISTERED_SEED_DI
     seed = realpath(only(ARGS))
     mktempdir("/var/tmp"; prefix = "rtc-direct-") do directory
         check_attachment(seed, directory)
+    end
+    @testset "RTC-only SIGKILL withdraws installed discovery" begin
+        mktempdir("/var/tmp"; prefix = "rtc-direct-kill-") do directory
+            check_attachment(seed, directory; abrupt_exit = true)
+        end
     end
     @testset "Installed admission rejects a missing provider thread" begin
         mktempdir("/var/tmp"; prefix = "rtc-direct-") do directory

@@ -22,6 +22,18 @@ const SPA = PipeWireAO.SPA
 const CC = ControlCodec
 const BC = OwnerBootstrapCodec
 const AC = AcquisitionLifecycleCodec
+
+@testset "Native acquisition declarations follow the wire protocol identifiers" begin
+    for instrument in instances(AC.Instrument)
+        name = string(instrument)
+        @test AC.declared_instrument(lowercase(name)) === instrument
+        @test AC.declared_instrument(name) === nothing
+        @test AC.declared_instrument(name; allow_wire_value = true) === instrument
+        @test AC.declared_instrument(Int(UInt32(instrument)); allow_wire_value = true) === instrument
+    end
+    @test AC.declared_instrument("instrument") === nothing
+    @test AC.declared_instrument(nothing; allow_wire_value = true) === nothing
+end
 const IDENTITY = CC.ControllerIdentity(UInt32(7), UInt64(11), Int64(13))
 struct Group
     nodes::Vector{String}

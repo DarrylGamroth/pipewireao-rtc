@@ -537,12 +537,38 @@ end
 prepare_command(argv::Cmd) = argv
 prepare_command(argv) = Cmd(String.(argv))
 
+function capture_command_output(pipe, path, maximum_bytes)
+    output = IOBuffer()
+    chunk = Vector{UInt8}(undef, Int(min(64 * 1024, maximum_bytes)))
+    file = if path === nothing
+        nothing
+    else
+        mkpath(dirname(path))
+        open(path, "w")
+    end
+    try
+        while true
+            remaining = maximum_bytes - position(output)
+            requested = remaining < length(chunk) ? Int(remaining) + 1 : length(chunk)
+            count = readbytes!(pipe, chunk, requested)
+            count <= remaining || return nothing
+            bytes = view(chunk, 1:count)
+            write(output, bytes)
+            file === nothing || write(file, bytes)
+            count < requested && return String(take!(output))
+        end
+    finally
+        file === nothing || close(file)
+    end
+end
+
 """
     run_checked(argv; env=Dict(), timeout=30, cwd=nothing,
                 stdout_path=nothing, stderr_path=nothing, maximum_output_bytes=16 * 1024 * 1024)
 
 Run a subprocess under a deadline in seconds and return its stdout, stderr and exit status.
-Apply `env` to the child and bound the captured output in bytes.
+Bound each captured stream in bytes. Capture stays in memory unless an explicit
+output path is supplied.
 """
 function run_checked(
     argv;
@@ -562,51 +588,40 @@ function run_checked(
     command = addenv(
         command, (String(key) => String(value) for (key, value) in pairs(env))...
     )
-    return mktempdir() do directory
-        out_path =
-            stdout_path === nothing ? joinpath(directory, "stdout") : String(stdout_path)
-        err_path =
-            stderr_path === nothing ? joinpath(directory, "stderr") : String(stderr_path)
-        mkpath(dirname(out_path))
-        mkpath(dirname(err_path))
-        process = nothing
-        open(out_path, "w") do out
-            open(err_path, "w") do err
-                process = run(
-                    pipeline(ignorestatus(command); stdout = out, stderr = err);
-                    wait = false,
-                )
-                try
-                    state = timedwait(
-                        timeout; pollint = clamp(timeout / 10, 0.001, 0.01)
-                    ) do
-                        filesize(out_path) <= maximum_output_bytes &&
-                        filesize(err_path) <= maximum_output_bytes ||
-                            throw(ArgumentError("subprocess output exceeds bound"))
-                        process_exited(process)
-                    end
-                    state == :ok || throw(
-                        ErrorException("subprocess exceeded $(timeout) second deadline")
-                    )
-                    wait(process)
-                finally
-                    if !process_exited(process)
-                        kill(process, Base.SIGTERM)
-                        timedwait(() -> process_exited(process), 1; pollint = 0.01) ==
-                        :ok || kill(process, Base.SIGKILL)
-                        wait(process)
-                    end
+    out, err = Pipe(), Pipe()
+    process = nothing
+    try
+        process = run(
+            pipeline(ignorestatus(command); stdout = out, stderr = err); wait = false
+        )
+        close(out.in)
+        close(err.in)
+        stdout_task = @async capture_command_output(out, stdout_path, maximum_output_bytes)
+        stderr_task = @async capture_command_output(err, stderr_path, maximum_output_bytes)
+        state = timedwait(timeout; pollint = clamp(timeout / 10, 0.001, 0.01)) do
+            for reader in (stdout_task, stderr_task)
+                if istaskdone(reader) && fetch(reader) === nothing
+                    throw(ArgumentError("subprocess output exceeds bound"))
                 end
             end
+            process_exited(process) && istaskdone(stdout_task) && istaskdone(stderr_task)
         end
-        filesize(out_path) <= maximum_output_bytes &&
-        filesize(err_path) <= maximum_output_bytes ||
-            throw(ArgumentError("subprocess output exceeds bound"))
+        state == :ok || throw(ErrorException("subprocess exceeded $(timeout) second deadline"))
+        wait(process)
         return (
-            stdout = read(out_path, String),
-            stderr = read(err_path, String),
-            returncode = process.exitcode,
+            stdout = fetch(stdout_task),
+            stderr = fetch(stderr_task),
+            returncode = iszero(process.termsignal) ? process.exitcode : 128 + process.termsignal,
         )
+    finally
+        close(out)
+        close(err)
+        if process !== nothing && !process_exited(process)
+            kill(process, Base.SIGTERM)
+            timedwait(() -> process_exited(process), 1; pollint = 0.01) ==
+                :ok || kill(process, Base.SIGKILL)
+            wait(process)
+        end
     end
 end
 

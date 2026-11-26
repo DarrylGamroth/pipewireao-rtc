@@ -161,7 +161,7 @@ end
         @test occursin("Requisite=core.service site-controller.service source.service", unit)
         @test occursin("Wants=" * replace(analysis_unit, "@." => "@%i."), unit)
         @test occursin("Environment=\"RTC_LOG=$package/log\"", unit)
-        @test !occursin("ExecStopPost=", unit)
+        @test occursin("ExecStopPost=\"/launcher\" retire-direct --unit %n", unit)
         @test !occursin("INVOCATION_ID", unit)
         @test occursin("Environment=\"RTC_RUNTIME_LOG=%t/pipewireao-session-%i/100%% \$rtc.log\"", unit)
 

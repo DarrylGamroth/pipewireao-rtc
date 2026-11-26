@@ -235,10 +235,10 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         C.write_json(joinpath(authoring, "graph.conf"), variant)
         projection(name, shape) = Dict(
             "path" =>
-                "components/cal2/generated/calibration/llowfs/artifacts/" * name * ".fits",
+                "components/feedback-sensor/generated/calibration/llowfs/artifacts/" * name * ".fits",
             "sha256" => Dict(
                 "\$ref" =>
-                    "/calibration/cal2/" *
+                    "/calibration/feedback-sensor/" *
                     Dict(
                         "command-projection" => "projection",
                         "physical-to-modes" => "inverse",
@@ -257,8 +257,8 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
             "reference_sign" => -1,
             "command_limit_m" => 1e-6,
             "calibration_identity" =>
-                Dict("\$ref" => "/calibration/cal2/calibration_identity"),
-            "command_order" => Dict("\$ref" => "/calibration/cal2/command_order"),
+                Dict("\$ref" => "/calibration/feedback-sensor/calibration_identity"),
+            "command_order" => Dict("\$ref" => "/calibration/feedback-sensor/command_order"),
             "projection" => projection("command-projection", [2, 2]),
             "inverse" => projection("physical-to-modes", [2, 2]),
             "reference" => projection("modes-to-reference", [1, 2]),
@@ -281,7 +281,7 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
                 "parameters" => [
                     Dict("port" => name, "path" => path, "hdu" => 1, "axes" => axes) for
                     (name, path, axes) in (
-                        ("offset", "components/cal2/generated/calibration/zero.fits", [1]),
+                        ("offset", "components/feedback-sensor/generated/calibration/zero.fits", [1]),
                         ("inverse", contract["inverse"]["path"], [2, 1]),
                         ("reference", contract["reference"]["path"], [2, 1]),
                     )
@@ -300,9 +300,9 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         )
         document = Dict(
             "version" => 1,
-            "namespace" => "cal2",
+            "namespace" => "feedback-sensor",
             "profile" => "profile.yaml",
-            "roles" => Dict("simulator" => "cal2-optics"),
+            "roles" => Dict("simulator" => "feedback-sensor-optics"),
             "links" => [],
             "calibration" => "generated/calibration",
             "receiver" => Dict(
@@ -330,7 +330,7 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         )
         spec = C.read_json(joinpath(output, "deployment.conf"))
         @test spec["source-owner"] == "julia" &&
-            spec["auxiliary-source-owners"] == ["cal2-optics"]
+            spec["auxiliary-source-owners"] == ["feedback-sensor-optics"]
         @test Set(keys(spec["node-owners"])) ==
             Set(["pupil", "sensor", "llowfs-offset", "scc-offset"])
         @test "--threads=3,0" in first(spec["owners"])["argv"]
@@ -393,7 +393,7 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
             profile = gpu_profile,
         )
         @test C.read_json(joinpath(mixed, "simulation.conf"))["backend"] == "cpu"
-        @test C.read_json(joinpath(mixed, "components/cal2/simulation.conf"))["backend"] ==
+        @test C.read_json(joinpath(mixed, "components/feedback-sensor/simulation.conf"))["backend"] ==
             "amdgpu"
         @test C.read_yaml(joinpath(mixed, "rtc/feedback-profile.yaml"))["upstream"] ==
             Dict("backend" => "cpu", "device" => 0)

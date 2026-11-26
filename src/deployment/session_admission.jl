@@ -104,7 +104,7 @@ function _main_identity(request, invocation, record, config; manager = nothing, 
     startswith(group, "/") && group != "/" && S.process_identity(pid, ticks, group) ||
         throw(ArgumentError("RTC MainPID is outside its unit cgroup"))
     direct = get(record, "direct_attach", false)
-    (direct ? isempty(values["ExecStopPost"]) :
+    (direct ? SessionLaunch.direct_retirement_hook_valid(values["ExecStopPost"], request) :
         SessionLaunch.cleanup_hook_valid(values["ExecStopPost"], request, record["source_role"])) ||
         throw(ArgumentError("RTC emergency cleanup hook changed"))
     SessionLaunch.stop_hook_valid(values["ExecStop"], request; direct) ||

@@ -151,16 +151,22 @@ function write_spa_config(
     parser = joinpath(
         PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir, "bin", "pwao-spa-json-dump"
     )
-    mktempdir() do directory
-        source = joinpath(directory, "configuration.conf")
-        write(source, payload)
-        normalized = Common.run_checked([parser, "-N", "-R", source]; timeout = 10)
-        normalized.returncode == 0 || throw(
-            ArgumentError("PipeWire rejected generated SPA-JSON: $(normalized.stderr)")
-        )
-        isequal(Common.parse_json(normalized.stdout), value) ||
-            throw(ArgumentError("SPA configuration changed during native serialization"))
+    # The native parser maps its file input. Give it an anonymous RAM-backed file.
+    descriptor = @ccall memfd_create("pipewireao-spa-config"::Cstring, 1::Cuint)::Cint # MFD_CLOEXEC
+    Base.systemerror("memfd_create", descriptor < 0)
+    io = Base.fdio(descriptor, true)
+    normalized = try
+        write(io, payload)
+        flush(io)
+        Common.run_checked([parser, "-N", "-R", "/proc/$(getpid())/fd/$descriptor"]; timeout = 10)
+    finally
+        close(io)
     end
+    normalized.returncode == 0 || throw(
+        ArgumentError("PipeWire rejected generated SPA-JSON: $(normalized.stderr)")
+    )
+    isequal(Common.parse_json(normalized.stdout), value) ||
+        throw(ArgumentError("SPA configuration changed during native serialization"))
     mkpath(dirname(path))
     write(path, payload)
     return path

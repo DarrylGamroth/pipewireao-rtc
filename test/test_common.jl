@@ -160,6 +160,7 @@ end
     @test cli_arguments(["--item", "a", "--item=b"]; repeats = ["item"]).item == ["a", "b"]
     @test run_checked(["/bin/echo", "hello"]).stdout == "hello\n"
     @test run_checked(["/bin/sh", "-c", "exit 7"]).returncode == 7
+    @test run_checked(["/bin/sh", "-c", "kill -TERM \$\$"]).returncode == 143
     @test run_checked(
         ["/bin/sh", "-c", "printf '%s' \"\$RTC_MIGRATION_TEST\""];
         env = Dict("RTC_MIGRATION_TEST" => "value"),
@@ -167,9 +168,23 @@ end
     @test_throws ErrorException run_checked(["/bin/sleep", "5"]; timeout = 0.05)
     # Session cleanup may pass the final milliseconds of its overall deadline.
     @test_throws ErrorException run_checked(["/bin/sleep", "1"]; timeout = 0.001)
-    @test_throws Exception run_checked(
+    @test_throws ArgumentError run_checked(
         ["/bin/sh", "-c", "head -c 1000 /dev/zero"]; maximum_output_bytes = 100
     )
+    @test_throws ArgumentError run_checked(
+        ["/bin/sh", "-c", "head -c 1000 /dev/zero >&2"]; maximum_output_bytes = 100
+    )
+    @test_throws ErrorException run_checked(
+        ["/bin/sh", "-c", "sleep 0.2 &"]; timeout = 0.05
+    )
+    withenv("TMPDIR" => "/proc") do
+        result = run_checked(
+            ["/bin/sh", "-c", "head -c 98304 /dev/zero >&2 && head -c 98304 /dev/zero"];
+            maximum_output_bytes = 98304,
+        )
+        @test result.stdout == result.stderr == repeat("\0", 98304)
+        @test result.returncode == 0
+    end
 end
 
 @testset "single-document YAML configuration" begin

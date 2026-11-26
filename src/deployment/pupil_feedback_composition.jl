@@ -181,7 +181,7 @@ function prepare_pupil_feedback(
         calibration = rtc.calibration,
     )
     shared = index["physical_projection"]
-    context["calibration"]["cal2"] = Dict(
+    context["calibration"][namespace] = Dict(
         "calibration_identity" => index["calibration_identity"],
         "command_order" => command_order,
         "projection_sha256" => shared["command-projection"]["sha256"],

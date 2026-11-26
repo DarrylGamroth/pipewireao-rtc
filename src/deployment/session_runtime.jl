@@ -924,13 +924,8 @@ function source_status(
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
 )
-    kind = if instrument == "classic"
-        AcquisitionCodec.Classic
-    elseif instrument == "copper"
-        AcquisitionCodec.Copper
-    else
-        throw(ArgumentError("unsupported calibration instrument"))
-    end
+    kind = AcquisitionCodec.declared_instrument(instrument)
+    kind === nothing && throw(ArgumentError("unsupported calibration instrument"))
     source = ready_record["source_endpoint"]
     get(source, "profile", nothing) == "pipewireao.rtc.calibration-lifecycle/1" ||
         throw(ArgumentError("source Status requires a calibration lifecycle endpoint"))

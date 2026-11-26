@@ -111,12 +111,22 @@ function cleanup_hook_valid(
     )
 end
 
-function stop_hook_valid(commands::Vector{S.ExecCommand}, request::Request; direct = false)
+function shutdown_hook_valid(commands::Vector{S.ExecCommand}, argv::Vector{String})
     length(commands) == 1 || return false
     command = only(commands)
+    return !command.ignore_failure && command.path == first(argv) && command.argv == argv
+end
+
+function direct_retirement_hook_valid(commands, request::Request)
+    argv = [request.launcher, "retire-direct", "--unit", request.unit,
+            "--runtime-root", request.runtime_root]
+    return shutdown_hook_valid(commands, argv)
+end
+
+function stop_hook_valid(commands::Vector{S.ExecCommand}, request::Request; direct = false)
     argv = [request.launcher, "stop", "--unit", request.unit, "--runtime-root", request.runtime_root]
     direct && push!(argv, "--direct")
-    return !command.ignore_failure && command.path == request.launcher && command.argv == argv
+    return shutdown_hook_valid(commands, argv)
 end
 
 function stop_hook_valid(value::AbstractString, request::Request; direct = false)
@@ -766,6 +776,9 @@ function prepare!(
         function install_owner!(owner)
             role = owner["role"]
             env = owner_environment(paths, spec, bindings, runtime, role)
+            if !haskey(spec["environment"], "CUDA_CACHE_PATH")
+                env["CUDA_CACHE_PATH"] = joinpath(request.runtime_root, "cuda-cache")
+            end
             for (key, value) in owner["environment"]
                 env[key] = D.substitute(value, bindings)
             end

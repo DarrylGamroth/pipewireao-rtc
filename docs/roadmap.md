@@ -24,6 +24,10 @@ each admitted all 20 Links, primed while open and accepted native Quit.
 [Installed-session evidence](reviews/20261125-installed-session/REVIEW.md#implementation-and-verification)
 
 RTC Quit releases its graph attachments and leaves independent owners running.
+The shared CPU integration fixture now verifies one outstanding native loan
+is returned, its capture pool retires and the provider and core stay live.
+[Shared Quit evidence](validation/shared-quit-20261126/README.md#cpu-quit-regression)
+
 For an explicit graph service stop, `f2217e8` moved PipeWire disposal onto
 the graph's owning thread. In the disposable Classic CPU replay, the idle
 retained graph exited with status 0 in 0.327 s after its explicit stop.
@@ -34,6 +38,16 @@ Connect, and the connected-stop private-core test passed all 11 checks.
 These observations apply to their respective source revisions and fixtures.
 [Graph shutdown evidence](reviews/20261125-installed-session/REVIEW.md#retained-graph-service-shutdown) ·
 [Service procedure](SYSTEMD_SESSION_STARTUP.md#keep-controller-graph-services-running-across-an-rtc-restart)
+
+On RTC 0.7.33, standalone CAL2 reached held Ready in 8.435 s and
+reattached in 6.931 s with its independent CPU simulator publishing. Both
+integrators primed on live camera data with correction open. RTC-only
+SIGKILL exposed a stale discovery locator. The direct service now retires
+that locator in `ExecStopPost` after an abnormal exit. Installed Classic
+passed CPU observer stall, reconnect, DM edit and calibration checks.
+GPI2 sustained a 1 Hz wall-clock CPU simulation on rtc-devel with its
+2 kHz model configuration. The CPU observations retain their own scopes.
+[CPU qualification and remaining historical cases](validation/cpu-qualification-20261126/README.md)
 
 ### Delivery order
 

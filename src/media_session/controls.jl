@@ -405,13 +405,8 @@ function source(runtime, handle::UInt64, declaration)
         pid,
     )
     instrument = get(declaration, "instrument", nothing)
-    normalized = if instrument === nothing
-        nothing
-    elseif instrument in ("classic", "Classic", 1)
-        AcquisitionLifecycleCodec.Classic
-    elseif instrument in ("copper", "Copper", 2)
-        AcquisitionLifecycleCodec.Copper
-    else
+    normalized = AcquisitionLifecycleCodec.declared_instrument(instrument; allow_wire_value = true)
+    if instrument !== nothing && normalized === nothing
         throw(ArgumentError("invalid acquisition instrument"))
     end
     return AcquisitionBinding(owner, normalized, nothing)

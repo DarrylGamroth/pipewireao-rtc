@@ -10,6 +10,7 @@ import ..GitExport
 import ..ScienceExport
 import ..ControlClient
 import ..OwnerBootstrapCodec
+import ..AcquisitionLifecycleCodec
 
 export DeploymentError,
     fail,
@@ -1441,8 +1442,8 @@ function validate_external_owner!(owner::AbstractDict, source_role, auxiliary, r
             "native acquisition lifecycle must be the selected source owner",
         )
         require(
-            get(owner, "instrument", nothing) in ("classic", "copper"),
-            "native acquisition requires an explicit Classic or Copper instrument",
+            AcquisitionLifecycleCodec.declared_instrument(get(owner, "instrument", nothing)) !== nothing,
+            "native acquisition requires an instrument declared by its lifecycle protocol",
         )
         node = get(owner, "control-node", nothing)
         require(
