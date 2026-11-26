@@ -57,8 +57,9 @@ The focal queue retained its three capture buffers and reported zero
 protocol errors. A separate observer reconfiguration used slow driving for
 15 s, removed observation clients for 15 s, and reattached. The same focal
 Link and producer remained active and all eight outputs advanced after
-reattachment. Native Quit and cleanup completed in 11.059 s. Issue #11
-remains open for focused buffer-ownership verification on a supported build.
+reattachment. Native Quit and cleanup completed in 11.059 s. This run
+exceeded both the reported elapsed duration and detector sequence in #11.
+The result establishes behavior on the supported build exercised here.
 
 ## Runtime configuration and command output
 
