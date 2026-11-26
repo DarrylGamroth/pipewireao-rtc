@@ -776,6 +776,9 @@ function prepare!(
         function install_owner!(owner)
             role = owner["role"]
             env = owner_environment(paths, spec, bindings, runtime, role)
+            if !haskey(spec["environment"], "CUDA_CACHE_PATH")
+                env["CUDA_CACHE_PATH"] = joinpath(request.runtime_root, "cuda-cache")
+            end
             for (key, value) in owner["environment"]
                 env[key] = D.substitute(value, bindings)
             end
