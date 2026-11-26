@@ -52,6 +52,24 @@ The JSON receipts retain observed sequences, the inferred gaps between received
 labels and the two-second Stop observation window. Their validation scope is
 functional sample delivery and identity consistency at the lossy queue boundary.
 
+### CAL2 capture-buffer release on Quit
+
+For standalone CAL2 with an independent source and private core, stop the
+observer clients after capture. Take a native `pwao-dump` snapshot on that
+core before sending Quit and another after the RTC has exited. Keep the core
+and simulator active through the second snapshot. Verify the queue counters
+with the same native SDK and the RTC package environment.
+
+```sh
+julia --startup-file=no --project=. test/integration/managed_session_cal2.jl \
+  --quit-counters "$before_quit_json" "$after_quit_json"
+```
+
+The verifier checks the same capture generation and queue module on each side
+of Quit, one pending loan returned per camera, and both capture pools retired
+without protocol errors. Its JSON result reports counter changes across Quit
+so prior publications and withdrawals do not affect the balance.
+
 ## Managed Classic CPU closed-loop replay
 
 This replay used the former RTC simulator launcher. The
