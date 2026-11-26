@@ -36,3 +36,6 @@ config:
     $ref: /source/source_position_angle_deg
   atmosphere_opd_schema:
     $ref: /schemas/atmosphere_opd_schema
+optional_config:
+  low_frequency_completion:
+    $ref: /values/low_frequency_completion
