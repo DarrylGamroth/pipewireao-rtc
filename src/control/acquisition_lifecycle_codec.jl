@@ -51,6 +51,17 @@ Client.capability_names(
 @enum ColdLifecycle::UInt32 Preparing = 1 Prepared = 2 Connected = 3 Fault = 4 Stopped = 5
 @enum Instrument::UInt32 Classic = 1 Copper = 2
 
+function declared_instrument(value; allow_wire_value = false)
+    for instrument in instances(Instrument)
+        name = string(instrument)
+        isequal(value, lowercase(name)) && return instrument
+        if allow_wire_value && (isequal(value, name) || isequal(value, UInt32(instrument)))
+            return instrument
+        end
+    end
+    return nothing
+end
+
 struct LifecycleCommand{O} end
 function LifecycleCommand(operation::Symbol)
     operation in (:status, :pause, :resume, :reset, :connect, :shutdown) ||

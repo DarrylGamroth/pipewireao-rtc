@@ -35,7 +35,7 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "composition_documents.jl"))
         original_identity = IC.prescription_identity(calibrated, settings)
         E.seal!(base)
         component = composition_fixture(
-            joinpath(temporary, "component"), "cal2", "optics", "camera"
+            joinpath(temporary, "component"), "feedback-sensor", "optics", "camera"
         )
         directory = joinpath(component, "generated/calibration")
         mkpath(directory)
@@ -134,8 +134,8 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "composition_documents.jl"))
             "version" => 2,
             "command_limit_m" => 1e-6,
             "calibration_identity" =>
-                Dict("\$ref" => "/calibration/cal2/calibration_identity"),
-            "command_order" => Dict("\$ref" => "/calibration/cal2/command_order"),
+                Dict("\$ref" => "/calibration/feedback-sensor/calibration_identity"),
+            "command_order" => Dict("\$ref" => "/calibration/feedback-sensor/command_order"),
             "branches" => Dict(
                 name => Dict(
                     "node_name" => name * "-offset",
@@ -153,10 +153,10 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "composition_documents.jl"))
             ("inverse", "physical-to-modes", "inverse"),
         )
             contract[field] = Dict(
-                "path" => "components/cal2/generated/calibration/" * shared[key]["path"],
+                "path" => "components/feedback-sensor/generated/calibration/" * shared[key]["path"],
                 "shape" => [2, 2],
                 "axes" => [2, 1],
-                "sha256" => Dict("\$ref" => "/calibration/cal2/" * hashkey * "_sha256"),
+                "sha256" => Dict("\$ref" => "/calibration/feedback-sensor/" * hashkey * "_sha256"),
             )
         end
         C.write_yaml(joinpath(author, "receiver.yaml"), contract)
@@ -173,8 +173,8 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "composition_documents.jl"))
         recipepath = joinpath(author, "composition.yaml")
         recipe = Dict(
             "version" => 1,
-            "namespace" => "cal2",
-            "roles" => Dict("optics" => "cal2-optics"),
+            "namespace" => "feedback-sensor",
+            "roles" => Dict("optics" => "feedback-sensor-optics"),
             "links" => [],
             "profile" => "profile.yaml",
             "calibration" => "generated/calibration",
