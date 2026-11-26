@@ -48,16 +48,24 @@ function direct_attachment(config, activation, request, invocation, services, ex
     )
     process = _main_identity(request, invocation, record, config; manager, deadline, clock)
     coordinator = S.Coordinator(unit, invocation, process[3], request.launcher)
-    source_spec = only(filter(owner -> owner["role"] == source, spec["owners"]))
-    SessionLaunch.external_source!(spec, source_spec)
+    topology = get(activation, "direct-topology", nothing)
     if haskey(activation, "direct-parameter-owner")
         admission["parameter_service"] = activation["direct-parameter-service"]
-        push!(spec["owners"], activation["direct-parameter-owner"])
         spec["placement"]["parameters"] = activation["direct-parameter-placement"]
     end
     record["credentials"] = P.credentials(spec["placement"]["session"]["rt-priority"],
         spec["placement"]["session"]["locked-bytes"], spec["cpu-latency-us"])
-    declarations = SessionConfiguration.owner_specs(spec)
+    declarations = if topology === nothing
+        owners = SessionConfiguration.owner_specs(spec)
+        SessionLaunch.external_source!(spec, owners[source])
+        if haskey(activation, "direct-parameter-owner")
+            owners = SessionConfiguration.owner_declarations(
+                [collect(values(owners)); activation["direct-parameter-owner"]])
+        end
+        owners
+    else
+        topology["owners"]
+    end
     Set(keys(services)) == union(keys(declarations), ["core"]) ||
         throw(ArgumentError("direct service bindings do not cover the installed owners"))
     bindings = Dict(
@@ -115,13 +123,19 @@ function direct_attachment(config, activation, request, invocation, services, ex
         D.decode(config, prefix) # Installations created before the normalized configuration was sealed.
     end
     session = installed["pipewireao.session"]["session"]
-    bound = SessionConfiguration.session_configuration(spec, session, bindings, record["owners"];
-        node_owners = Dict{String,String}(spec["node-owners"]))
+    plan = if topology === nothing
+        topology = SessionConfiguration.session_topology(spec, session, bindings,
+            spec["node-owners"], declarations)
+        nothing
+    else
+        SessionConfiguration.installed_links(activation["direct-link-plan"], session)
+    end
+    bound = SessionConfiguration.bind_session_configuration(topology, session, bindings, record["owners"])
     for section in ("context.properties", "context.modules")
         installed[section] == bound[section] || throw(ArgumentError("installed PipeWire context differs: $section"))
     end
-    return (; config = bound, deadline,
-        deployment = InstalledAdmission(request, invocation, config, record, process, nothing, nothing, manager))
+    deployment = InstalledAdmission(request, invocation, config, record, process, nothing, nothing, manager)
+    return DirectAttachment(bound, deadline, deployment, plan)
 end
 
 function finish_direct_quit!(context::InstalledAdmission)

@@ -23,6 +23,12 @@ each admitted all 20 Links, primed while open and accepted native Quit.
 [Deployment commands](../README.md#deploy-an-instrument-from-its-definitions) ·
 [Installed-session evidence](reviews/20261125-installed-session/REVIEW.md#implementation-and-verification)
 
+Direct installation now seals the node ownership and Link negotiation order.
+Generated retained graph services can start alongside the independent source
+and report systemd readiness after publishing native Prepared. MediaSession's
+package image covers the installed direct-attachment constructor and Link setup.
+[Prestarting graph services](SYSTEMD_SESSION_STARTUP.md#keep-controller-graph-services-running-across-an-rtc-restart)
+
 RTC Quit releases its graph attachments and leaves independent owners running.
 The shared CPU integration fixture now verifies one outstanding native loan
 is returned, its capture pool retires and the provider and core stay live.

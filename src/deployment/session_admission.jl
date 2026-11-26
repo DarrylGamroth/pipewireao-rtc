@@ -78,6 +78,13 @@ mutable struct InstalledAdmission
     manager::Union{Nothing,S.UserManager}
 end
 
+struct DirectAttachment
+    config::Dict{String,Any}
+    deadline::Int64
+    deployment::InstalledAdmission
+    link_plan::Union{Nothing,SessionConfiguration.LinkPlan}
+end
+
 function _startup_deadline(deadline, clock)
     Clocks.time_nanos(clock) < deadline ||
         throw(ArgumentError("installed RTC exceeded its startup deadline"))
@@ -314,18 +321,6 @@ function publish_ready!(check, context::InstalledAdmission, endpoint; deadline, 
         end
         rethrow()
     end
-    return nothing
-end
-
-"""
-    notify_ready!()
-
-Notify systemd from the RTC main process after accepting the completed startup
-publication. Throw if systemd's notification socket could not be reached.
-"""
-function notify_ready!()
-    result = ccall((:sd_notify, "libsystemd.so.0"), Cint, (Cint, Cstring), 0, "READY=1")
-    result > 0 || throw(ArgumentError("systemd readiness notification failed (result $result)"))
     return nothing
 end
 

@@ -17,6 +17,7 @@ import ..PipeWireAORTC
 import ..Common
 import ..RunnerCodec
 import ..SessionAdmission
+import ..SystemdOwners
 import ..SessionProfile
 import ..SessionCodec
 import ..ControlCodec
@@ -26,6 +27,8 @@ import ..AcquisitionLifecycleCodec
 import ..SourceControl
 import ..ParameterSource
 import ..DeploymentConfiguration
+import ..SessionConfiguration
+using ..SessionConfiguration: link_order as _link_order, link_prerequisites
 using PipeWireAO
 
 """Owned observations, applied by the session task after native dispatch.

@@ -145,6 +145,7 @@ end
 
 function install_persistent_graphs!(package, prefix, spec, external;
     stop_unit = joinpath(PipeWireAORTC.resource_root(), "persistent-graph-stop.service.in"),
+    ready_unit = joinpath(PipeWireAORTC.resource_root(), "persistent-graph-ready.service.in"),
 )
     if isfile(stop_unit)
         Sys.isexecutable("/usr/bin/waitpid") ||
@@ -260,6 +261,12 @@ function install_persistent_graphs!(package, prefix, spec, external;
             after = [external.core], requisite = [external.core],
             stop_signal = get(owner, "stop-signal", "SIGTERM"),
         )
+        if isfile(ready_unit)
+            readiness = replace(read(ready_unit, String),
+                "@TIMEOUT_START@" => string(D.startup_timeout_ms(spec), "ms"))
+            unit_text = replace(unit_text, "Type=exec\n" => "", "TimeoutStartSec=20\n" => "")
+            unit_text *= "\n" * readiness
+        end
         # Only pinned graph packages that implement cooperative service shutdown
         # supply this unit fragment. Historical installations keep their launcher.
         if isfile(stop_unit)

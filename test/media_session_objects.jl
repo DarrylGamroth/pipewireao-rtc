@@ -4,6 +4,7 @@ module MediaSessionObjectsTests
 using Test, PipeWireAO
 import Clocks
 import PipeWireAORTC.MediaSession: Job, Owner, QUIT_OPERATION, submitted!
+using PipeWireAORTC.SessionConfiguration: link_order as _link_order, link_prerequisites
 import PipeWireAORTC:
     OwnerBootstrapCodec, ControlClient, AcquisitionLifecycleCodec, DeploymentConfiguration,
     ParameterSource, SourceControl
@@ -926,6 +927,10 @@ end
     ]
     prerequisites = link_prerequisites(rows, _link_order(rows))
     @test prerequisites == [[2, 3, 6], [], [], [5], [], [], [2]]
+    address(port) = DeploymentConfiguration.PortAddress(string(port.node), string(port.port))
+    declarations = [(address(output), address(input), passive) for (output, input, passive) in rows]
+    @test _link_order(declarations) == _link_order(rows)
+    @test link_prerequisites(declarations, _link_order(declarations)) == prerequisites
     @test_throws "scheduling cycle" _link_order(
         [rows[1], (endpoint(2, 23), endpoint(1, 12), false)]
     )

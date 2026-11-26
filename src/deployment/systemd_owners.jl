@@ -41,6 +41,12 @@ fail(message) = throw(OwnerError(message))
 
 include("systemd_bus.jl")
 
+function notify_ready!()
+    result = ccall((:sd_notify, "libsystemd.so.0"), Cint, (Cint, Cstring), 0, "READY=1")
+    result > 0 || throw(ArgumentError("systemd readiness notification failed (result $result)"))
+    return nothing
+end
+
 struct Coordinator
     unit::String
     invocation::String

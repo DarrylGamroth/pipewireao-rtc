@@ -11,6 +11,7 @@ import ThreadPinning
 import ..ControlClient
 import ..ControlEndpoint
 import ..OwnerBootstrapCodec
+import ..SystemdOwners
 
 export Runtime,
     validate_threads,
@@ -674,6 +675,9 @@ end
     facts.error === nothing || return Hsm.EventNotHandled
     if facts.prepared && !sm.cancel && !sm.finishing
         _publish!(sm, Codec.Prepared)
+        if sm.runtime.persistent && haskey(ENV, "NOTIFY_SOCKET")
+            SystemdOwners.notify_ready!()
+        end
         return Hsm.transition!(sm, :Prepared)
     end
     return Hsm.EventHandled
