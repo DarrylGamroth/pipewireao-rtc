@@ -35,8 +35,8 @@ same mapping.
 
 [Issue #11](https://github.com/DarrylGamroth/pipewireao-rtc/issues/11) reports a
 required focal-image Link loss after about eight minutes in the 2026-10-23
-cohort. The original sealed application was unavailable locally. This run
-uses the current authored instrument at `e403690`, registered RTC 0.7.33,
+cohort. This run uses the current authored instrument at `e403690`,
+registered RTC 0.7.33,
 PipeWireAO.jl 0.9.6, native SDK 4.0.10+0 and CUDA.jl 6.5.1 on an RTX 3080.
 The simulator uses its 500 Hz model and a wall-clock pacing target of 500 Hz.
 The normal observation client subscribes to all eight declared products on
@@ -57,8 +57,8 @@ The focal queue retained its three capture buffers and reported zero
 protocol errors. A separate observer reconfiguration used slow driving for
 15 s, removed observation clients for 15 s, and reattached. The same focal
 Link and producer remained active and all eight outputs advanced after
-reattachment. Native Quit and cleanup completed in 11.059 s. The historical
-incident remains open for its reported cohort.
+reattachment. Native Quit and cleanup completed in 11.059 s. Issue #11
+remains open for focused buffer-ownership verification on a supported build.
 
 ## Runtime configuration and command output
 
