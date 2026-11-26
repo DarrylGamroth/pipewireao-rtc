@@ -24,6 +24,10 @@ each admitted all 20 Links, primed while open and accepted native Quit.
 [Installed-session evidence](reviews/20261125-installed-session/REVIEW.md#implementation-and-verification)
 
 RTC Quit releases its graph attachments and leaves independent owners running.
+The shared CPU integration fixture now verifies one outstanding native loan
+is returned, its capture pool retires and the provider and core stay live.
+[Shared Quit evidence](validation/shared-quit-20261126/README.md#cpu-quit-regression)
+
 For an explicit graph service stop, `f2217e8` moved PipeWire disposal onto
 the graph's owning thread. In the disposable Classic CPU replay, the idle
 retained graph exited with status 0 in 0.327 s after its explicit stop.

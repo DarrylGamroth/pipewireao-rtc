@@ -2,6 +2,7 @@
 
 | Engineering question | Verification record |
 | --- | --- |
+| Does native Quit return a pending capture loan while its provider stays up? | [Shared CPU Quit regression and Classic CUDA check](validation/shared-quit-20261126/README.md) |
 | What passed on CPU with RTC 0.7.33, and where does CPU pacing matter? | [CAL2 restart, Classic controls, Copper feedback and GPI2 pacing](validation/cpu-qualification-20261126/README.md) |
 | Does an installed RTC admit its declared Links, quit cleanly and release its retained graph? | [Classic CPU admission and service shutdown](reviews/20261125-installed-session/REVIEW.md) |
 | Does CAL2 keep publishing through native Quit and RTC reattachment with the bundled queue? | [Installed CAL2 camera sequences, open-loop priming and buffer withdrawal](validation/cal2-bundled-queue-20261125/README.md) |
