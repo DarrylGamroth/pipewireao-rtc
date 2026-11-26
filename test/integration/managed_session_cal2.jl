@@ -9,6 +9,86 @@ const E = R.InstrumentExport
 const USAGE = "usage: managed_session_cal2.jl APPLICATION FRESH_STAGE PREFIX [--preflight] [--samples N] [--timeout-seconds N]"
 require(value, message) = value || throw(ArgumentError(message))
 
+function queue_counter(properties, key, queue)
+    value = get(properties, key, nothing)
+    require(
+        value isa Integer && !(value isa Bool) && 0 <= value <= typemax(UInt64),
+        "$queue has an invalid or missing $key counter",
+    )
+    # Widen before subtraction and addition so full-width counters remain exact.
+    return Int128(value)
+end
+
+function quit_queue_counters(before, after)
+    function core_cookie(objects)
+        info = only(
+            object["info"] for object in objects if
+            object["type"] == "PipeWire:Interface:Core" && object["id"] == 0
+        )
+        return queue_counter(info, "cookie", "PipeWire core")
+    end
+    require(core_cookie(before) == core_cookie(after), "Quit snapshots use different cores")
+    results = Dict{String,Any}()
+    for camera in ("cal2-llowfs", "cal2-scc")
+        name = camera * "-image-queue"
+        function properties(objects)
+            return only(
+                object["info"]["props"] for object in objects if
+                object["type"] == "PipeWire:Interface:Module" &&
+                object["info"]["name"] == "libpipewire-module-queue" &&
+                get(object["info"]["props"], "node.name", nothing) == name
+            )
+        end
+        initial, final = properties(before), properties(after)
+        for key in ("object.serial", "queue.state.capture-generation")
+            require(
+                queue_counter(initial, key, name) == queue_counter(final, key, name) > 0,
+                "$name changed $key across Quit",
+            )
+        end
+        before_buffers = queue_counter(initial, "queue.state.capture-buffers", name)
+        after_buffers = queue_counter(final, "queue.state.capture-buffers", name)
+        before_pending = queue_counter(initial, "queue.state.pending-depth", name)
+        after_pending = queue_counter(final, "queue.state.pending-depth", name)
+        require(
+            before_buffers > 0 && after_buffers == 0 && before_pending == 1 && after_pending == 0,
+            "$name did not retire its capture pool and pending loan",
+        )
+        for snapshot in (initial, final), key in (
+            "queue.state.playback-buffers", "queue.state.completion-depth",
+            "queue.stats.protocol-errors",
+        )
+            require(queue_counter(snapshot, key, name) == 0, "$name has nonzero $key")
+        end
+        changes = Dict{String,Int128}()
+        for stat in (
+            "publications", "replacements", "withdrawal-returns",
+            "deliveries", "completions", "dropped-arrivals",
+        )
+            key = "queue.stats." * stat
+            changes[stat] = queue_counter(final, key, name) - queue_counter(initial, key, name)
+            require(changes[stat] >= 0, "$name counter $key regressed across Quit")
+        end
+        require(
+            changes["withdrawal-returns"] == 1 &&
+                changes["deliveries"] == changes["completions"] == changes["dropped-arrivals"] ==
+                0,
+            "$name did not return exactly one pending loan on Quit",
+        )
+        require(
+            before_pending + changes["publications"] ==
+                after_pending + changes["replacements"] + changes["withdrawal-returns"],
+            "$name publications and loan returns did not balance across Quit",
+        )
+        results[camera] = Dict(
+            "capture_buffers_before" => before_buffers, "capture_buffers_after" => after_buffers,
+            "pending_before" => before_pending, "pending_after" => after_pending,
+            "counter_changes" => changes,
+        )
+    end
+    return results
+end
+
 function argument(argv, key)
     positions = findall(value -> value == key || startswith(value, key * "="), argv)
     length(positions) == 1 || throw(ArgumentError("owner must declare exactly one $key"))
@@ -36,6 +116,8 @@ capture_node(objects, name) = only(
         objects,
     ),
 )
+publisher_healthy(value) = value === false || (value isa AbstractString && value == "false")
+
 function declared_port(session, name, direction)
     node, port = endpoint(name)
     entries = [
@@ -231,6 +313,32 @@ function modal_product!(
 end
 
 "Cold preflight: accepts real deployable selections only, and never starts a core."
+function selected_calibration(component, optical)
+    configuration = get(optical, "rtc_configuration", nothing)
+    require(
+        configuration isa AbstractString &&
+            normpath(configuration) == configuration &&
+            startswith(configuration, "generated/") &&
+            basename(configuration) == "rtc.yaml" &&
+            dirname(configuration) != "generated",
+        "CAL2 capture requires an explicit generated calibration RTC configuration",
+    )
+    D.relative_asset(component, configuration)
+    calibration = dirname(configuration)
+    selection = C.read_yaml(
+        D.relative_asset(component, joinpath(calibration, "selection.yaml"))
+    )
+    indexpath = D.relative_asset(component, joinpath(calibration, "calibration.yaml"))
+    index = C.read_yaml(indexpath)
+    require(
+        selection["calibration_index_sha256"] == C.sha256_file(indexpath) &&
+            selection["calibration_identity"] == index["calibration_identity"],
+        "selected calibration index differs",
+    )
+    E.validate_selected_rtc(component, calibration, selection, index, optical)
+    return (; calibration, selection, index)
+end
+
 function preflight(application, prefix; sample_count = 40, timeout_seconds = nothing)
     application, spec = E.sealed_application(realpath(application), prefix)
     D.profile(joinpath(application, "deployment.conf"), prefix)
@@ -268,8 +376,10 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
     auxiliary_config = asset(application, argument(auxiliary["argv"], "--config"))
     upstream = D.decode(primary_config, prefix)
     optical = D.decode(auxiliary_config, prefix)
+    standalone =
+        upstream["version"] == 5 && get(upstream, "mode", nothing) == "pupil-source"
     require(
-        upstream["version"] == 3 && get(upstream, "pupil_output", false),
+        standalone || (upstream["version"] == 3 && get(upstream, "pupil_output", false)),
         "primary source must export its scientific pupil",
     )
     require(
@@ -281,25 +391,16 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
         "expected independent SCC and LLOWFS branches",
     )
     component = dirname(auxiliary_config)
-    selection = C.read_yaml(
-        D.relative_asset(component, "generated/calibration/selection.yaml")
-    )
-    indexpath = D.relative_asset(component, "generated/calibration/calibration.yaml")
-    index = C.read_yaml(indexpath)
-    require(
-        selection["calibration_index_sha256"] == C.sha256_file(indexpath) &&
-            selection["calibration_identity"] == index["calibration_identity"],
-        "selected calibration index differs",
-    )
-    E.validate_selected_rtc(component, "generated/calibration", selection, index, optical)
+    (; calibration, index) = selected_calibration(component, optical)
     require(
         Set(keys(index["branches"])) == Set(["llowfs", "scc"]),
         "selected branch index differs",
     )
+    reports = Dict{String,Any}()
     for name in ("llowfs", "scc")
         entry = index["branches"][name]
         require(entry["path"] == name, "branch index must retain its own bundle directory")
-        path = D.relative_asset(component, "generated/calibration/" * name * "/result.yaml")
+        path = D.relative_asset(component, joinpath(calibration, name, "result.yaml"))
         require(C.sha256_file(path) == entry["result_sha256"], "branch result hash differs")
         report = R.InstrumentCalibration.read_bundle(dirname(path)).report
         require(
@@ -312,7 +413,11 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
                 report["calibration_identity"] == index["calibration_identity"],
             "bootstrap/diagnostic/rejected calibration is not admitted",
         )
-        E.validate_reference_backend(report["upstream_reference"], upstream)
+        if standalone
+            reports[name] = report
+        else
+            E.validate_reference_backend(report["upstream_reference"], upstream)
+        end
         for (key, descriptor) in index["physical_projection"]
             require(
                 report["artifact_sha256"][key*".fits"] == descriptor["sha256"],
@@ -331,21 +436,87 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
         parse(Int, first(split(argument(receiving["argv"], "--threads"), ','))) >= 3,
         "receiver requires three default Julia threads",
     )
-    graph_path = asset(application, argument(receiving["argv"], "--graph"))
-    binding_path = asset(application, argument(receiving["argv"], "--fits-bindings"))
     Base.require(Main, :FilterGraphPipeWire)
     Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
-    Base.invokelatest(
-        E.validate_feedback,
-        application,
-        relpath(graph_path, application),
-        relpath(binding_path, application),
-        relpath(receiver_path, application),
-    )
-    contracts = Base.invokelatest(E.graph_port_contracts, graph_path)
-    graph = D.decode(graph_path, prefix)
-    graph_node = graph["node.name"]
-    require(mapping[graph_node] == receiving["role"], "receiving graph owner differs")
+    if standalone
+        require(
+            receiving["role"] == primary["role"] && receiver["version"] == 2,
+            "pupil source must own its P/Q-only physical receiver",
+        )
+        Base.require(Main, :AdaptiveOpticsCalibration)
+        Base.invokelatest(
+            E.validate_pupil_source,
+            application,
+            relpath(primary_config, application),
+            relpath(receiver_path, application);
+            prefix,
+        )
+        selected_dir = "generated/physical-offset-calibration"
+        selected = C.read_yaml(
+            D.relative_asset(application, joinpath(selected_dir, "selection.yaml"))
+        )
+        require(
+            selected["calibration_identity"] == index["calibration_identity"] &&
+                selected["source_prescription_identity"] ==
+                upstream["prescription_identity"],
+            "pupil source calibration selection differs",
+        )
+        for (file, key) in (
+            ("original-deployment.conf", "original_deployment_sha256"),
+            ("original-simulation.conf", "original_simulation_sha256"),
+        )
+            path = D.relative_asset(application, joinpath(selected_dir, file))
+            require(
+                C.sha256_file(path) == selected[key],
+                "original pupil source selection provenance differs",
+            )
+        end
+        options = R.AOSOwner.configuration(primary_config)
+        prepared = R.PhysicalOffsets.prepare(
+            receiver_path;
+            options.command_count,
+            options.command_order,
+            options.calibration_identity,
+        )
+        calibrated = reports["llowfs"]
+        require(
+            all(
+                key -> reports["scc"][key] == calibrated[key],
+                ("upstream_prescription_identity", "recipe", "provenance"),
+            ),
+            "physical branches do not share their calibrated mirror and recipe",
+        )
+        proof = Base.invokelatest(
+            E.validate_pupil_equivalence,
+            application,
+            component,
+            upstream,
+            calibrated,
+            first(prepared.inputs.calibrations).P;
+            mirror = upstream["mirror"],
+            prefix,
+        )
+        require(
+            proof == selected["physical_equivalence"] && proof["accepted"] === true,
+            "pupil source physical transfer proof differs",
+        )
+        reference = nothing
+    else
+        graph_path = asset(application, argument(receiving["argv"], "--graph"))
+        binding_path = asset(application, argument(receiving["argv"], "--fits-bindings"))
+        Base.invokelatest(
+            E.validate_feedback,
+            application,
+            relpath(graph_path, application),
+            relpath(binding_path, application),
+            relpath(receiver_path, application),
+        )
+        contracts = Base.invokelatest(E.graph_port_contracts, graph_path)
+        graph = D.decode(graph_path, prefix)
+        graph_node = graph["node.name"]
+        require(mapping[graph_node] == receiving["role"], "receiving graph owner differs")
+        reference = (; graph = graph_node, node = receiver["algorithm"])
+    end
     pupil_link = only(
         filter(
             link -> link["input"] == optical["pupil_node"] * ":input_1", session["links"]
@@ -358,7 +529,7 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
     )
     period = round(Int64, 1e9 / upstream["rate"])
     require(
-        upstream["exposure_ns"] == period,
+        standalone || upstream["exposure_ns"] == period,
         "selector requires completely covered primary model intervals",
     )
     products = Any[product(
@@ -374,7 +545,9 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
     durations = Dict{String,Int64}()
     controls = Any[]
     missing = String[
-        "Receiver-specific arm/disarm and rejection counters have no declared native observation export; generic parameter generations are captured separately.",
+        standalone ?
+        "Receiver-specific arm/disarm and rejection counters have no declared native observation export. The P/Q source has no graph reference parameters." :
+        "Receiver-specific arm/disarm and rejection counters have no declared native observation export. Generic parameter generations are captured separately.",
         "Correction-open exact-zero startup cannot establish nonzero contribution acceptance or transaction adoption.",
     ]
     for name in ("llowfs", "scc")
@@ -448,19 +621,37 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
             priming_exposures,
         )
     end
-    physical = receiver["clock_output"]
-    push!(
-        products,
-        product(
-            "physical",
-            graph_node * ":" * physical,
-            contracts["outputs"][physical],
-            period,
-            mapping;
-            model_time = false,
-        ),
-    )
-    reference_products!(products, missing, graph, contracts, receiver, period, mapping)
+    if standalone
+        require(
+            get(upstream, "applied_command_observation", false),
+            "standalone capture requires adopted physical command observation",
+        )
+        output = "simulator-" * upstream["mirror"] * "-applied:output_1"
+        push!(
+            products,
+            product(
+                "physical",
+                output,
+                declared_port(session, output, "output"),
+                period,
+                mapping,
+            ),
+        )
+    else
+        physical = receiver["clock_output"]
+        push!(
+            products,
+            product(
+                "physical",
+                graph_node * ":" * physical,
+                contracts["outputs"][physical],
+                period,
+                mapping;
+                model_time = false,
+            ),
+        )
+        reference_products!(products, missing, graph, contracts, receiver, period, mapping)
+    end
     require(
         40 <= sample_count <= 128 && sample_count * period % durations["scc"] == 0,
         "sample count must be in40:128 and cover whole SCC exposures",
@@ -490,8 +681,9 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
         pacing,
         calibration_identity = index["calibration_identity"],
         controls = Tuple(controls),
-        reference = (graph = graph_node, node = receiver["algorithm"]),
+        reference,
         missing,
+        standalone,
     )
 end
 
@@ -522,7 +714,13 @@ function covered_count(product, covered)
 end
 
 function record!(
-    samples, values, receipt, duration; model_time = true, priming_exposures = 0
+    samples,
+    values,
+    receipt,
+    duration;
+    model_time = true,
+    priming_exposures = 0,
+    name = "unnamed",
 )
     require(
         length(samples.records) < samples.bound,
@@ -551,13 +749,21 @@ function record!(
         copyto!(samples.first, values)
     else
         previous = last(samples.records)
-        require(
+        contiguous =
             identity["domain"] == previous["domain"] &&
-                identity["generation"] == previous["generation"] &&
-                identity["sequence"] == previous["sequence"] + 1 &&
-                model_pts == previous["model_pts"] + previous["duration"] &&
-                receipt.pts >= previous["pts"],
-            "acquisition gap or changed cohort",
+            identity["generation"] == previous["generation"] &&
+            identity["sequence"] == previous["sequence"] + 1 &&
+            model_pts == previous["model_pts"] + previous["duration"] &&
+            receipt.pts >= previous["pts"]
+        contiguous || throw(
+            ArgumentError(
+                "acquisition gap or changed cohort for $name: " *
+                "previous=(domain=$(previous["domain"]), generation=$(previous["generation"]), " *
+                "sequence=$(previous["sequence"]), pts=$(previous["pts"]), model_pts=$(previous["model_pts"]), duration=$(previous["duration"])); " *
+                "rejected=(domain=$(identity["domain"]), generation=$(identity["generation"]), sequence=$(identity["sequence"]), " *
+                "pts=$(receipt.pts), duration=$(receipt.duration), lost_samples=$(receipt.lost_samples), " *
+                "trigger_state=$(receipt.trigger_state), model_pts=$model_pts)",
+            ),
         )
     end
     push!(
@@ -722,12 +928,14 @@ function observe_epoch(handle, selected, stage, name)
         )
         require_open_snapshot(control, properties, generation)
     end
-    reference_before = M.request(
-        handle,
-        stage,
-        name * "-reference-before",
-        ["parameter-generation", plan.reference.graph, plan.reference.node],
-    )
+    reference_before =
+        plan.reference === nothing ? nothing :
+        M.request(
+            handle,
+            stage,
+            name * "-reference-before",
+            ["parameter-generation", plan.reference.graph, plan.reference.node],
+        )
     HIL = Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
     ledger = W._ledger(handle)
     remote = ledger["remote"]
@@ -895,10 +1103,11 @@ function observe_epoch(handle, selected, stage, name)
                                 ),
                             )
                         end
-                        if endswith(product.name, "-offset")
+                        if endswith(product.name, "-offset") ||
+                            (plan.standalone && product.name == "physical")
                             require(
                                 all(iszero, arrays[index]),
-                                "startup-only lifecycle observed a nonzero CAL2 offset",
+                                "correction-open lifecycle observed a nonzero CAL2 command",
                             )
                         elseif product.name in ("llowfs", "scc")
                             require(
@@ -920,6 +1129,7 @@ function observe_epoch(handle, selected, stage, name)
                             product.duration;
                             model_time = product.model_time,
                             priming_exposures = product.priming_exposures,
+                            name = product.name,
                         )
                     end
                 end
@@ -936,12 +1146,14 @@ function observe_epoch(handle, selected, stage, name)
                 "Ready",
                 "Pause did not reach Ready",
             )
-            reference_after = M.request(
-                handle,
-                stage,
-                name * "-reference-after",
-                ["parameter-generation", plan.reference.graph, plan.reference.node],
-            )
+            reference_after =
+                plan.reference === nothing ? nothing :
+                M.request(
+                    handle,
+                    stage,
+                    name * "-reference-after",
+                    ["parameter-generation", plan.reference.graph, plan.reference.node],
+                )
             records = Dict{String,Any}()
             for (index, product) in enumerate(plan.products)
                 log = samples[index]
@@ -1013,8 +1225,13 @@ function observe_epoch(handle, selected, stage, name)
                 key => value for
                 (key, value) in props if startswith(key, "aos.pupil-output.")
             )
+            C.write_json(
+                joinpath(stage, name * "-pupil-output-status.json"), publisher_status
+            )
             require(
-                get(publisher_status, "aos.pupil-output.failed", nothing) == "false",
+                publisher_healthy(
+                    get(publisher_status, "aos.pupil-output.failed", nothing)
+                ),
                 "pupil publisher reported failure",
             )
             for key in ("dropped", "transport-dropped", "gaps")
@@ -1110,7 +1327,10 @@ function main(args)
                           parse(Float64, options["--timeout-seconds"]) : nothing,
     )
     cohort = M.Faults.runtime_cohort(application, plan.spec, prefix)
+    queue = joinpath(D.installed_paths(prefix)["modules"], "libpipewire-module-queue.so")
     summary = Dict(
+        "native_queue" => Dict("path" => queue, "sha256" => C.sha256_file(queue)),
+        "primary_source" => plan.standalone ? "pupil-source" : "gpi-wfs",
         "deployment_sha256" => C.sha256_file(joinpath(application, "deployment.conf")),
         "manifest_sha256" => cohort["project"]["sha256"]["Manifest.toml"],
         "prefix" => prefix,
@@ -1250,7 +1470,7 @@ function main(args)
         result["source_snapshots"] = Dict(
             "ready" => ready, "held" => held, "reset" => reset, "final-held" => final
         )
-        result["shutdown"] = M.shutdown(handle, stage)
+        result["shutdown"] = M.shutdown(handle, joinpath(stage, "session"))
         result["completed"] = true
     catch error
         result["failure"] = sprint(showerror, error)
@@ -1258,7 +1478,7 @@ function main(args)
     finally
         if handle !== nothing && !result["completed"]
             try
-                M.Faults.cleanup!(handle, stage; failed = true)
+                M.Faults.cleanup!(handle, joinpath(stage, "session"); failed = true)
             catch error
                 result["cleanup_failure"] = sprint(showerror, error)
             end
@@ -1269,11 +1489,16 @@ function main(args)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    main(ARGS)
-    println(
-        "--preflight" in ARGS ? "CAL2 lifecycle preflight passed; no session started" :
-        "CAL2 lifecycle complete; receipt: " *
-        joinpath(abspath(ARGS[2]), "cal2-lifecycle-result.json"),
-    )
+    if !isempty(ARGS) && first(ARGS) == "--quit-counters"
+        require(length(ARGS) == 3, "usage: managed_session_cal2.jl --quit-counters BEFORE AFTER")
+        println(C.metadata_json(quit_queue_counters(C.read_json(ARGS[2]), C.read_json(ARGS[3]))))
+    else
+        main(ARGS)
+        println(
+            "--preflight" in ARGS ? "CAL2 lifecycle preflight passed; no session started" :
+            "CAL2 lifecycle complete; receipt: " *
+            joinpath(abspath(ARGS[2]), "cal2-lifecycle-result.json"),
+        )
+    end
 end
 end
