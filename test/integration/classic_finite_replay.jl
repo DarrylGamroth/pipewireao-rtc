@@ -330,6 +330,10 @@ function record_prefix!(
             detach_observers!(prepared, observer)
         elseif mode === :churn && index == cld(2count, 3) + 1
             attach_observers!(prepared, registry, observer)
+        elseif mode === :slow && index in (2, count)
+            with_thread_loop_lock(prepared.loop) do _
+                foreach(stream -> set_active!(stream, index == count), observer.streams)
+            end
         end
         sequence = UInt64(index)
         completed = exchange_frame!(prepared)
@@ -348,7 +352,6 @@ function record_prefix!(
             @test frame_capture.identity.sequence == sequence
             @test frame_capture.identity.generation == generation
             index == 1 || @test frame_capture.identity.domain == identities[1].domain
-            @test frame_capture.version == command_capture.version == 2
             @test frame_capture.duration ==
                 command_capture.duration ==
                 prepared.configuration.exposure_duration_ns

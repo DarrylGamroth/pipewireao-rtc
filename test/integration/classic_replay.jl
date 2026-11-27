@@ -23,11 +23,19 @@ function prepare_controller(application)
         "complete-frame",
     ])
     entries = PipeWireAORTC.GraphOwner.bindings(asset("--fits-bindings"))
-    return FilterGraphPipeWire.prepare_service_graph(
+    graph = FilterGraphPipeWire.prepare_service_graph(
         options.graph;
         initial_parameters = formats ->
             PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats),
     )
+    try
+        # This private replay compares the correction on captured and oracle frames.
+        FilterGraphs.replace_properties!(graph, "closed-loop-correction:closed" => true)
+    catch
+        FilterGraphPipeWire.close_execution(graph)
+        rethrow()
+    end
+    return graph
 end
 
 function load_frame!(raw, frames, index)
