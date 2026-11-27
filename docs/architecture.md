@@ -104,10 +104,11 @@ activation function and does not treat delivery of a request as completion.
 Runner-owned and externally owned graph hosts implement the same contract.
 
 This is decision **RTC-ARCH-017**: integrate the REVOLT Classic simulated plant
-through the same external HIL boundary. `REVOLTClassicSim.jl` remains
-transport-neutral. A separate `REVOLTClassicSimPipeWireHIL.jl` package maps
-its prepared 352-by-352 Shack–Hartmann frame and 277-element HSDM277 command
-boundary to ordinary PipeWire nodes. The RTC may place either the maintained
+through the same external HIL boundary. The Classic instrument declaration
+supplies the transport-neutral preparation inputs.
+[AdaptiveOpticsSimPipeWireHIL](https://github.com/DarrylGamroth/AdaptiveOpticsSimPipeWireHIL)
+maps its prepared 352-by-352 Shack–Hartmann frame and 277-element HSDM277
+command boundary to ordinary PipeWire nodes. The RTC may place either the maintained
 `fgn-native` controller or an equivalent `FilterGraphs` processing node
 between those endpoints without knowing how the plant or controller is
 implemented.

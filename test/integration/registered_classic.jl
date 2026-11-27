@@ -1,5 +1,5 @@
 # Opt-in non-actuating application integration. Only fresh owned units are used.
-using Test, PipeWireAORTC, PipeWireAO, TOML
+using Test, PipeWireAORTC, PipeWireAO
 import PipeWireAORTC.SessionRuntime: Clocks
 
 include("classic_observation.jl")
@@ -94,33 +94,27 @@ function check_simulator_metadata(application, stage, graph)
         "installed simulator configuration differs from selected application",
     )
     options = R.AOSOwner.configuration(config_path)
-    checked(
-        options.version == 2 && options.plant.package === :REVOLTClassicSim,
-        "application does not select the managed Classic builder",
-    )
-    manifest = TOML.parsefile(joinpath(stage, "installed", "Manifest.toml"))
-    classic = only(manifest["deps"]["REVOLTClassicSim"])
-    checked(
-        classic["version"] == "0.2.1",
-        "application does not select the Classic 0.2.1 candidate",
-    )
+    checked(options.version == 3, "application does not select a declarative plant")
+    declaration = R.InstrumentConfiguration.load_simulation(options.plant.definition)
+    checked(declaration.document["id"] == "revolt-classic", "application does not select Classic")
     checked(
         options.calibration_identity !== nothing, "startup calibration identity is missing"
     )
     expected = Dict(
-        "aos.simulation.package" => string(options.plant.package),
-        "aos.simulation.package-version" => classic["version"],
-        "aos.simulation.profile" => options.plant.settings.profile,
+        "aos.simulation.package" => declaration.document["id"],
+        "aos.simulation.graph" => options.plant.graph,
         "aos.simulation.backend" => string(options.backend),
         "aos.simulation.device" => string(options.device),
         "aos.simulation.model-period-ns" => string(options.period_ns),
         "aos.simulation.exposure-ns" => string(options.exposure_ns),
         "aos.simulation.configuration-sha256" => C.sha256_file(config_path),
         "aos.simulation.calibration-identity" => options.calibration_identity,
-        # Classic 0.2.1's prepared atmosphere/CMOS construction seeds.
+        # Reproducible atmosphere and CMOS state at startup.
         "aos.simulation.atmosphere-rng-seed" => "1",
         "aos.simulation.detector-rng-seed" => "0",
     )
+    profile = get(options.plant.settings, :profile, nothing)
+    profile === nothing || (expected["aos.simulation.profile"] = string(profile))
     properties = simulator_node(graph)["info"]["props"]
     # pwao-dump presents numeric node-info strings as JSON numbers.
     observed = Dict(

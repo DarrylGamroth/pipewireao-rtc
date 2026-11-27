@@ -27,9 +27,6 @@
       "path": "../../adaptive-optics-simulations"
     },
     {
-      "path": "../../REVOLTCopperSim.jl"
-    },
-    {
       "path": "../../GPI2Sim.jl"
     },
     {

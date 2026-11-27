@@ -31,7 +31,7 @@ Stored artifacts in the new application are FITS. This does not change native nd
 
 The target instrument directory contains Project/Manifest, native PipeWire/RTC graph and session configuration, a simulation graph, FITS artifacts and binding metadata. Optional GUI configuration and reports are separate. Registered packages supply all executable implementation; no copied `src`, tests, scientific package directories or authoring-checkout paths belong in the application.
 
-Classic's exact actuator order, masks, coordinates and prepared-profile provenance must survive the migration. Reusable AOS preparation should accept these declared inputs; `REVOLTClassicSim` is not registered. Publication must retain the early bootstrap Preparing endpoint, cancellation and source-first sequencing. New-framework SPIDERS is an additional declared profile; it does not imply porting the legacy Aeron RTC.
+Classic's declaration supplies the exact actuator order, masks, coordinates and prepared-profile provenance to reusable AOS preparation. Publication must retain the early bootstrap Preparing endpoint, cancellation and source-first sequencing. New-framework SPIDERS is an additional declared profile; it does not imply porting the legacy Aeron RTC.
 
 ## Delivery coverage and evidence gates
 

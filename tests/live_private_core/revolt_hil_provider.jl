@@ -1,14 +1,31 @@
 using AdaptiveOpticsSim.AlgorithmGraphs
-using AdaptiveOpticsSimPipeWireHIL: exchange_frame!, frame_command_timing
+using AdaptiveOpticsSimPipeWireHIL: exchange_frame!, frame_command_timing,
+    prepare_pipewire_hil, start!, stop!
 using Base.Threads: Atomic
 using LinearAlgebra
 using PipeWireAO
 using Printf
-using REVOLTClassicSim
-using REVOLTClassicSimPipeWireHIL
+length(ARGS) == 5 ||
+    error("expected CORE_NAME CONTROL_DIRECTORY NATIVE_GRAPH JULIA_GRAPH INSTRUMENTS_ROOT")
+core_name, control_directory, native_graph_path, julia_graph_path, instruments_root = ARGS
+const CLASSIC = joinpath(realpath(instruments_root), "revolt-classic")
+include(joinpath(realpath(instruments_root), "tools", "scenario", "scenario.jl"))
+const CLASSIC_DECLARATION = Simulation.configuration(CLASSIC).declaration
+const CLASSIC_MIRROR = Simulation.Configuration.mirror(
+    CLASSIC_DECLARATION, nothing,
+    only(keys(CLASSIC_DECLARATION.instrument.document["deformable_mirrors"])),
+)
+const CLASSIC_SENSOR = Simulation.Configuration.sensor_layout(
+    CLASSIC_DECLARATION, CLASSIC_DECLARATION.instrument.document["wavefront_sensors"]["shwfs"],
+)
+command_count() = length(CLASSIC_MIRROR.description.layout.command_positions)
 
-length(ARGS) == 4 || error("expected CORE_NAME CONTROL_DIRECTORY NATIVE_GRAPH JULIA_GRAPH")
-core_name, control_directory, native_graph_path, julia_graph_path = ARGS
+function prepare_classic(; simulation_graph = "production")
+    configuration = Simulation.configuration(CLASSIC; simulation_graph)
+    return Simulation.Configuration.prepare_system(
+        configuration; target = HostComputeDevice(), execution = StreamGraphExecution()
+    )
+end
 native_phase_1 = joinpath(control_directory, "revolt-native-phase-1")
 native_phase_2 = joinpath(control_directory, "revolt-native-phase-2")
 native_phase_2_continue = joinpath(control_directory, "revolt-native-phase-2-continue")
@@ -26,7 +43,7 @@ stop_file = joinpath(control_directory, "stop-revolt-hil")
 native_latency_phase = joinpath(control_directory, "revolt-native-latency")
 julia_latency_phase = joinpath(control_directory, "revolt-julia-latency")
 
-const SUBAPERTURE_SIZE = 22
+const SUBAPERTURE_SIZE = first(CLASSIC_SENSOR.subaperture_shape)
 const CONTROLLER_GAIN = -0.2f0
 const CONTROLLER_POLE = 1.0f0
 const UPDATED_CONTROLLER_GAIN = -0.1f0
@@ -185,12 +202,10 @@ function initialize_latency_csv!(request)
 end
 
 function subaperture_origins()
-    mask = valid_subapertures()
-    origins = Tuple{Int,Int}[]
-    for column in axes(mask, 2), row in axes(mask, 1)
-        mask[row, column] || continue
-        push!(origins, ((row - 1) * SUBAPERTURE_SIZE, (column - 1) * SUBAPERTURE_SIZE))
-    end
+    CLASSIC_SENSOR.subaperture_shape == (SUBAPERTURE_SIZE, SUBAPERTURE_SIZE) ||
+        error("REVOLT Classic private-core fixture requires square subapertures")
+    # The comparison controller traverses the detector column before the row.
+    origins = sort!(collect(CLASSIC_SENSOR.subaperture_origins); by = reverse)
     length(origins) == 188 || error(
         "REVOLT Classic valid-subaperture mask selected $(length(origins)); expected 188",
     )
@@ -229,7 +244,7 @@ function controller_slopes(frame)
 end
 
 function calibrate_controller()
-    calibration = prepare_calibration_system()
+    calibration = prepare_classic(; simulation_graph = "calibration")
     boundary = calibration.boundary
     sequence = step_hil_frame!(boundary)
     flat_slopes = controller_slopes(hil_frame_buffer(boundary))
@@ -379,8 +394,10 @@ arrays_close(actual, expected; rtol, atol) = all(
 )
 
 function prepare_phase(control_matrix)
-    plant = prepare_revolt_classic_pipewire_hil(; remote = core_name)
-    oracle = prepare_hil_system()
+    system = prepare_classic()
+    pipewire = prepare_pipewire_hil(system.boundary, pipewire_configuration(system, core_name))
+    plant = (; system..., pipewire)
+    oracle = prepare_classic()
     oracle_sequence = Ref(step_hil_frame!(oracle.boundary))
     direct_state = zeros(Float32, command_count())
     start!(plant.pipewire)
