@@ -11,6 +11,8 @@
 | How was open-loop startup exercised across instruments? | [Classic, GPI2 and SPIDERS graph checks](validation/direct-session-launch-20261124/instruments.md) and [CAL2 live priming and first corrections](validation/open-loop-startup-20261123/README.md) |
 | What happened on the first DM edit, first correction and GPI2 shutdown? | [Native NDArray integration](validation/rtc-ndarray-integration-20261123/README.md) |
 | Where were the 500 µs deadlines missed on the GPI2 replay? | [Matched traced and untraced windows](validation/gpi2-traced-replay-20261122/README.md) |
+| How did SPIDERS recover from SCC dropout and shared mirror saturation? | [112-mode multirate private-core HIL](validation/spiders-multirate-20261118/README.md) and [MLLOWFS lab estimator parity](validation/spiders-multirate-20261118/modal-sensing.md) |
+| Did a wider SCC mode bank improve the SPIDERS dark hole? | [64 and 112 modes](validation/spiders-fringe-banks-20261117/README.md) and [112 and 144 lab-derived modes](validation/spiders-lab-mode-bank-20261117/README.md) |
 
 Use the dated directories in [validation](validation/) and [reviews](reviews/)
 for other runs. Each report records its configuration and distinguishes software
