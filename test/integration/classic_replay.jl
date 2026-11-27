@@ -7,19 +7,35 @@ const FEEDBACK_OUT = Symbol("controller-constraint-feedback")
 const SCALE = Float32(1e-6)
 
 function prepare_controller(application)
+    deployment = PipeWireAORTC.Common.read_json(joinpath(application, "deployment.conf"))
+    owner = only(owner for owner in deployment["owners"] if "--fits-bindings" in owner["argv"])
+    function asset(option)
+        path = owner["argv"][only(findall(==(option), owner["argv"])) + 1]
+        return PipeWireAORTC.DeploymentConfiguration.relative_asset(
+            application, String(chopprefix(path, "@PACKAGE@/")),
+        )
+    end
     options = FilterGraphPipeWire.parse_arguments([
         "--graph",
-        joinpath(application, "graph.conf"),
+        asset("--graph"),
         "--check",
         "--execution",
         "complete-frame",
     ])
-    entries = PipeWireAORTC.GraphOwner.bindings(joinpath(application, "parameters.conf"))
-    return FilterGraphPipeWire.prepare_service_graph(
+    entries = PipeWireAORTC.GraphOwner.bindings(asset("--fits-bindings"))
+    graph = FilterGraphPipeWire.prepare_service_graph(
         options.graph;
         initial_parameters = formats ->
             PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats),
     )
+    try
+        # This private replay compares the correction on captured and oracle frames.
+        FilterGraphs.replace_properties!(graph, "closed-loop-correction:closed" => true)
+    catch
+        FilterGraphPipeWire.close_execution(graph)
+        rethrow()
+    end
+    return graph
 end
 
 function load_frame!(raw, frames, index)

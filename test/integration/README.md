@@ -1,5 +1,19 @@
 # Actual headless RTC fault qualification
 
+## Classic finite replay
+
+Build the Classic simulator application from its instrument checkout. Run
+`classic_finite_replay.jl` in the built application's Julia environment.
+The test uses its declared plant, controller graph, and calibration bindings.
+Set `CLASSIC_EXCHANGE_SUPPORT` to the instrument checkout's
+`test/exchange_fixture.jl` and `CLASSIC_NATIVE_PREFIX` to the native prefix
+that supplies the queue module. The test starts and stops its own private core.
+
+```sh
+julia --startup-file=no --threads=2,1 --project="$application" \
+  test/integration/classic_finite_replay.jl "$application" "$fresh_output" 6
+```
+
 ## Classic CPU Ready-to-Quit regression
 
 `classic_shutdown.jl CPU_APPLICATION FRESH_STAGE NATIVE_PREFIX` starts a fresh

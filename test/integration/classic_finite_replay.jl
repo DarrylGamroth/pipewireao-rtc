@@ -6,7 +6,7 @@ module ClassicFiniteReplay
 
 using Test, SHA
 using AdaptiveOpticsSim.AlgorithmGraphs, AdaptiveOpticsSim.Backends
-using AdaptiveOpticsSimPipeWireHIL, REVOLTClassicSim
+using AdaptiveOpticsSimPipeWireHIL
 using PipeWireAO, PipeWireAO_jll, PipeWireAORTC
 using FilterGraphPipeWire, FilterGraphAlgorithms, FilterGraphs
 
@@ -42,12 +42,15 @@ const RTC_QUEUES = (
     ("flux", "rtc-flux"),
     ("validity", "rtc-validity"),
     ("current-offset", "rtc-offset"),
+    ("current-shape-offset", "rtc-shape-offset"),
     ("constraint-feedback", "rtc-constraint-feedback"),
     ("correction-role", "rtc-correction-role"),
 )
 
-function write_private_configuration(path, application, core_name)
-    installed = PipeWireAORTC.Common.read_json(joinpath(application, "core.conf.in"))
+function write_private_configuration(path, application, core_name, prefix)
+    deployment = PipeWireAORTC.Common.read_json(joinpath(application, "deployment.conf"))
+    core = PipeWireAORTC.DeploymentConfiguration.relative_asset(application, deployment["core"])
+    installed = PipeWireAORTC.DeploymentConfiguration.decode(core, prefix)
     selected = Set(
         [
             "simulator-detector-queue-input";
@@ -58,8 +61,8 @@ function write_private_configuration(path, application, core_name)
         declaration["name"] == "libpipewire-module-queue" &&
             declaration["args"]["capture.props"]["node.name"] in selected
     end
-    length(queues) == 8 ||
-        error("application does not declare the eight selected copy queues")
+    length(queues) == length(selected) ||
+        error("application does not declare every selected copy queue")
     for declaration in queues
         args = declaration["args"]
         args["queue.max-buffers"] == 1 &&
@@ -113,9 +116,8 @@ function capture(::Type{T}, count) where {T}
         UInt64(0),
         Threads.Atomic{UInt64}(0),
         StreamBuffer(),
-        0,
         nothing,
-        ACQUISITION_TRIGGER_ABSENT,
+        nothing,
     )
 end
 
@@ -328,6 +330,10 @@ function record_prefix!(
             detach_observers!(prepared, observer)
         elseif mode === :churn && index == cld(2count, 3) + 1
             attach_observers!(prepared, registry, observer)
+        elseif mode === :slow && index in (2, count)
+            with_thread_loop_lock(prepared.loop) do _
+                foreach(stream -> set_active!(stream, index == count), observer.streams)
+            end
         end
         sequence = UInt64(index)
         completed = exchange_frame!(prepared)
@@ -346,7 +352,6 @@ function record_prefix!(
             @test frame_capture.identity.sequence == sequence
             @test frame_capture.identity.generation == generation
             index == 1 || @test frame_capture.identity.domain == identities[1].domain
-            @test frame_capture.version == command_capture.version == 2
             @test frame_capture.duration ==
                 command_capture.duration ==
                 prepared.configuration.exposure_duration_ns
@@ -400,10 +405,6 @@ function run_prefix(application, output, system, count; mode = :none)
     configuration_path = joinpath(output, "configuration")
     mkpath(runtime)
     mkpath(configuration_path)
-    write_private_configuration(
-        joinpath(configuration_path, "private-core.conf"), application, core_name
-    )
-    write(joinpath(configuration_path, "client.conf"), CLIENT_CONFIGURATION)
     # The registered JLL supplies the core; the composed application prefix
     # also supplies the external observation queue module and SPA plugins.
     artifact = abspath(
@@ -413,6 +414,10 @@ function run_prefix(application, output, system, count; mode = :none)
         error(
             "set CLASSIC_NATIVE_PREFIX to the reviewed composed native prefix containing the queue module",
         )
+    write_private_configuration(
+        joinpath(configuration_path, "private-core.conf"), application, core_name, artifact
+    )
+    write(joinpath(configuration_path, "client.conf"), CLIENT_CONFIGURATION)
     environment = Dict(
         "XDG_RUNTIME_DIR" => runtime,
         "PIPEWIREAO_RUNTIME_DIR" => runtime,
@@ -445,9 +450,12 @@ function run_prefix(application, output, system, count; mode = :none)
             options = PipeWireAORTC.AOSOwner.configuration(
                 joinpath(application, "simulation.conf")
             )
-            configuration = REVOLTClassicSim.pipewire_configuration(
-                system,
-                core_name;
+            configuration = PipeWireHILConfiguration(;
+                remote = core_name,
+                frame_node_name = "revolt-classic-sim-wfs",
+                command_node_name = "revolt-classic-sim-command",
+                rate = SPA.Fraction(UInt32(options.rate), UInt32(1)),
+                exposure_duration_ns = options.exposure_ns,
                 frame_encoding = options.frame_encoding,
                 frame_schema = options.frame_schema,
                 command_schema = options.command_schema,
@@ -464,9 +472,9 @@ function run_prefix(application, output, system, count; mode = :none)
             # prevent task migration after choosing that native owner thread.
             owner_task = Threads.@spawn :default begin
                 current_task().sticky = true
-                graph = prepare_controller(application)
-                controller = nothing
+                graph = controller = nothing
                 try
+                    graph = prepare_controller(application)
                     controller = FilterGraphPipeWire.PipeWireNode(
                         graph;
                         name = "classic-finite-jfg",
@@ -474,8 +482,12 @@ function run_prefix(application, output, system, count; mode = :none)
                         rate = 500//1,
                         connect = false,
                         fifo_inputs = true,
+                        parameter_ports = false,
                         boundary_layout = FilterGraphAlgorithms.RowMajorLayout(),
                         feedback = FEEDBACK_IN => FEEDBACK_OUT,
+                        PipeWireAORTC.GraphOwner.metadata_profiles(
+                            graph; feedback = FEEDBACK_IN => FEEDBACK_OUT,
+                        )...,
                     )
                     FilterGraphPipeWire.prepare!(
                         controller; required_outputs = keys(graph.output_formats)
@@ -488,7 +500,7 @@ function run_prefix(application, output, system, count; mode = :none)
                     rethrow()
                 finally
                     controller === nothing || close(controller)
-                    FilterGraphPipeWire.close_execution(graph)
+                    graph === nothing || FilterGraphPipeWire.close_execution(graph)
                 end
             end
             timedwait(
@@ -790,7 +802,10 @@ function run_replay(arguments)
     before = Dict(name => digest(joinpath(application, name)) for name in keys(declared))
     before["deployment.conf"] = digest(joinpath(application, "deployment.conf"))
     @testset "Classic finite $(options.backend) plant / CPU FilterGraphs replay" begin
-        system = REVOLTClassicSim.prepare_hil_system(options.plant.settings; target)
+        system = PipeWireAORTC.InstrumentConfiguration.prepare_system(
+            options.plant.definition; settings = options.plant.settings,
+            simulation_graph = options.plant.graph, target,
+        )
         @test compute_device(system.boundary.frame_output) == target
         @test compute_device(system.boundary.command_input) == target
         result = run_prefix(application, joinpath(output, "none"), system, count)
